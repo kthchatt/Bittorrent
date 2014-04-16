@@ -25,18 +25,18 @@ void regx()
     regex_t regex;
     int reti;
     char msgbuf[100];
-    char* damessage = "http://www.sub.domain.tld/filespec.ext";
+    char* damessage = "http://www.sub.domain.tld:80/filespec.ext";
 
 
 /* Compile regular expression */
-    reti = regcomp(&regex, "^(?:\w+://)?([^/?]*)", 0);
+    reti = regcomp(&regex, "(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*", 0);
     if( reti )
     { 
         fprintf(stderr, "Could not compile regex\n"); exit(1); 
     }
 
 /* Execute regular expression */
-    reti = regexec(&regex, "bbb", 0, NULL, 0);
+    reti = regexec(&regex, "http://www.sub.domain.tld:80/filespec.ext", 0, NULL, 0);
     if( !reti )
     {
             puts("Match");
@@ -51,6 +51,8 @@ void regx()
         fprintf(stderr, "Regex match failed: %s\n", msgbuf);
         exit(1);
     }
+
+    fprintf(stderr, "Regex: %s\n", regex);
 
 /* Free compiled regular expression if you want to use the regex_t again */
     regfree(&regex);
