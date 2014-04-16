@@ -15,28 +15,30 @@
 
 
 //ip is set to 0 for non-proxy connections.
-void announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
-              char* event, int downloaded = 0, int left = 0);
+//TODO: Return list of peers.
+int announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
+              char* event, int downloaded, int left) 
 {
     int sockfd = 0, n = 0;
     char recvBuff[1024];
     struct addrinfo hints, *res;
+    char domain[100];
+    char announce[100];
+    int tracker_port = 0;
+
+    //TODO: Extract from tracker.
+
+
+    //TODO: Extract domain name.            (sub.domain.tld)
+    //TODO: Extract port from url.          (:xx)
+    //TODO: Extract announce from url.      (/trackering/tracker/announce)
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
+    getaddrinfo(tracker, "[tracker_port]", &hints, &res);
 
-    getaddrinfo(tracker, "http", &hints, &res);
-
-    if(argc != 2)
-    {
-        printf("\n Usage: %s <ip of server> \n",argv[0]);
-        return 1;
-    } 
-
-    memset(recvBuff, '0',sizeof(recvBuff));
-
-    if((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+    if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
     {
         printf("\n Error : Could not create socket \n");
         return 1;
@@ -44,42 +46,57 @@ void announce(char* tracker, char* info_hash, char* peer_id, char* ip,
 
     //TODO: bind to port, include port in announce request.
 
-    if( connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
+    if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
     {
        printf("\n Error : Connect Failed \n");
        return 1;
     } 
 
-    //TODO: Build request header.
-    char *request = "GET /announce?info_hash=12345678901234567890&peer_id=ABCDEFGHIJKLMNOPQRST&ip=255.255.255.255&port=6881&downloaded=1234&left=98765&event=started HTTP/1.1\r\nhost: retracker.hq.ertelecom.ru\r\n\r\n";//"GET / HTTP/1.1\r\nhost: www.google.se\r\n\r\n";
+    char request[200];
+
+//TODO: Append parameters to announce.  (?info_hash=20&peer_id=20&ip=&port=&downloaded=&left=&event=)
+    strcat(request, "GET");
+    strcat(request, " [announceurl+parameters] ");
+    strcat(request, "HTTP/1.1\r\n")
+    strcat(request, "host: ");
+    strcat(request, "[sub.domain.tld]");
+    strcat(request, "\r\n\r\n");
+
     int len, bytes_sent;
-
-    printf("query: %s", request);
-    fflush(stdout);
-
     len = strlen(request);
     bytes_sent = send(sockfd, request, len, 0);
 
-    //TODO: Interpret peer list.
-    while ( (n = read(sockfd, recvBuff, sizeof(recvBuff)-1)) > 0)
+    memset(recvBuff, '0',sizeof(recvBuff));
+    while ((n = read(sockfd, recvBuff, sizeof(recvBuff)-1)) > 0)
     {
         recvBuff[n] = 0;
         if(fputs(recvBuff, stdout) == EOF)
         {
             printf("\n Error : Fputs error\n");
+            return 1;
         }
     } 
 
-    if(n < 0)
+    //TODO: All data received, interpret peer list.
+
+    if (n < 0)
     {
         printf("\n Read error \n");
+        return 1;
     }  
+
+    return 0;
 }
 
 
 //main for testing.
 int main(int argc, char *argv[])
 {
-    announce("tracker.istole.it","iiiinnnnffffoooohashkkkkk", "peerIDaaaabbbbcdeeff", "0", "Started", 0, 120582);
+    if (announce("protocol://retracker.hq.ertelecom.ru:port/announce-url","iiiinnnnffffoooohashkkkkk", "peerIDaaaabbbbcdeeff", "0", "Started", 0, 120582) != 0)
+    {
+        printf("Announce Error.");
+    }
+    
+
     return 0;
 }
