@@ -13,7 +13,13 @@ int main(int argc, char *argv[])
 {
     int sockfd = 0, n = 0;
     char recvBuff[1024];
-    struct sockaddr_in serv_addr; 
+    struct addrinfo hints, *res;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    getaddrinfo("retracker.hq.ertelecom.ru", "http", &hints, &res);
 
     if(argc != 2)
     {
@@ -22,28 +28,36 @@ int main(int argc, char *argv[])
     } 
 
     memset(recvBuff, '0',sizeof(recvBuff));
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+
+    if((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
     {
         printf("\n Error : Could not create socket \n");
         return 1;
     } 
 
-    memset(&serv_addr, '0', sizeof(serv_addr)); 
+    //TODO: bind to port, include port in announce request.
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(5000); 
-
-    if(inet_pton(AF_INET, argv[1], &serv_addr.sin_addr)<=0)
-    {
-        printf("\n inet_pton error occured\n");
-        return 1;
-    } 
-
-    if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if( connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
     {
        printf("\n Error : Connect Failed \n");
        return 1;
     } 
+
+    char *request = "GET /announce?info_hash=12345678901234567890&peer_id=ABCDEFGHIJKLMNOPQRST&ip=255.255.255.255&port=6881&downloaded=1234&left=98765&event=started HTTP/1.1\r\nhost: retracker.hq.ertelecom.ru\r\n\r\n";//"GET / HTTP/1.1\r\nhost: www.google.se\r\n\r\n";
+    int len, bytes_sent;
+
+    /*strcat(request, "GET");
+    strcat(request, " / ");           //announce URL parameters
+    strcat(request, "HTTP/1.1\r\n");  
+    strcat(request, "host: ");
+    strcat(request, "www.google.se"); //announce host
+    strcat(request, "\r\n\r\n");*/
+
+    printf("query: %s", request);
+    fflush(stdout);
+
+    len = strlen(request);
+    bytes_sent = send(sockfd, request, len, 0);
 
     while ( (n = read(sockfd, recvBuff, sizeof(recvBuff)-1)) > 0)
     {
