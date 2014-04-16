@@ -12,6 +12,36 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h> 
+#include <regex.h>
+
+void regx()
+{     
+        regex_t regex;
+        int reti;
+        char msgbuf[100];
+
+
+/* Compile regular expression */
+        reti = regcomp(&regex, "^a[[:alnum:]]", 0);
+        if( reti ){ fprintf(stderr, "Could not compile regex\n"); exit(1); }
+
+/* Execute regular expression */
+        reti = regexec(&regex, "abc", 0, NULL, 0);
+        if( !reti ){
+                puts("Match");
+        }
+        else if( reti == REG_NOMATCH ){
+                puts("No match");
+        }
+        else{
+                regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+                fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                exit(1);
+        }
+
+/* Free compiled regular expression if you want to use the regex_t again */
+    regfree(&regex);
+}
 
 
 //ip is set to 0 for non-proxy connections.
@@ -57,7 +87,7 @@ int announce(char* tracker, char* info_hash, char* peer_id, char* ip,
 //TODO: Append parameters to announce.  (?info_hash=20&peer_id=20&ip=&port=&downloaded=&left=&event=)
     strcat(request, "GET");
     strcat(request, " [announceurl+parameters] ");
-    strcat(request, "HTTP/1.1\r\n")
+    strcat(request, "HTTP/1.1\r\n");
     strcat(request, "host: ");
     strcat(request, "[sub.domain.tld]");
     strcat(request, "\r\n\r\n");
@@ -92,10 +122,12 @@ int announce(char* tracker, char* info_hash, char* peer_id, char* ip,
 //main for testing.
 int main(int argc, char *argv[])
 {
-    if (announce("protocol://retracker.hq.ertelecom.ru:port/announce-url","iiiinnnnffffoooohashkkkkk", "peerIDaaaabbbbcdeeff", "0", "Started", 0, 120582) != 0)
+    /*if (announce("protocol://retracker.hq.ertelecom.ru:port/announce-url","iiiinnnnffffoooohashkkkkk", "peerIDaaaabbbbcdeeff", "0", "Started", 0, 120582) != 0)
     {
         printf("Announce Error.");
-    }
+    }*/
+
+        regx();
     
 
     return 0;
