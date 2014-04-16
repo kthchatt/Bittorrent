@@ -14,6 +14,12 @@
 #include <arpa/inet.h> 
 #include <regex.h>
 
+
+/*
+domain    (\/.*-)?(w+)([a-z, A-Z, 0-9, .])*
+protocol  ^[a-z, A-Z, 0-9]*
+*/
+
 void regx()
 {     
     regex_t regex;
