@@ -20,6 +20,7 @@ domain    (\/.*-)?(w+)([a-z, A-Z, 0-9, .])*
 protocol  ^[a-z, A-Z, 0-9]*
 */
 
+//TODO: Regexes for domain, protocol, port and announce.
 void regx()
 {     
     regex_t regex;
