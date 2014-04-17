@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
-unsigned char *getHash(char torrentPath[], int piece);
+#include "pieces.h"
 
 int main()
 {
@@ -24,7 +19,7 @@ unsigned char *getHash(char torrentPath[], int piece){
 	if (!file)
 	{
 		fprintf(stderr, "Unable to open file %s", torrentPath);
-		return;
+		return hash;
 	}
 	//Get file length
 	fseek(file, 0, SEEK_END);
@@ -37,7 +32,7 @@ unsigned char *getHash(char torrentPath[], int piece){
 	{
 		fprintf(stderr, "Memory error!");
         fclose(file);
-		return;
+		return hash;
 	}
 
 	//Read file contents into buffer
