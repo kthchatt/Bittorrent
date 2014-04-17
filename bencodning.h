@@ -4,6 +4,7 @@
 #include <stdio.h> 
 #include <string.h>
 #include <stdlib.h>
+
 typedef struct metainfodecode
 {
 	char _announce[250];
@@ -22,7 +23,7 @@ typedef struct metainfodecode
 	long int _hash_length;
 	char _pieces [5000][20];
 } torrent_info;
-/*
+
 int init_file (char *, FILE *);
 void list_handler(FILE *, char *, torrent_info *);
 char read_one_char (FILE *);
@@ -34,7 +35,6 @@ void complete_dictonarry (char *, char *, torrent_info *);
 void dictonarry_handler (FILE *, torrent_info *, char *);
 void announce_list_handler(FILE *, torrent_info *);
 void int_handler(FILE *, char *, torrent_info *);
-*/
-extern int decode_bencode(int,char **)
+int decode_bencode(int,char **);
 
 #endif
