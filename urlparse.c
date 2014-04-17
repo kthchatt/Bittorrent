@@ -80,20 +80,20 @@ void url_port(char* url, int *port)
 
     for (i = len; i > 0; i--)
     {
+        if ((url[i] < 48 || url[i] > 57) && url[i] != ':')
+        {
+            port_end = i-1;
+        }
+
         if (url[i] == ':')
         {
             port_start = i;
             break;
         }
-
-        if (url[i] < 47 || url[i] > 57)
-        {
-            port_end = i-1;
-        }
     }
 
     amp = 1;
-    for (i = port_end-1; i > port_start; i--)
+    for (i = port_end; i > port_start; i--)
     {
         *port += (url[i]-48) * amp;
         amp *= 10;
@@ -125,7 +125,7 @@ void testing(char* urls)
     printf("protocol: %s\n", prot);
 
     url_port(url, &port);
-    printf("port: %d\n", port);
+    printf("\nport: %d\n", port);
 }
 
 //function caller.
@@ -133,12 +133,8 @@ int main(int argc, char ** argv)
 {
 
     testing("http://tracker.istole.it:456/announce");
-    testing("udp://tracker.now/");
-    testing("tracker.istole.it");
-    testing("tracker.istole.it:800");
-    testing("www.tracker.now:500/announce");
-    testing("tracked.eu");
-    testing("udp://tracker.eu:500/");
+    testing("tracker.istole.it:801");
+    testing("www.tracker.now:500/");
 
     return 0;
 }
