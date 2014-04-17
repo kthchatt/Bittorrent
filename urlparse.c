@@ -69,29 +69,23 @@ void url_protocol(char* url, char* protocol)
     }
 
     //if protocol omitted default to http
-    if (protocol_end > 4)
+    if (protocol_end > 4 || protocol_end == 0)
     {
         strcpy(protocol, "http");
     }
 }
 
 //finds the port number, searches from end of string to first colon.
-void url_port(char* url, int port)
+void url_port(char* url, int *port)
 {
     int i, len, port_end, port_start, occur = 0, amp = 0;
-    port = 0;
-
-    printf("port: %d %d %d", *port, port, &port);
-    fflush(stdout);
+    *port = 80;
 
     len = strlen(url);
     port_end = len;
 
-    for (i = len; i < len; i--)
+    for (i = len; i > 0; i--)
     {
-    printf("[%d]", i);
-    fflush(stdout);
-
         if (url[i] == ':')
         {
             port_start = i;
@@ -104,16 +98,15 @@ void url_port(char* url, int port)
         }
     }
 
-    printf("CALCEN");
-    fflush(stdout);
-
     amp = 1;
-    for (i = port_end; i > port_start; i--)
+    for (i = port_end-1; i > port_start; i--)
     {
-        printf("port [%d]\n", *port);
-        port += (url[i]-48) * amp;
+        *port += (url[i]-48) * amp;
         amp *= 10;
     }
+
+    if (*port > 0 || *port >= 65535)
+        *port = 80;
 }
 
 
@@ -126,9 +119,10 @@ int main(int argc, char ** argv)
     char* host;
     int port = 40;
 
-    url = "www.datgoed.domain.tld:80/announce";
+    //url = "www.datgoed.domain.tld/announce";
+    url = argv[1];
     int len = strlen(url);
-
+    printf("URL: %s", url);
 
     host = (char*) malloc(len);
     url_hostname(url, host);
@@ -140,7 +134,7 @@ int main(int argc, char ** argv)
 
 
     url_port(url, &port);
-    printf("port: %d", port);
+    printf("port: %d\n", port);
 
 
     return 0;
