@@ -55,14 +55,24 @@ void execute_regex (regex_t* reg, char* source, char* dest)
 
             printf("'%.*s' (bytes %d:%d)\n", (finish - start), (source + start), start, finish);
 
-            
+            int j, k = 0;
+            //dest = (char*) malloc(result[i].rm_eo - result[i].rm_so);
 
-            dest = (char*) malloc(result[i].rm_eo - result[i].rm_so);
+            for(j = result[i].rm_so; j < result[i].rm_eo; ++j) 
+            {
+                printf("%c", source[j]);
+                dest[k] = source[j];
+                k++;
+            }
+
+            dest[k] = '\0';
+
+            printf("-%s-", dest);
+           /* dest = (char*) malloc(result[i].rm_eo - result[i].rm_so);
             strncpy(dest, &source[result[i].rm_so], result[i].rm_eo - result[i].rm_so);
-            dest[strlen(dest)] = '\0';
 
             printf("Result: -%s-\n", dest);
-            printf("Result2: -%s-\n", source);
+            printf("Result2: -%s-\n", source);*/
 
         }
         mpos += result[0].rm_eo;
@@ -101,9 +111,9 @@ int main(int argc, char ** argv)
     char* dest;
 
     source = "protocol://www.sub.domain.tld/fileptr";
+    dest = (char*) malloc(strlen(source)+1);
 
     regex_string(source, dest, DOMAIN);
-
     printf("source: %s, dest: %s", source, dest);
 
     return 0;
