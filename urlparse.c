@@ -20,7 +20,7 @@ void url_hostname(char* url, char* host)
 
     for (i = 0; i < len; i++)
     {
-        if (domain_start != 0 && (url[i] == '/' || url[i] == ':'))
+        if (i > 5 && url[i] == '/' || url[i] == ':')
         {
             domain_end = i;
             break;
@@ -76,29 +76,44 @@ void url_protocol(char* url, char* protocol)
 }
 
 //finds the port number, searches from end of string to first colon.
-void url_port(char* url, int* port);
+void url_port(char* url, int port)
 {
-    int i, len, port_end, port_start, occur = 1, port = 0;
+    int i, len, port_end, port_start, occur = 0, amp = 0;
+    port = 0;
+
+    printf("port: %d %d %d", *port, port, &port);
+    fflush(stdout);
+
     len = strlen(url);
+    port_end = len;
 
     for (i = len; i < len; i--)
     {
-        if (url[i] => 48 && url[i] <= 57)
-        {
-            port += (url[i]-48) * occur;
-            occur *= 10;
-        }
+    printf("[%d]", i);
+    fflush(stdout);
 
         if (url[i] == ':')
         {
-            port_end = i;
+            port_start = i;
+            break;
+        }
+
+        if (url[i] < 47 || url[i] > 57)
+        {
+            port_end = i-1;
         }
     }
 
-    /*
-            port += (url[i]-48) * occur;
-            occur *= 10;
-    */
+    printf("CALCEN");
+    fflush(stdout);
+
+    amp = 1;
+    for (i = port_end; i > port_start; i--)
+    {
+        printf("port [%d]\n", *port);
+        port += (url[i]-48) * amp;
+        amp *= 10;
+    }
 }
 
 
@@ -109,23 +124,23 @@ int main(int argc, char ** argv)
     char* url;
     char* prot;
     char* host;
-    char* port;
+    int port = 40;
 
-    url = "www.datgoed.domain.tld:port/announce";
+    url = "www.datgoed.domain.tld:80/announce";
     int len = strlen(url);
 
 
     host = (char*) malloc(len);
-    hostname(url, host);
+    url_hostname(url, host);
     printf("hostname: %s\n", host);
 
     prot = (char*) malloc(len);
-    protocol(url, prot);
+    url_protocol(url, prot);
     printf("protocol: %s\n", prot);
 
-    port = (char*) malloc(len);
-    protocol(url, port);
-    printf("port: %s", port);
+
+    url_port(url, &port);
+    printf("port: %d", port);
 
 
     return 0;
