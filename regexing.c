@@ -13,14 +13,13 @@
  #define ERROR_MSG 100
  #define DOMAIN 0
  #define PROTOCOL 1
+ #define PORT 2
 
- /*
-domain    (\/.*-)?(w+)([a-z, A-Z, 0-9, .])*
-protocol  ^[a-z, A-Z, 0-9]*
-*/
-
-char* regtable[2] = {"(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*",  //domain
-                     "^[a-z, A-Z, 0-9]*"};                  //protocol
+char* regtable[4] = {"(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*",  //domain
+                     "^([a-z, A-Z]+)",                      //protocol
+                     "PORT_REGEX",                          //port
+                     "FILEPTR_REGEX"                        //fileptr 
+                     };                  
 
 //scans source for regex reg and puts the result in dest.
 //dest only returns one match, change dest to array for multiple returns.
@@ -28,16 +27,18 @@ void execute_regex (regex_t* reg, char* source, char* dest)
 {
     char* mpos = source;
     int match_count = 5;
+    int i, k, j;
     regmatch_t result[match_count];
 
     while (1)
     {
-        int i, k, j;
         char* extract;
         int unmatched = regexec(reg, mpos, match_count, result, 0);
 
-        if (unmatched)
-            return;
+        if (unmatched == 1)
+            break;
+
+        printf("-%d-", unmatched);
 
         for (i = 0; i < match_count; i++)
         {
@@ -88,7 +89,7 @@ int regex_string(char* source, char* dest, int type)
             break;
     }
 
-    //printf ("Searching for '%s' in '%s'\n", query, source);
+    printf ("Searching for '%s' in '%s'\n", query, source);
 
     if (regcomp(&reg, query, REG_EXTENDED|REG_NEWLINE) != 0)
         printf("Failed to compile %s", query);
