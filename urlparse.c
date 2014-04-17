@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <regex.h>
 
 
 //extract hostname from url. 
@@ -99,22 +98,46 @@ void url_port(char* url, int *port)
         amp *= 10;
     }
 
-   // if (*port > 0 || *port >= 65535)
-   //     *port = 80;
+    if (*port < 1)
+        *port = 80;
+}
+
+void url_announce(char* url, char* announce)
+{
+    int len, i, j = 0, announce_started = 0;
+    len = strlen(url);
+
+    if (len < 6)
+        return;
+
+    for (i = 7; i < len; i++)
+    {
+        if (url[i] == '/' || announce_started == 1)
+        {
+            announce[j] = url[i];
+            announce_started = 1;
+            j++;
+        }
+    }
 }
 
 
-
+/*------------------------------- BEGIN: REMOVE WHEN COMPLETE ----------------------------------*/
 void testing(char* urls)
 {
     char* url;
     char* prot;
     char* host;
+    char* announce;
     int port = 40;
 
     url = urls;//"http://www.datgoed.domain.tld/announce";
     int len = strlen(url);
     printf("URL: %s\n", url);
+
+    announce = (char*) malloc(len);
+    url_announce(url, announce);
+    printf("announce: %s\n", announce);
 
     host = (char*) malloc(len);
     url_hostname(url, host);
@@ -125,16 +148,18 @@ void testing(char* urls)
     printf("protocol: %s\n", prot);
 
     url_port(url, &port);
-    printf("\nport: %d\n", port);
+    printf("port: %d\n\n", port);
 }
 
 //function caller.
 int main(int argc, char ** argv)
 {
 
-    testing("http://tracker.istole.it:456/announce");
-    testing("tracker.istole.it:801");
-    testing("www.tracker.now:500/");
+    testing("http://tracker.istole.it:456/tracker5/announce");
+    testing("tracker.istole5.it:801/announce");
+    testing("www.tracker.now/announce/announce5");
 
     return 0;
 }
+
+/*------------------------------- END: REMOVE WHEN COMPLETE ----------------------------------*/

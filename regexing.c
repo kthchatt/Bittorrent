@@ -5,6 +5,8 @@
  * Takes a string and regex type, returns regex match.
  */
 
+ //TODO: REPURPOSE.
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,6 +16,7 @@
  #define DOMAIN 0
  #define PROTOCOL 1
  #define PORT 2
+
 
 char* regtable[4] = {"(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*",  //domain
                      "^([a-z, A-Z]+)",                      //protocol

@@ -1,6 +1,9 @@
-// announce.c 
-// 2014-04-16
-// Robin Duda
+/* announce.c 
+ * 2014-04-16
+ * Robin Duda
+ * Reference URL: http://beej.us/guide/bgnet/output/html/multipage/syscalls.html
+ * Announces presence to tracker and fetches peers in the swarm.
+ */
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -15,51 +18,6 @@
 #include <regex.h>
 
 
-/*
-domain    (\/.*-)?(w+)([a-z, A-Z, 0-9, .])*
-protocol  ^[a-z, A-Z, 0-9]*
-*/
-
-//TODO: Regexes for domain, protocol, port and announce.
-void regx()
-{     
-    regex_t regex;
-    int reti;
-    char msgbuf[100];
-    char* damessage = "http://www.sub.domain.tld:80/filespec.ext";
-
-
-/* Compile regular expression */
-    reti = regcomp(&regex, "(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*", 0);
-    if( reti )
-    { 
-        fprintf(stderr, "Could not compile regex\n"); exit(1); 
-    }
-
-/* Execute regular expression */
-    reti = regexec(&regex, "http://www.sub.domain.tld:80/filespec.ext", 0, NULL, 0);
-    if( !reti )
-    {
-            puts("Match");
-    }
-    else if( reti == REG_NOMATCH )
-    {
-        puts("No match");
-    }
-    else
-    {
-        regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-        fprintf(stderr, "Regex match failed: %s\n", msgbuf);
-        exit(1);
-    }
-
-    fprintf(stderr, "Regex: %s\n", regex);
-
-/* Free compiled regular expression if you want to use the regex_t again */
-    regfree(&regex);
-}
-
-
 //ip is set to 0 for non-proxy connections.
 //TODO: Return list of peers.
 int announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
@@ -72,12 +30,7 @@ int announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     char announce[100];
     int tracker_port = 0;
 
-    //TODO: Extract from tracker.
-
-
-    //TODO: Extract domain name.            (sub.domain.tld)
-    //TODO: Extract port from url.          (:xx)
-    //TODO: Extract announce from url.      (/trackering/tracker/announce)
+    //TODO: Use regexing.h to extract domain, protocol and port.
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -138,13 +91,10 @@ int announce(char* tracker, char* info_hash, char* peer_id, char* ip,
 //main for testing.
 int main(int argc, char *argv[])
 {
-    /*if (announce("protocol://retracker.hq.ertelecom.ru:port/announce-url","iiiinnnnffffoooohashkkkkk", "peerIDaaaabbbbcdeeff", "0", "Started", 0, 120582) != 0)
+    if (announce("protocol://retracker.hq.ertelecom.ru:port/announce-url","iiiinnnnffffoooohashkkkkk", "peerIDaaaabbbbcdeeff", "0", "Started", 0, 120582) != 0)
     {
         printf("Announce Error.");
-    }*/
-
-        regx();
+    }
     
-
     return 0;
 }
