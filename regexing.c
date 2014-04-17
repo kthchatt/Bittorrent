@@ -22,15 +22,16 @@ protocol  ^[a-z, A-Z, 0-9]*
 char* regtable[2] = {"(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*",  //domain
                      "^[a-z, A-Z, 0-9]*"};                  //protocol
 
-void execute_regex (regex_t* reg, char* string)
+void execute_regex (regex_t* reg, char* source, char* dest)
 {
-    char* mpos = string;
+    char* mpos = source;
     int match_count = 5;
     regmatch_t result[match_count];
 
     while (1)
     {
-        int i = 0;
+        int i = 0, k;
+        char* extract;
         int unmatched = regexec(reg, mpos, match_count, result, 0);
 
         if (unmatched)
@@ -44,15 +45,25 @@ void execute_regex (regex_t* reg, char* string)
             if (result[i].rm_so == -1)
                 break;
 
-            start = result[i].rm_so + (mpos - string);
-            finish = result[i].rm_eo + (mpos - string);
+            start = result[i].rm_so + (mpos - source);
+            finish = result[i].rm_eo + (mpos - source);
 
             if (i == 0)
                 printf("$& is ");
             else
                 printf("$%d is ", i);
 
-            printf("'%.*s' (bytes %d:%d)\n", (finish - start), string + start, start, finish);
+            printf("'%.*s' (bytes %d:%d)\n", (finish - start), (source + start), start, finish);
+
+            
+
+            dest = (char*) malloc(result[i].rm_eo - result[i].rm_so);
+            strncpy(dest, &source[result[i].rm_so], result[i].rm_eo - result[i].rm_so);
+            dest[strlen(dest)] = '\0';
+
+            printf("Result: -%s-\n", dest);
+            printf("Result2: -%s-\n", source);
+
         }
         mpos += result[0].rm_eo;
     }
@@ -65,36 +76,35 @@ int regex_string(char* source, char* dest, int type)
     regex_t reg;
     char* query;
 
+    printf("source: %s, dest: %s\n", source, dest);
+
     switch(type)
     {
         case DOMAIN: query = regtable[DOMAIN];
             break;
         case PROTOCOL: query = regtable[PROTOCOL];
             break;
-        case default: query = null;
-            break;
     }
-
-    //compile
-    //execute
-}
-
-int main(int argc, char ** argv)
-{
-
-    query = "(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*";
-    source = "http://www.sub.domain.tld:80/file_specifier";
 
     printf ("Searching for '%s' in '%s'\n", query, source);
 
     if (regcomp(&reg, query, REG_EXTENDED|REG_NEWLINE) != 0)
-    {
-        printf("regex failed to compile!");
-        return 1;
-    }
-    else
-        execute_regex(&reg, source);
+        printf("Failed to compile %s", query);
 
-    regfree (&reg);
+    execute_regex(&reg, source, dest);
+    regfree(&reg);
+}
+
+int main(int argc, char ** argv)
+{
+    char* source;
+    char* dest;
+
+    source = "protocol://www.sub.domain.tld/fileptr";
+
+    regex_string(source, dest, DOMAIN);
+
+    printf("source: %s, dest: %s", source, dest);
+
     return 0;
 }
