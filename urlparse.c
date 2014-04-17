@@ -20,7 +20,7 @@ void url_hostname(char* url, char* host)
 
     for (i = 0; i < len; i++)
     {
-        if (i > 5 && url[i] == '/' || url[i] == ':')
+        if (i > 6 && (url[i] == '/' || url[i] == ':'))
         {
             domain_end = i;
             break;
@@ -31,12 +31,6 @@ void url_hostname(char* url, char* host)
             domain_start = i+3;
             i += 3;
         }
-    }
-
-    //if protocol omitted.
-    if (domain_start > 4)
-    {
-        domain_start = 0;
     }
 
     for (i = domain_start; i < domain_end; i++)
@@ -79,7 +73,7 @@ void url_protocol(char* url, char* protocol)
 void url_port(char* url, int *port)
 {
     int i, len, port_end, port_start, occur = 0, amp = 0;
-    *port = 80;
+    *port = 0;
 
     len = strlen(url);
     port_end = len;
@@ -105,24 +99,22 @@ void url_port(char* url, int *port)
         amp *= 10;
     }
 
-    if (*port > 0 || *port >= 65535)
-        *port = 80;
+   // if (*port > 0 || *port >= 65535)
+   //     *port = 80;
 }
 
 
 
-//function caller.
-int main(int argc, char ** argv)
+void testing(char* urls)
 {
     char* url;
     char* prot;
     char* host;
     int port = 40;
 
-    //url = "www.datgoed.domain.tld/announce";
-    url = argv[1];
+    url = urls;//"http://www.datgoed.domain.tld/announce";
     int len = strlen(url);
-    printf("URL: %s", url);
+    printf("URL: %s\n", url);
 
     host = (char*) malloc(len);
     url_hostname(url, host);
@@ -132,10 +124,21 @@ int main(int argc, char ** argv)
     url_protocol(url, prot);
     printf("protocol: %s\n", prot);
 
-
     url_port(url, &port);
     printf("port: %d\n", port);
+}
 
+//function caller.
+int main(int argc, char ** argv)
+{
+
+    testing("http://tracker.istole.it:456/announce");
+    testing("udp://tracker.now/");
+    testing("tracker.istole.it");
+    testing("tracker.istole.it:800");
+    testing("www.tracker.now:500/announce");
+    testing("tracked.eu");
+    testing("udp://tracker.eu:500/");
 
     return 0;
 }
