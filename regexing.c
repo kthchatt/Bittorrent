@@ -22,6 +22,8 @@ protocol  ^[a-z, A-Z, 0-9]*
 char* regtable[2] = {"(\\/.*-)?(w+)([a-z, A-Z, 0-9, .])*",  //domain
                      "^[a-z, A-Z, 0-9]*"};                  //protocol
 
+//scans source for regex reg and puts the result in dest.
+//dest only returns one match, change dest to array for multiple returns.
 void execute_regex (regex_t* reg, char* source, char* dest)
 {
     char* mpos = source;
@@ -30,7 +32,7 @@ void execute_regex (regex_t* reg, char* source, char* dest)
 
     while (1)
     {
-        int i = 0, k;
+        int i, k, j;
         char* extract;
         int unmatched = regexec(reg, mpos, match_count, result, 0);
 
@@ -48,32 +50,21 @@ void execute_regex (regex_t* reg, char* source, char* dest)
             start = result[i].rm_so + (mpos - source);
             finish = result[i].rm_eo + (mpos - source);
 
-            if (i == 0)
+            /*
                 printf("$& is ");
             else
-                printf("$%d is ", i);
+                printf("$%d is ", i);*/
 
-            printf("'%.*s' (bytes %d:%d)\n", (finish - start), (source + start), start, finish);
-
-            int j, k = 0;
-            //dest = (char*) malloc(result[i].rm_eo - result[i].rm_so);
-
+            k = 0;
             for(j = result[i].rm_so; j < result[i].rm_eo; ++j) 
             {
-                printf("%c", source[j]);
+                //printf("%c", source[j]);
                 dest[k] = source[j];
                 k++;
             }
 
             dest[k] = '\0';
-
-            printf("-%s-", dest);
-           /* dest = (char*) malloc(result[i].rm_eo - result[i].rm_so);
-            strncpy(dest, &source[result[i].rm_so], result[i].rm_eo - result[i].rm_so);
-
-            printf("Result: -%s-\n", dest);
-            printf("Result2: -%s-\n", source);*/
-
+           // printf("-%s-", dest);
         }
         mpos += result[0].rm_eo;
     }
@@ -81,12 +72,13 @@ void execute_regex (regex_t* reg, char* source, char* dest)
     return;
 }
 
+//compile and select the correct regex string depending on type.
 int regex_string(char* source, char* dest, int type)
 {
     regex_t reg;
     char* query;
 
-    printf("source: %s, dest: %s\n", source, dest);
+    //printf("source: %s, dest: %s\n", source, dest);
 
     switch(type)
     {
@@ -96,7 +88,7 @@ int regex_string(char* source, char* dest, int type)
             break;
     }
 
-    printf ("Searching for '%s' in '%s'\n", query, source);
+    //printf ("Searching for '%s' in '%s'\n", query, source);
 
     if (regcomp(&reg, query, REG_EXTENDED|REG_NEWLINE) != 0)
         printf("Failed to compile %s", query);
@@ -105,6 +97,7 @@ int regex_string(char* source, char* dest, int type)
     regfree(&reg);
 }
 
+//function caller.
 int main(int argc, char ** argv)
 {
     char* source;
@@ -113,8 +106,8 @@ int main(int argc, char ** argv)
     source = "protocol://www.sub.domain.tld/fileptr";
     dest = (char*) malloc(strlen(source)+1);
 
-    regex_string(source, dest, DOMAIN);
-    printf("source: %s, dest: %s", source, dest);
+    regex_string(source, dest, PROTOCOL);
+    printf("source: %s, dest: %s\n", source, dest);
 
     return 0;
 }
