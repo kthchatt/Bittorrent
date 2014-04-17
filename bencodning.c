@@ -24,17 +24,19 @@ typedef struct metainfodecode
 } torrent_info;
 
 int init_file (char *, FILE *);
+void list_handler(FILE *, char *, torrent_info *);
 char read_one_char (FILE *);
 void read_specific_length (FILE *, int, char *);
 int read_length_of_next (FILE *);
 int dictonaty_encoding (FILE *);
 void complete_dictonarry (char *, char *, torrent_info *);
-void dictonarry_handler (FILE *, torrent_info *);
+void dictonarry_handler (FILE *, torrent_info *, char *);
 
 
 int main(){
 	torrent_info data;
 	char bencode[25000];
+	char *string_name;
 	char file_name[] = "torrent.torrent";
 	char test_dictonary_list;
 	int i = 0; int length_of_next_int = 0;
@@ -48,13 +50,15 @@ int main(){
 	}
 
 //TODO denna behöver köras flera gånger. 
-	test_dictonary_list = read_one_char(fp);
-	switch(test_dictonary_list){
+	for (i = 0; i < 2; ++i)
+	{
+		test_dictonary_list = read_one_char(fp);
+		switch(test_dictonary_list){
 		case 'l':
-
+			list_handler(fp, string_name, &data);
 		break;
 		case 'd':
-			dictonarry_handler(fp, &data);
+			string_name = dictonarry_handler(fp, &data, string_name);
 		break;
 		case 'i':
 
@@ -63,6 +67,8 @@ int main(){
 			fprintf(stderr, "Next\n");
 		break;
 	}
+	}
+
 
 	//Skriver ut allt som inte har lästs in än. 
 	fgets(bencode, 3000, fp);
@@ -77,11 +83,28 @@ int main(){
 
 int init_file (char *name, FILE *fp){
 }
+
+void list_handler(FILE *sfp, char *string_name, torrent_info *data){
+	if (strcmp(string_name, "announce-list") == 0)
+	{	
+		announce_list_handler(sfp, data);
+	} else if (strcmp(string_name, "comment") == 0)
+	{	
+		
+	} else if (strcmp(string_name, "creation date") == 0)
+	{	
+		
+	} else if (strcmp(string_name, "created by") == 0)
+	{	
+		
+	}
+
+}
 /*Dictonarry handler tar hand om när det kommer en ordlista 
 (beydelser), Den tar bara hand om hela betydelser. Betydelser 
 som består av ordlistor måste hanteras i separata funktioner. 
 */
-void dictonarry_handler (FILE *sfp, torrent_info *data){
+void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 	int i = 0; int length_of_next_int = 0;
 	int not_complete_dictonarry = 0;
 	char string_name[250];
@@ -92,6 +115,7 @@ void dictonarry_handler (FILE *sfp, torrent_info *data){
 			not_complete_dictonarry = 1;
 			fseek(sfp,-1, SEEK_CUR); //spolar tillbaka filperkaren ett steg.
 			break;
+			//return string_name;
 		}
 		read_specific_length(sfp, length_of_next_int, string_name);
 		length_of_next_int = read_length_of_next(sfp);
@@ -99,15 +123,19 @@ void dictonarry_handler (FILE *sfp, torrent_info *data){
 			not_complete_dictonarry = 1;
 			fseek(sfp,-1, SEEK_CUR);
 			break;
+			//return string_name;
 		}
 		read_specific_length(sfp, length_of_next_int, string_value);
 		complete_dictonarry(string_name, string_value, data);
 
 	}
+	strcpy(string, string_name);
+	return;
 
 }
 
-void announce_list_handler(){
+void announce_list_handler(FILE *sfp, torrent_info *data){
+
 	//TODO Här skall det läggas till en fuktion för hantera 
 	//announce list. Det skall lagras i samma struct som allt annat.
 
@@ -143,7 +171,8 @@ void read_specific_length (FILE *sfp, int length_of_next_int, char *temporary){
 int read_length_of_next (FILE *sfp){
 	char next_char[20];
 	char last_char = '\0'; int i = 0; int length_of_next_int = 0;
-	while (last_char != ':' && i < 20){
+	while (last_char != ':' && i < 20 && last_char != 'd' && last_char != 'l' 
+				&& last_char != 'i' && last_char != 'e'){
 		fscanf(sfp, "%c", &next_char[i]);
 		last_char = next_char[i];
 		i++;
@@ -158,6 +187,7 @@ int read_length_of_next (FILE *sfp){
 char read_one_char (FILE *sfp){
 	char one_char;
 	fscanf(sfp, "%c", &one_char);
+	fprintf(stderr, "%c\n", one_char);
 	return(one_char);
 }
 
