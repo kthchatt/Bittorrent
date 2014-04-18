@@ -31,7 +31,7 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     char* announce = (char*) malloc(url_len);
     char* hostname = (char*) malloc(url_len);
     char* protocol = (char*) malloc(url_len);
-    int   port;
+    int   port = 80;
 
     url_announce(tracker, announce);
     url_hostname(tracker, hostname);
