@@ -1,4 +1,4 @@
-#include "bencodning.h"
+#include "bencodning.c"
 #include <stdio.h>
 
 int main () {
