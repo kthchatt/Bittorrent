@@ -23,6 +23,7 @@ typedef struct metainfodecode
 	long long int _creation_date;
 	char _comment [250];
 	char _created_by[250];
+	int _multi_file;
 
 	long long int _piece_length;
 	int _private;
