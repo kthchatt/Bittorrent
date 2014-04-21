@@ -18,60 +18,13 @@
 #include "urlparse.h"
 
 
-//ip is set to 0 for non-proxy connections.
-//TODO: Return list of peers.
-int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
-              char* event, int downloaded, int left) 
+void buildrequest(char request[200], char* tracker, char* hostname, char* info_hash, char* peer_id, char* ip, 
+              char* event, int downloaded, int left, int port) 
 {
-    int sockfd = 0, n = 0;
-    char recvbuf[1024];
-    struct addrinfo hints, *res;
-
-    int url_len = strlen(tracker);
-    char* announce = (char*) malloc(url_len);
-    char* hostname = (char*) malloc(url_len);
-    char* protocol = (char*) malloc(url_len);
-    int   port = 80;
+    char* announce = (char*) malloc(100);
 
     url_announce(tracker, announce);
-    url_hostname(tracker, hostname);
-    url_protocol(tracker, protocol);
-    url_port(tracker, &port);
 
-    printf("\n\nannounce request!\nurl: %s\nhostname: %s\nannounce: %s\nprotocol: %s\nport: %d\n\n", tracker, hostname, announce, protocol, port);
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-    getaddrinfo(hostname, protocol, &hints, &res);
-
-    printf("GETADDRINFO_OK");
-    fflush(stdout);
-
-    if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
-    {
-        printf("\n Error : Could not create socket \n");
-        return 1;
-    } 
-
-    //TODO: bind to port, include port in announce request.
-
-    printf("SOCKFD_OK");
-    fflush(stdout);
-
-    if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
-    {
-       printf("\n Error : Connect Failed \n");
-       return 1;
-    } 
-
-    printf("RequestBuidler");
-    fflush(stdout);
-
-    //add IP ?
-
-    char request[200];
     strcat(request, "GET ");
     strcat(request, announce);
     strcat(request, "?info_hash=");
@@ -79,7 +32,7 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     strcat(request, "&peer_id=");
     strcat(request, peer_id);
     strcat(request, "&port=");
-    strcat(request, "8080");
+    strcat(request, "0");
     strcat(request, "&downloaded=");
     strcat(request, "0");
     strcat(request, "&left=");
@@ -90,13 +43,53 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     strcat(request, "host: ");
     strcat(request, hostname);
     strcat(request, "\r\n\r\n");
+}
 
-    int len, bytes_sent, i = 0;
+//ip is set to 0 for non-proxy connections.
+//TODO: Return list of peers.
+int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
+              char* event, int downloaded, int left) 
+{
+    int sockfd = 0, n = 0, port = 80;
+    char recvbuf[1024];
+    struct addrinfo hints, *res;
+    char request[200];
+    int url_len = strlen(tracker);
+    char* hostname = (char*) malloc(url_len);
+    char* protocol = (char*) malloc(url_len);
+
+    url_hostname(tracker, hostname);
+    url_protocol(tracker, protocol);
+    url_port(tracker, &port);
+
+    //printf("\n\nannounce request!\nurl: %s\nhostname: %s\nannounce: %s\nprotocol: %s\nport: %d\n\n", tracker, hostname, announce, protocol, port);
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+    getaddrinfo(hostname, protocol, &hints, &res);
+
+    if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+    {
+        printf("\n Error : Could not create socket \n");
+        return 1;
+    } 
+
+    if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
+    {
+       printf("\n Error : Connect Failed \n");
+       return 1;
+    } 
+
+
+    buildrequest(request, tracker, hostname, info_hash, peer_id, ip, event, downloaded, left, port);
+
+    int len, bytes_sent, msglen = 1;
     len = strlen(request);
     bytes_sent = send(sockfd, request, len, 0);
 
     memset(recvbuf, '0',sizeof(recvbuf));
-    while ((n = read(sockfd, recvbuf, 2)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
+    while ((n = read(sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
     {
         recvbuf[n] = 0;
         if(fputs(recvbuf, stdout) == EOF)
@@ -105,8 +98,49 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
             return 1;
         }
 
-        printf("[%d]", recvbuf);
-        i++;
+        if (strcmp(recvbuf, ":"))
+            msglen = 5;
+        else
+            msglen = 1;
+
+        int dls = 0;
+        char terminate = '0';
+        if (strcmp(recvbuf, "peers") == 0)
+        {
+
+            while (terminate != ':')    //skip length, skip : char
+             read(sockfd, &terminate, 1);
+
+            int sx = 0;
+
+            printf("\n\nIP: ");
+            for (sx = 0; sx < 4; sx++)
+            {
+                read(sockfd, &dls, 1);
+                printf("%d.", dls);
+            }
+
+            //x * 2^⁸ -1
+            int port = 0;
+            dls = 0;
+            read(sockfd, &dls, 1);
+            printf(" %d ", dls);
+
+            //swap byte order
+            if (dls != 0)
+                port = (dls * 256) ;
+
+            dls = 0;
+            read(sockfd, &dls, 1);
+            printf(" %d ", dls);
+            printf("\n");
+            port += dls;
+
+            printf("\nPORT: %d\n", port);
+        }
+
+
+//        printf("[%c]", recvbuf[0]);
     } 
 
     if (n < 0)
@@ -128,4 +162,4 @@ int main(int argc, char *argv[])
     }
     
     return 0;
-}*/
+}*/ 
