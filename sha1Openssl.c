@@ -7,5 +7,5 @@ int main(){
 	unsigned char hash[SHA_DIGEST_LENGTH];
 	SHA1(data, length, hash);
 
-	// gcc sha1Openssl.c -o sha1Openssl -lssl lcrypto
+	// gcc sha1Openssl.c -o sha1Openssl -lssl -lcrypto
 }
