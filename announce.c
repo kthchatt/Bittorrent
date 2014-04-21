@@ -105,6 +105,7 @@ void response(int* sockfd)
             return;
         }
 
+        // strcmp(recvbuf, ":") ? msglen=5:msglen=1;
         if (strcmp(recvbuf, ":"))
             msglen = 5;
         else
