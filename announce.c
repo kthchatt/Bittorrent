@@ -25,6 +25,7 @@ void buildrequest(char request[200], char* tracker, char* hostname, char* info_h
 
     url_announce(tracker, announce);
 
+    //sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", announce, info_hash, peer_id, port, downloaded, left, event, hostname);
     strcat(request, "GET ");
     strcat(request, announce);
     strcat(request, "?info_hash=");
