@@ -3,12 +3,12 @@
 int main()
 {
 	// example
-    unsigned char *test = getHash("t.torrent", 2); // get first hash, second hash = 1 etc
-    printf("%d", findHash(test, "t.torrent"));
+    unsigned char *test = getHash("t.torrent", 2, 20); // get first hash, second hash = 1 etc
+    printf("%d", findHash(test, "t.torrent", 20));
 	return 0;
 }
 
-int findHash(unsigned char hash[], char filePath[]){
+int findHash(unsigned char hash[], char filePath[], int totalPieces){
     FILE *file;
 	unsigned char *buffer, *result;
 	unsigned long fileLen;
@@ -50,7 +50,7 @@ int findHash(unsigned char hash[], char filePath[]){
         offset++;
     }
 
-    while(counter < 10){
+    while(counter < totalPieces){
         for(i=0; i<20; i++){
             if(tmpHash[i]!=result[offset+i+1+(counter*20)]) break;
             if(i==19) return counter;
@@ -61,7 +61,7 @@ int findHash(unsigned char hash[], char filePath[]){
     return 0;
 }
 
-unsigned char *getHash(char torrentPath[], int piece){
+unsigned char *getHash(char torrentPath[], int piece, int totalPieces){
     FILE *file;
 	unsigned char *buffer, *result;
 	unsigned long fileLen;
@@ -102,7 +102,7 @@ unsigned char *getHash(char torrentPath[], int piece){
         offset++;
     }
 
-    for(i=0; i<20; i++){
+    for(i=0; i<totalPieces; i++){
         hash[i]=result[offset+i+1+(piece*20)];
     }
 	free(buffer);
