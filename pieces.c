@@ -15,7 +15,6 @@ int findHash(unsigned char hash[], char filePath[], int totalPieces){
 	int counter=0;
 	unsigned char tmpHash[20];
 	strcpy(tmpHash, hash);
-	//Open file
 
 	file = fopen(filePath, "rb");
 	if (!file)
@@ -95,7 +94,7 @@ unsigned char *getHash(char torrentPath[], int piece, int totalPieces){
     // find start of hash table
     result = strstr(buffer, ":pieces");
 
-    // find offset amount
+    // find offset
     int i, offset=1;
     for(;;){
         if(result[offset]==':') break;

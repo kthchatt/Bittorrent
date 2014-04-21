@@ -91,64 +91,74 @@ void query(char request[200], char* tracker, int* sockfd)
 
 void response(int* sockfd)
 {
-    int num, msglen = 1, i = 0;
-    unsigned short int port;
-    char data;
-    char recvbuf[1024], terminate = '0';
+    int num, msglen = 1;
+    char recvbuf[1024];
  
     memset(recvbuf, '0', sizeof(recvbuf));
 
     while ((num = read(*sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
     {
-        recvbuf[num] = 0;                   //set null char.
+        recvbuf[num] = 0;
         if(fputs(recvbuf, stdout) == EOF)
         {
             printf("\n Error : Fputs error\n");
             return;
         }
 
-        //find keywords
+        // strcmp(recvbuf, ":") ? msglen=5:msglen=1;
         if (strcmp(recvbuf, ":"))
             msglen = 5;
         else
             msglen = 1; 
 
+        int dls = 0;
+        char terminate = '0';
         if (strcmp(recvbuf, "peers") == 0)
         {
-            terminate = '0';
 
             while (terminate != ':')    //skip length, skip : char
-                read(*sockfd, &terminate, 1);
+             read(*sockfd, &terminate, 1);
 
 
-            num = 1;
-            printf("-- WORKING --");
-            fflush(stdout);
+while (num > 0)
+{
+            int sx = 0;
 
-            while (num > 0)
+            printf("\n\nIP: ");
+            for (sx = 0; sx < 4; sx++)
             {
-                 port = 0;
+                num = read(*sockfd, &dls, 1);
+                printf("%d.", dls);
+            }
 
-                printf("\nIP: ");
+            //x * 2^⁸ -1
+            int port = 0;
+            dls = 0;
+            num = read(*sockfd, &dls, 1);
+            printf(" %d ", dls);
 
-                 //read IP, 4 ordered bytes.
-                for (i = 0; i < 4; i++)
-                {
-                     if (!(num = read(*sockfd, &data, 1) > 0))
-                        return;
-                     printf("%d.", data);
-                 }
+            //swap byte order
+            if (dls != 0)
+                port = (dls * 256) ;
 
-                //read port:
-                num = read(*sockfd, &data, 1);
-                port = (data * 256) ;
-                num = read(*sockfd, &data, 1);
-                port += data;
+            dls = 0;
+            num = read(*sockfd, &dls, 1);
+            printf(" %d ", dls);
+            printf("\n");
+            port += dls;
 
-                printf("\nPORT: %d\n", port);
-            }   
+            printf("\nPORT: %d\n", port);
         }
+        }
+
     } 
+
+    if (num < 0)
+    {
+        printf("\n Read error \n");
+        return;
+    }  
+
 }
 
 //ip is set to 0 for non-proxy connections.
@@ -160,10 +170,8 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     char request[200];
 
     build(request, tracker, info_hash, peer_id, ip, event, downloaded, left);   //bound port
-    query(request, tracker, &sockfd);                                           //target port in url
-    response(&sockfd);                                                          //read response
-
-    //todo: bind/listen
+    query(request, tracker, &sockfd);                                                           //target port in url
+    response(&sockfd);                                                                                 //todo: bind/listen
 
     return 0;
 }
