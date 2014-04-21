@@ -1,8 +1,10 @@
 #include "pieces.c"
+#include "makeFile.h"
 
 int saveToFile(char *filePath, char *torrentPath, char *data,  unsigned char *hash, int pieceLength){
 	int index = findHash(hash, torrentPath);
-	File *file = fopen(filePath, "a+");
+	FILE *file;
+	fopen(filePath, "wb");
 	fseek(file, index*pieceLength, SEEK_SET);
 	fprintf(file, "%s", data);
 	fclose(file);
@@ -11,11 +13,12 @@ int saveToFile(char *filePath, char *torrentPath, char *data,  unsigned char *ha
 
 char *readFromFile(char *filePath, char *torrentPath, unsigned char *hash, int pieceLength){
 	int index = findHash(hash, torrentPath);
-	char *buffer;
+	char *piece;
 
-	File *file = fopen(filePath, "rb");
+	FILE *file;
+	fopen(filePath, "rb");
 	fseek(file, index*pieceLength, SEEK_SET);
-	fread(buffer, pieceLength, 1, file);
-
-	return &buffer;
-}	
+	fread(piece, pieceLength, 1, file);
+	fclose(file);
+	return piece;
+}
