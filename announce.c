@@ -111,7 +111,7 @@ void response(int* sockfd)
         if (strcmp(recvbuf, ":"))
             msglen = 5;
         else
-            msglen = 1;
+            msglen = 1; 
 
         if (strcmp(recvbuf, "peers") == 0)
         {
