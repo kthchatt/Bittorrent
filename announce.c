@@ -25,7 +25,7 @@ void debug(int postal)
     fflush(stdout); 
 }
 
-
+//construct a http query
 int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
               char* event, int downloaded, int left) 
 {
@@ -45,10 +45,9 @@ int build(char request[200], char* tracker, char* info_hash, char* peer_id, char
     return strlen(request);
 }
 
+//send a http query
 void query(char request[200], char* tracker, int* sockfd)
 {
-    debug(3);
-
     int n = 0, port = 80, url_len = strlen(tracker);
     char* hostname = (char*) malloc(url_len);
     char* protocol = (char*) malloc(url_len);
@@ -59,7 +58,6 @@ void query(char request[200], char* tracker, int* sockfd)
     url_protocol(tracker, protocol);
     url_port(tracker, &port);
 
-    //printf("\n\nannounce request!\nurl: %s\nhostname: %s\nannounce: %s\nprotocol: %s\nport: %d\n\n", tracker, hostname, announce, protocol, port);
     memset(&hints, 0, sizeof(hints));
     memset(recvbuf, '0',sizeof(recvbuf));
     hints.ai_family = AF_UNSPEC;
@@ -77,11 +75,9 @@ void query(char request[200], char* tracker, int* sockfd)
 
     free(hostname);
     free(protocol);
-
-    debug(4);
 }
 
-//todo: read whole buffer at once, scan offset for "peers???:" and begin scanning for IP:Port.
+//read uncompressed 
 void response(int* sockfd)
 {
     int num, port, i, j, data;
@@ -102,19 +98,15 @@ void response(int* sockfd)
                 seekpos = &recvbuf[i];
                 strncpy(seek, recvbuf+i, 5);
 
-                printf("[ SEEK: -%s- ]", seek);
-
                 if (strcmp(seek, ":peer") == 0)
-                {
-                    printf("SEEK SUCESS!!");
-                    
+                {   
+                    i++;
                     while (recvbuf[i] != ':')
                         i++;
                     i++;
-                    i++;
 
 
-                    while (i < num)           //keep reading
+                    while (i + 6 < num)           //keep reading
                     {
                         port = 0;;
 
@@ -124,7 +116,7 @@ void response(int* sockfd)
                         for (j = 0; j < 4; j++)
                         {
                             data = recvbuf[i+j];
-                            printf("%d.", data);    //STORE IP
+                            printf("%d.", data);    //todo: STORE IP
                         }
 
                         i += 4;
@@ -133,54 +125,13 @@ void response(int* sockfd)
                         port += recvbuf[i+1];
                         i += 2;
 
-                        printf("port: %d", port);   //STORE PORT
+                        printf("port: %d", port);   //todo: STORE PORT
                     }
+                    printf("\n");
                 }
             }
         }       
     }
-
-    /*while ((num = read(*sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
-    {
-        recvbuf[num] = 0;                   //set null char.
-        if(fputs(recvbuf, stdout) == EOF);
-
-        if (strcmp(recvbuf, ":"))
-            msglen = 5;
-        else
-            msglen = 1; 
-
-        if (strcmp(recvbuf, "peers") == 0)
-        {
-            char terminate = '0';
-            while (terminate != ':')    //skip length, skip : char
-                read(*sockfd, &terminate, 1);
-
-            while (1) 
-            {
-                 port = 0;
-
-                printf("\nIP: ");
-
-                 //read IP, 4 ordered bytes.
-                for (i = 0; i < 4; i++)
-                {
-                     if ((num = read(*sockfd, &data, 1) != 1))
-                        return;
-                     printf("%d.", data);
-                 }
-
-                //read port:
-                if ((num = read(*sockfd, &data, 1) != 1))
-                    return;
-                port = (data * 256) ;
-                if ((num = read(*sockfd, &data, 1) != 1))
-                    return;
-                port += data;
-                printf("\nPORT: %d\n", port);
-            }
-        }  
-    } */ 
 }
 
 //ip is set to 0 for non-proxy connections.
