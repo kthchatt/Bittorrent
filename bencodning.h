@@ -1,3 +1,14 @@
+/*
+This is the geader file for "bencodning.c". 
+The function decode_bencode takes a char string as file name
+and a torrent_info struct as data storage with information about
+the torrent. 
+
+Written by Gustaf Nilstadius on behalf of KTH STH. 
+Used by groupe 42 in project. 
+
+Feel fre to use this code as you want. 
+*/
 #ifndef BENCODNING_H
 #define BENCODNING_H
 
@@ -35,6 +46,7 @@ void complete_dictonarry (char *, char *, torrent_info *);
 void dictonarry_handler (FILE *, torrent_info *, char *);
 void announce_list_handler(FILE *, torrent_info *);
 void int_handler(FILE *, char *, torrent_info *);
-int decode_bencode(int,char **);
+
+int decode_bencode(char *, torrent_info *);
 
 #endif

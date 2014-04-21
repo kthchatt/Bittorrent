@@ -4,50 +4,21 @@ Wotking status:		Under construction
 
 The sole purpuse of this lib is to decode bencodning.
 */
-//#include "bencodning.h"
 
+#include "bencodning.h"
 #include <stdio.h> 
 #include <string.h>
 #include <stdlib.h>
 
-typedef struct metainfodecode
-{
-	char _announce[250];
-	char _announce_list [15][250];
-	long long int _creation_date;
-	char _comment [250];
-	char _created_by[250];
-
-	long long int _piece_length;
-	int _private;
-
-	char _file_name [250];
-	long long int _file_length;
-	char _file_MD5 [32];
-
-	long int _hash_length;
-	char _pieces [5000][20];
-} torrent_info;
-
-int init_file (char *, FILE *);
-void list_handler(FILE *, char *, torrent_info *);
-char read_one_char (FILE *);
-void read_specific_length (FILE *, int, char *);
-int read_length_of_next (FILE *);
-int dictonaty_encoding (FILE *);
-void hash_handler(FILE *, torrent_info *);
-void complete_dictonarry (char *, char *, torrent_info *);
-void dictonarry_handler (FILE *, torrent_info *, char *);
-void announce_list_handler(FILE *, torrent_info *);
-void int_handler(FILE *, char *, torrent_info *);
-
-int main(int argc, char *argv[]){
-	torrent_info data;
+int decode_bencode(char *file_name, torrent_info *data){
+	//torrent_info data;
 	char bencode[25000];
 	char string_name[250];
-	char file_name[250] = "torrent.torrent";
+	//char file_name[250] = "torrent.torrent";
 	char test_dictonary_list;
 	int i = 0; int j = 0; int length_of_next_int = 0;
+
+
 	FILE *fp;
 	fp = fopen(file_name, "r");
 	if (fp != NULL){
@@ -57,15 +28,14 @@ int main(int argc, char *argv[]){
 		return(-1);
 	}
 
-//TODO denna behöver köras flera gånger. 
 	test_dictonary_list = read_one_char(fp);
 	switch(test_dictonary_list){
 		case 'l':
 			//fseek(fp,-1, SEEK_CUR);
-			list_handler(fp, string_name, &data);
+			list_handler(fp, string_name, data);
 		break;
 		case 'd':
-			dictonarry_handler(fp, &data, string_name);
+			dictonarry_handler(fp, data, string_name);
 		break;
 		case 'i':
 
@@ -74,13 +44,11 @@ int main(int argc, char *argv[]){
 			fprintf(stderr, "Next\n");
 		break;
 	}
-	//fprintf(stderr, "Entire file is read\n");
-	//char dataptr = data._pieces[0][0];
 	for (i = 0; i < 50; ++i)
 	{
 		for (j = 0; j < 20; ++j)
 		{
-			fprintf(stderr, "%02x", (unsigned char) data._pieces[i][j]);
+			fprintf(stderr, "%02x", (unsigned char) data->_pieces[i][j]);
 			//dataptr++;
 		}
 		fprintf(stderr, "\n");
@@ -92,9 +60,8 @@ int main(int argc, char *argv[]){
 	{
 		printf("%c", bencode[i]);
 	}
-	
+	return 1;
 
-	//close(fp);
 }
 
 int init_file (char *name, FILE *fp){
