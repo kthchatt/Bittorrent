@@ -17,12 +17,18 @@
 #include <arpa/inet.h> 
 #include "urlparse.h"
 
+ //todo: save a peerlist with ip:port and info_hash.
 
-void buildrequest(char request[200], char* tracker, char* hostname, char* info_hash, char* peer_id, char* ip, 
-              char* event, int downloaded, int left, int port) 
+
+int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
+              char* event, int downloaded, int left) 
 {
-    char* announce = (char*) malloc(100);
+    char* announce = (char*) malloc(strlen(tracker));
+    char* hostname = (char*) malloc(strlen(tracker));
+    int port = 80;
 
+    url_port(tracker, &port);
+    url_hostname(tracker, hostname);
     url_announce(tracker, announce);
 
     //sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", announce, info_hash, peer_id, port, downloaded, left, event, hostname);
@@ -33,7 +39,7 @@ void buildrequest(char request[200], char* tracker, char* hostname, char* info_h
     strcat(request, "&peer_id=");
     strcat(request, peer_id);
     strcat(request, "&port=");
-    strcat(request, "0");
+    strcat(request, "31337");
     strcat(request, "&downloaded=");
     strcat(request, "0");
     strcat(request, "&left=");
@@ -44,20 +50,17 @@ void buildrequest(char request[200], char* tracker, char* hostname, char* info_h
     strcat(request, "host: ");
     strcat(request, hostname);
     strcat(request, "\r\n\r\n");
+
+    return strlen(request);
 }
 
-//ip is set to 0 for non-proxy connections.
-//TODO: Return list of peers.
-int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
-              char* event, int downloaded, int left) 
+void query(char request[200], char* tracker, int* sockfd)
 {
-    int sockfd = 0, n = 0, port = 80;
-    char recvbuf[1024];
-    struct addrinfo hints, *res;
-    char request[200];
-    int url_len = strlen(tracker);
+    int n = 0, port = 80, url_len = strlen(tracker);
     char* hostname = (char*) malloc(url_len);
     char* protocol = (char*) malloc(url_len);
+    char recvbuf[1024];
+    struct addrinfo hints, *res;
 
     url_hostname(tracker, hostname);
     url_protocol(tracker, protocol);
@@ -65,38 +68,41 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
 
     //printf("\n\nannounce request!\nurl: %s\nhostname: %s\nannounce: %s\nprotocol: %s\nport: %d\n\n", tracker, hostname, announce, protocol, port);
     memset(&hints, 0, sizeof(hints));
+    memset(recvbuf, '0',sizeof(recvbuf));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
     getaddrinfo(hostname, protocol, &hints, &res);
 
-    if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+    if ((*sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
     {
         printf("\n Error : Could not create socket \n");
-        return 1;
+        return;
     } 
 
-    if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
+    if (connect(*sockfd, res->ai_addr, res->ai_addrlen) < 0)
     {
        printf("\n Error : Connect Failed \n");
-       return 1;
+       return;
     } 
 
+    send(*sockfd, request, strlen(request), 0);
+}
 
-    buildrequest(request, tracker, hostname, info_hash, peer_id, ip, event, downloaded, left, port);
+void response(int* sockfd)
+{
+    int num, msglen = 1;
+    char recvbuf[1024];
+ 
+    memset(recvbuf, '0', sizeof(recvbuf));
 
-    int len, bytes_sent, msglen = 1;
-    len = strlen(request);
-    bytes_sent = send(sockfd, request, len, 0);
-
-    memset(recvbuf, '0',sizeof(recvbuf));
-    while ((n = read(sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
+    while ((num = read(*sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
     {
-        recvbuf[n] = 0;
+        recvbuf[num] = 0;
         if(fputs(recvbuf, stdout) == EOF)
         {
             printf("\n Error : Fputs error\n");
-            return 1;
+            return;
         }
 
         if (strcmp(recvbuf, ":"))
@@ -110,21 +116,24 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
         {
 
             while (terminate != ':')    //skip length, skip : char
-             read(sockfd, &terminate, 1);
+             read(*sockfd, &terminate, 1);
 
+
+while (num > 0)
+{
             int sx = 0;
 
             printf("\n\nIP: ");
             for (sx = 0; sx < 4; sx++)
             {
-                read(sockfd, &dls, 1);
+                num = read(*sockfd, &dls, 1);
                 printf("%d.", dls);
             }
 
             //x * 2^⁸ -1
             int port = 0;
             dls = 0;
-            read(sockfd, &dls, 1);
+            num = read(*sockfd, &dls, 1);
             printf(" %d ", dls);
 
             //swap byte order
@@ -132,35 +141,36 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
                 port = (dls * 256) ;
 
             dls = 0;
-            read(sockfd, &dls, 1);
+            num = read(*sockfd, &dls, 1);
             printf(" %d ", dls);
             printf("\n");
             port += dls;
 
             printf("\nPORT: %d\n", port);
         }
+        }
 
-
-//        printf("[%c]", recvbuf[0]);
     } 
 
-    if (n < 0)
+    if (num < 0)
     {
         printf("\n Read error \n");
-        return 1;
+        return;
     }  
+
+}
+
+//ip is set to 0 for non-proxy connections.
+//TODO: Return list of peers.
+int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
+              char* event, int downloaded, int left) 
+{
+    int sockfd = 0;
+    char request[200];
+
+    build(request, tracker, info_hash, peer_id, ip, event, downloaded, left);   //bound port
+    query(request, tracker, &sockfd);                                                           //target port in url
+    response(&sockfd);                                                                                 //todo: bind/listen
 
     return 0;
 }
-
-/*
-//main for testing.
-int main(int argc, char *argv[])
-{
-    if (announce("protocol://retracker.hq.ertelecom.ru:port/announce-url","iiiinnnnffffoooohashkkkkk", "peerIDaaaabbbbcdeeff", "0", "Started", 0, 120582) != 0)
-    {
-        printf("Announce Error.");
-    }
-    
-    return 0;
-}*/ 
