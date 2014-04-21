@@ -19,10 +19,19 @@
 
  //todo: save a peerlist with ip:port and info_hash.
 
+void debug(int postal) 
+{ 
+    printf("\n__stack_%d_safe__\n", postal); 
+    fflush(stdout); 
+}
+
 
 int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
               char* event, int downloaded, int left) 
 {
+    debug(0);
+
+
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
     int port = 80;
@@ -51,16 +60,23 @@ int build(char request[200], char* tracker, char* info_hash, char* peer_id, char
     strcat(request, hostname);
     strcat(request, "\r\n\r\n");
 
+    free(announce);
+    free(hostname);
+
+    debug(1);
+
     return strlen(request);
 }
 
 void query(char request[200], char* tracker, int* sockfd)
 {
+    debug(3);
+
     int n = 0, port = 80, url_len = strlen(tracker);
     char* hostname = (char*) malloc(url_len);
     char* protocol = (char*) malloc(url_len);
     char recvbuf[1024];
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *res;;
 
     url_hostname(tracker, hostname);
     url_protocol(tracker, protocol);
@@ -74,21 +90,21 @@ void query(char request[200], char* tracker, int* sockfd)
     hints.ai_flags = AI_PASSIVE;
     getaddrinfo(hostname, protocol, &hints, &res);
 
-    if ((*sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+    if ((*sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1)
     {
-        printf("\n Error : Could not create socket \n");
-        return;
-    } 
+        if (connect(*sockfd, res->ai_addr, res->ai_addrlen) > -1)
+        {
+            send(*sockfd, request, strlen(request), 0);
+        } 
+    }
 
-    if (connect(*sockfd, res->ai_addr, res->ai_addrlen) < 0)
-    {
-       printf("\n Error : Connect Failed \n");
-       return;
-    } 
+    free(hostname);
+    free(protocol);
 
-    send(*sockfd, request, strlen(request), 0);
+    debug(4);
 }
 
+//todo: read whole buffer at once, scan offset for "peers???:" and begin scanning for IP:Port.
 void response(int* sockfd)
 {
     int num, msglen = 1, i = 0;
@@ -101,11 +117,6 @@ void response(int* sockfd)
     while ((num = read(*sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
     {
         recvbuf[num] = 0;                   //set null char.
-        if(fputs(recvbuf, stdout) == EOF)
-        {
-            printf("\n Error : Fputs error\n");
-            return;
-        }
 
         //find keywords
         if (strcmp(recvbuf, ":"))
@@ -120,12 +131,7 @@ void response(int* sockfd)
             while (terminate != ':')    //skip length, skip : char
                 read(*sockfd, &terminate, 1);
 
-
-            num = 1;
-            printf("-- WORKING --");
-            fflush(stdout);
-
-            while (num > 0)
+            while (1) 
             {
                  port = 0;
 
@@ -134,17 +140,18 @@ void response(int* sockfd)
                  //read IP, 4 ordered bytes.
                 for (i = 0; i < 4; i++)
                 {
-                     if (!(num = read(*sockfd, &data, 1) > 0))
+                     if ((num = read(*sockfd, &data, 1) != 1))
                         return;
                      printf("%d.", data);
                  }
 
                 //read port:
-                num = read(*sockfd, &data, 1);
+                if ((num = read(*sockfd, &data, 1) != 1))
+                    return;
                 port = (data * 256) ;
-                num = read(*sockfd, &data, 1);
+                if ((num = read(*sockfd, &data, 1) != 1))
+                    return;
                 port += data;
-
                 printf("\nPORT: %d\n", port);
             }   
         }
@@ -156,7 +163,7 @@ void response(int* sockfd)
 int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip, 
               char* event, int downloaded, int left) 
 {
-    int sockfd = 0;
+    int sockfd = 0; 
     char request[200];
 
     build(request, tracker, info_hash, peer_id, ip, event, downloaded, left);   //bound port
@@ -166,4 +173,4 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     //todo: bind/listen
 
     return 0;
-}
+} 
