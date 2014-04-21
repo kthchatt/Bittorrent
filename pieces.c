@@ -53,7 +53,7 @@ int findHash(unsigned char hash[], char filePath[]){
     while(counter < 10){
         for(i=0; i<20; i++){
             if(tmpHash[i]!=result[offset+i+1+(counter*20)]) break;
-            if(i==19) return 1;
+            if(i==19) return counter;
         }
         counter++;
     }
