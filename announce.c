@@ -24,7 +24,7 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
               char* event, int downloaded, int left) 
 {
     int sockfd = 0, n = 0;
-    char recvBuff[1024];
+    char recvbuf[1024];
     struct addrinfo hints, *res;
 
     int url_len = strlen(tracker);
@@ -44,7 +44,7 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    getaddrinfo("www.google.se", "http", &hints, &res);
+    getaddrinfo(hostname, protocol, &hints, &res);
 
     printf("GETADDRINFO_OK");
     fflush(stdout);
@@ -69,31 +69,45 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     printf("RequestBuidler");
     fflush(stdout);
 
-//TODO: Append parameters to announce.  (?info_hash=20&peer_id=20&ip=&port=&downloaded=&left=&event=)
+    //add IP ?
+
     char request[200];
-    strcat(request, "GET");
-    strcat(request, " [announceurl+parameters] ");
-    strcat(request, "HTTP/1.1\r\n");
+    strcat(request, "GET ");
+    strcat(request, announce);
+    strcat(request, "?info_hash=");
+    strcat(request, info_hash);
+    strcat(request, "&peer_id=");
+    strcat(request, peer_id);
+    strcat(request, "&port=");
+    strcat(request, "8080");
+    strcat(request, "&downloaded=");
+    strcat(request, "0");
+    strcat(request, "&left=");
+    strcat(request, "12852");
+    strcat(request, "&event=");
+    strcat(request, event);
+    strcat(request, " HTTP/1.1\r\n");
     strcat(request, "host: ");
-    strcat(request, "[sub.domain.tld]");
+    strcat(request, hostname);
     strcat(request, "\r\n\r\n");
 
-    int len, bytes_sent;
+    int len, bytes_sent, i = 0;
     len = strlen(request);
     bytes_sent = send(sockfd, request, len, 0);
 
-    memset(recvBuff, '0',sizeof(recvBuff));
-    while ((n = read(sockfd, recvBuff, sizeof(recvBuff)-1)) > 0)
+    memset(recvbuf, '0',sizeof(recvbuf));
+    while ((n = read(sockfd, recvbuf, 2)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
     {
-        recvBuff[n] = 0;
-        if(fputs(recvBuff, stdout) == EOF)
+        recvbuf[n] = 0;
+        if(fputs(recvbuf, stdout) == EOF)
         {
             printf("\n Error : Fputs error\n");
             return 1;
         }
-    } 
 
-    //TODO: All data received, interpret peer list.
+        printf("[%d]", recvbuf);
+        i++;
+    } 
 
     if (n < 0)
     {
