@@ -29,9 +29,6 @@ void debug(int postal)
 int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
               char* event, int downloaded, int left) 
 {
-    debug(0);
-
-
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
     int port = 80;
@@ -42,30 +39,8 @@ int build(char request[200], char* tracker, char* info_hash, char* peer_id, char
 
     sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, info_hash, peer_id, port, downloaded, left, event, hostname);
-    
-    /*strcat(request, "GET ");
-    strcat(request, announce);
-    strcat(request, "?info_hash=");
-    strcat(request, info_hash);
-    strcat(request, "&peer_id=");
-    strcat(request, peer_id);
-    strcat(request, "&port=");
-    strcat(request, "31337");
-    strcat(request, "&downloaded=");
-    strcat(request, "0");
-    strcat(request, "&left=");
-    strcat(request, "12852");
-    strcat(request, "&event=");
-    strcat(request, event);
-    strcat(request, " HTTP/1.1\r\n");
-    strcat(request, "host: ");
-    strcat(request, hostname);
-    strcat(request, "\r\n\r\n");*/
-
     free(announce);
     free(hostname);
-
-    debug(1);
 
     return strlen(request);
 }
@@ -109,39 +84,78 @@ void query(char request[200], char* tracker, int* sockfd)
 //todo: read whole buffer at once, scan offset for "peers???:" and begin scanning for IP:Port.
 void response(int* sockfd)
 {
-    int num, msglen = 1;
-    char recvbuf[1024];
- 
+    int num, port, i, j, data;
+    char recvbuf[2048], seek[5];
+    char* seekpos;
+
     memset(recvbuf, '0', sizeof(recvbuf));
 
-    while ((num = read(*sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
+    if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
-<<<<<<< HEAD
-        recvbuf[num] = 0;                   //set null char.
-=======
         recvbuf[num] = 0;
-        if(fputs(recvbuf, stdout) == EOF)
-        {
-            printf("\n Error : Fputs error\n");
-            return;
-        }
->>>>>>> 5f7365b9218ae91dad4067b1c73412bf70aba8ce
+        printf("%s", recvbuf);
 
-        // strcmp(recvbuf, ":") ? msglen=5:msglen=1;
+        for (i = 0; i < num; i++)   //seek
+        {
+            if (recvbuf[i] == ':') //match keyword
+            {
+                seekpos = &recvbuf[i];
+                strncpy(seek, recvbuf+i, 5);
+
+                printf("[ SEEK: -%s- ]", seek);
+
+                if (strcmp(seek, ":peer") == 0)
+                {
+                    printf("SEEK SUCESS!!");
+                    
+                    while (recvbuf[i] != ':')
+                        i++;
+                    i++;
+                    i++;
+
+
+                    while (i < num)           //keep reading
+                    {
+                        port = 0;;
+
+                        printf("\nIP: ");
+
+                        //read IP, 4 ordered bytes.
+                        for (j = 0; j < 4; j++)
+                        {
+                            data = recvbuf[i+j];
+                            printf("%d.", data);    //STORE IP
+                        }
+
+                        i += 4;
+                        data = recvbuf[i];
+                        port = (data * 256) ;
+                        port += recvbuf[i+1];
+                        i += 2;
+
+                        printf("port: %d", port);   //STORE PORT
+                    }
+                }
+            }
+        }       
+    }
+
+    /*while ((num = read(*sockfd, recvbuf, msglen)) > 0) //sizeof(recvbuf)-1) = nbytes (1)
+    {
+        recvbuf[num] = 0;                   //set null char.
+        if(fputs(recvbuf, stdout) == EOF);
+
         if (strcmp(recvbuf, ":"))
             msglen = 5;
         else
             msglen = 1; 
 
-        int dls = 0;
-        char terminate = '0';
         if (strcmp(recvbuf, "peers") == 0)
         {
-
+            char terminate = '0';
             while (terminate != ':')    //skip length, skip : char
-             read(*sockfd, &terminate, 1);
+                read(*sockfd, &terminate, 1);
 
-<<<<<<< HEAD
             while (1) 
             {
                  port = 0;
@@ -164,49 +178,9 @@ void response(int* sockfd)
                     return;
                 port += data;
                 printf("\nPORT: %d\n", port);
-            }   
-=======
-
-while (num > 0)
-{
-            int sx = 0;
-
-            printf("\n\nIP: ");
-            for (sx = 0; sx < 4; sx++)
-            {
-                num = read(*sockfd, &dls, 1);
-                printf("%d.", dls);
             }
-
-            //x * 2^⁸ -1
-            int port = 0;
-            dls = 0;
-            num = read(*sockfd, &dls, 1);
-            printf(" %d ", dls);
-
-            //swap byte order
-            if (dls != 0)
-                port = (dls * 256) ;
-
-            dls = 0;
-            num = read(*sockfd, &dls, 1);
-            printf(" %d ", dls);
-            printf("\n");
-            port += dls;
-
-            printf("\nPORT: %d\n", port);
-        }
->>>>>>> 5f7365b9218ae91dad4067b1c73412bf70aba8ce
-        }
-
-    } 
-
-    if (num < 0)
-    {
-        printf("\n Read error \n");
-        return;
-    }  
-
+        }  
+    } */ 
 }
 
 //ip is set to 0 for non-proxy connections.
