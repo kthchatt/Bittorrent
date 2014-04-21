@@ -131,7 +131,7 @@ void response(int* sockfd)
         if (strcmp(recvbuf, ":"))
             msglen = 5;
         else
-            msglen = 1;
+            msglen = 1; 
 
         int dls = 0;
         char terminate = '0';
