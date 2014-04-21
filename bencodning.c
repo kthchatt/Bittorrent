@@ -68,6 +68,8 @@ int decode_bencode(char *file_name, torrent_info *data){
 int init_file (char *name, FILE *fp){
 }
 
+//TODO Files handler. 
+
 void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 	char one_char;
 	char string_value[250];
