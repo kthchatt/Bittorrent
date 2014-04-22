@@ -7,6 +7,28 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <urlparse.h>
+
+//returns url path, fx: http://www.tracker.domain.com:port/sft/tracker/announce.php
+ //will return /sft/tracker/, used to replace filepointer for scrape etc.
+ void url_path(char* url, char* path)
+ {
+    int i, path_start = 0, path_end, len;
+
+    len = strlen(url);
+
+    for (i = 6; i < len; i++)
+    {
+        if (url[i] == '/' && path_start == 0)   //find first occurrence of /
+            path_start = i;
+    
+        if (url[i] == '/')                      //find most recent occurence of /
+            path_end = i;
+    }
+
+    strncpy(path, url+path_start, path_end-path_start);
+    printf("-%s-", path);
+ }
 
 
 //extract hostname from url. 

@@ -16,12 +16,13 @@
 #include <errno.h>
 #include <arpa/inet.h> 
 #include "urlparse.h"
+#include "announce.h"
 
  //todo: save a peerlist with ip:port and info_hash.
 
 void debug(int postal) 
 { 
-    printf("\n__stack_%d_safe__\n", postal); 
+    printf("\n__point_%d_exec__\n", postal); 
     fflush(stdout); 
 }
 
@@ -31,13 +32,12 @@ int build(char request[200], char* tracker, char* info_hash, char* peer_id, char
 {
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
-    int port = 80;
+    int port = rand()%9999+500;    //bound port: listener for info_hash.
 
-    url_port(tracker, &port);
     url_hostname(tracker, hostname);
     url_announce(tracker, announce);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s&numwant=50&ip=0 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, info_hash, peer_id, port, downloaded, left, event, hostname);
     free(announce);
     free(hostname);
@@ -51,15 +51,13 @@ void query(char request[200], char* tracker, int* sockfd)
     int n = 0, port = 80, url_len = strlen(tracker);
     char* hostname = (char*) malloc(url_len);
     char* protocol = (char*) malloc(url_len);
-    char recvbuf[1024];
-    struct addrinfo hints, *res;;
+    struct addrinfo hints, *res;
 
     url_hostname(tracker, hostname);
     url_protocol(tracker, protocol);
     url_port(tracker, &port);
 
     memset(&hints, 0, sizeof(hints));
-    memset(recvbuf, '0',sizeof(recvbuf));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
@@ -108,7 +106,7 @@ void response(int* sockfd)
 
                     while (i + 6 < num)           //keep reading
                     {
-                        port = 0;;
+                        port = 0;
 
                         printf("\nIP: ");
 
