@@ -32,7 +32,7 @@ static int build(char request[200], char* tracker, char* info_hash, char* peer_i
 {
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
-    int port = rand()%9999+500;    //bound port: listener for info_hash.
+    int port = 5689;    //bound port: listener for info_hash.
 
     url_hostname(tracker, hostname);
     url_announce(tracker, announce);
