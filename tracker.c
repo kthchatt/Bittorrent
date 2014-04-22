@@ -1,3 +1,9 @@
+/* tracker.c
+ * 2014-04-22
+ * Robin Duda
+ *  Peer Tracker.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
