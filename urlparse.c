@@ -5,9 +5,9 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
+#include <stdio.h> 
 #include <string.h>
-#include <urlparse.h>
+#include "urlparse.h"
 
 //returns url path, fx: http://www.tracker.domain.com:port/sft/tracker/announce.php
  //will return /sft/tracker/, used to replace filepointer for scrape etc.
@@ -16,8 +16,9 @@
     int i, path_start = 0, path_end, len;
 
     len = strlen(url);
+    memset(path, 0, len);
 
-    for (i = 6; i < len; i++)
+    for (i = 7; i < len; i++)
     {
         if (url[i] == '/' && path_start == 0)   //find first occurrence of /
             path_start = i;
@@ -27,8 +28,7 @@
     }
 
     strncpy(path, url+path_start, path_end-path_start);
-    printf("-%s-", path);
- }
+}
 
 
 //extract hostname from url. 
@@ -37,6 +37,7 @@ void url_hostname(char* url, char* host)
     int i, pos = 0, domain_start = 0, domain_end, len;
 
     len = strlen(url);
+    memset(host, 0, len);
     domain_end = len;
 
     for (i = 0; i < len; i++)
@@ -67,6 +68,7 @@ void url_protocol(char* url, char* protocol)
     int i = 0, len, protocol_end = 0, k = 0;
     
     len = strlen(url);
+    memset(protocol, 0, len);
 
     for (i = 0; i < len; i++)
     {
@@ -127,7 +129,9 @@ void url_port(char* url, int *port)
 void url_announce(char* url, char* announce)
 {
     int len, i, j = 0, announce_started = 0;
+
     len = strlen(url);
+    memset(announce, 0, len);
 
     if (len < 6)
         return;
@@ -140,7 +144,7 @@ void url_announce(char* url, char* announce)
             announce_started = 1;
             j++;
         }
-    }
+    };
 }
 
 
@@ -151,6 +155,7 @@ void url_announce(char* url, char* announce)
     char* prot;
     char* host;
     char* announce;
+    char* path;
     int port = 40;
 
     url = urls;//"http://www.datgoed.domain.tld/announce";
@@ -169,11 +174,15 @@ void url_announce(char* url, char* announce)
     url_protocol(url, prot);
     printf("protocol: %s\n", prot);
 
+    path = (char*) malloc(len);
+    url_path(url, path);
+    printf("path: %s\n", path);
+
     url_port(url, &port);
     printf("port: %d\n\n", port);
-}*/
+}
 
-/*
+
 //function caller.
 int main(int argc, char ** argv)
 {
@@ -181,6 +190,10 @@ int main(int argc, char ** argv)
     testing("http://tracker.istole.it:456/tracker5/announce");
     testing("tracker.istole5.it:801/announce");
     testing("www.tracker.now/announce/announce5");
+    testing("http://192.168.0.14/announce");
+    testing("udp://192.168.014/announce");
+    testing("http://10.10.10.10:50/tracker/announce");
+    testing("http://94.228.192.98/announce");
 
     return 0;
 }*/

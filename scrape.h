@@ -7,7 +7,7 @@
 
 
 //return data in scrape-struct.
-int tracker_scrape(char* tracker, char* info_hash);
+void tracker_scrape(char* tracker, char* info_hash);
 
 
 #endif

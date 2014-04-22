@@ -19,13 +19,15 @@
  #include "scrape.h"
 
 
+//todo: decode scrape response and store somewhere.
+
 struct 
 {
 
 } scrapedata;
 
 //construct a http query
-int build(char request[200], char* tracker, char* info_hash) 
+static int build(char request[200], char* tracker, char* info_hash) 
 {
     char* path = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
@@ -34,15 +36,15 @@ int build(char request[200], char* tracker, char* info_hash)
     url_hostname(tracker, hostname);
     url_path(tracker, path);
 
-    sprintf(request, "GET %s/scrape HTTP/1.1\r\nhost: %s\r\n\r\n", 
-                                    path, hostname);
+    sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, info_hash, hostname);
+
     free(path);
     free(hostname);
 
     return strlen(request);
 }
 
-void query(char request[200], char* tracker, int* sockfd)
+static void query(char request[200], char* tracker, int* sockfd)
 {
 	int   port = 80, url_len = 200;
     char* hostname = (char*) malloc(url_len); 
@@ -71,17 +73,27 @@ void query(char request[200], char* tracker, int* sockfd)
     free(protocol);
 }
 
-void response(int* sockfd)
+static void response(int* sockfd)
 {
+    int num;
+    char recvbuf[2048];
 
+    memset(recvbuf, '0', sizeof(recvbuf));
+
+    if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
+    {
+        recvbuf[num] = 0;
+        printf("%s", recvbuf);
+	}
 }
 
- void scrape(char* tracker, char* info_hash)
+ void tracker_scrape(char* tracker, char* info_hash)
  {
-    int sockfd,port = 80;
+    int sockfd;
     char request[200];
 
     build(request, tracker, info_hash);
     query(request, tracker, &sockfd);
     response(&sockfd);
+    close(sockfd);
  }

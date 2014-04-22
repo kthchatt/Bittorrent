@@ -27,7 +27,7 @@ void debug(int postal)
 }
 
 //construct a http query
-int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
+static int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
               char* event, int downloaded, int left) 
 {
     char* announce = (char*) malloc(strlen(tracker));
@@ -37,8 +37,12 @@ int build(char request[200], char* tracker, char* info_hash, char* peer_id, char
     url_hostname(tracker, hostname);
     url_announce(tracker, announce);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s&numwant=50&ip=0 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s&numwant=50 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, info_hash, peer_id, port, downloaded, left, event, hostname);
+
+    printf("\n\n%s\n%s\n%s\n%s\n\n", request, tracker, hostname, announce);
+
+
     free(announce);
     free(hostname);
 
@@ -46,7 +50,7 @@ int build(char request[200], char* tracker, char* info_hash, char* peer_id, char
 }
 
 //send a http query
-void query(char request[200], char* tracker, int* sockfd)
+static void query(char request[200], char* tracker, int* sockfd)
 {
     int n = 0, port = 80, url_len = strlen(tracker);
     char* hostname = (char*) malloc(url_len);
@@ -76,7 +80,7 @@ void query(char request[200], char* tracker, int* sockfd)
 }
 
 //read uncompressed 
-void response(int* sockfd)
+static void response(int* sockfd)
 {
     int num, port, i, j, data;
     char recvbuf[2048], seek[5];
@@ -143,6 +147,5 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
     build(request, tracker, info_hash, peer_id, ip, event, downloaded, left);   //bound port
     query(request, tracker, &sockfd);                                                           //target port in url
     response(&sockfd);                                                                                 //todo: bind/listen
-
     return 0;
 } 
