@@ -4,6 +4,6 @@
 #include <stdio.h>
 #include <ctype.h>
 
-void urlEncode(unsigned char *hash, char *newStr);
+void urlEncode(unsigned char *str, char *newStr);
 
 #endif
