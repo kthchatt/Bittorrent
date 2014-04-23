@@ -27,10 +27,15 @@ typedef struct metainfodecode
 
 	long long int _piece_length;
 	int _private;
+//Common for singel and multi, singel uses only first long long int. 
+	long long int _file_length [4000];
 
+//For singel file torrent
 	char _file_name [250];
-	long long int _file_length;
 	char _file_MD5 [32];
+
+//For multi file torrent
+	char _file_path[4000][500];
 
 	long int _hash_length;
 	char _pieces [5000][20];
@@ -47,6 +52,7 @@ void complete_dictonarry (char *, char *, torrent_info *);
 void dictonarry_handler (FILE *, torrent_info *, char *);
 void announce_list_handler(FILE *, torrent_info *);
 void int_handler(FILE *, char *, torrent_info *);
+void path_handler(FILE *, torrent_info *);
 
 int decode_bencode(char *, torrent_info *);
 
