@@ -13,7 +13,7 @@ int main()
 }*/
 
 
-void urlEncode(unsigned char *hash, char *newStr)
+void urlEncode(unsigned char *str, char *newStr)
 {
     int i;
     char tbl[256];
@@ -22,8 +22,8 @@ void urlEncode(unsigned char *hash, char *newStr)
 
     char *ptbl = tbl;
 
-	for (; *hash; hash++) {
-		ptbl[*hash] ? sprintf(newStr, "%c", ptbl[*hash]) : sprintf(newStr, "%%%02X", *hash);
+	for (; *str; str++) {
+		ptbl[*str] ? sprintf(newStr, "%c", ptbl[*str]) : sprintf(newStr, "%%%02X", *str);
 		while (*++newStr);
 	}
 }
