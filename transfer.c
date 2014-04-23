@@ -1,7 +1,5 @@
 #include "transfer.h"
 
-#define PORT 5703
-
 int recievePiece(char *filePath, int pieceSize, int pieceIndex){
 	byte[] buffer = new byte[pieceSize];
 	Socket socket = new Socket(AddressFamily.InterNetwork,
