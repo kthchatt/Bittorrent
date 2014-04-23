@@ -85,7 +85,7 @@ static void response(int* sockfd)
     if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
         recvbuf[num] = 0;
-        printf("%s", recvbuf);
+        //printf("%s", recvbuf);
 
         for (i = 0; i < num; i++)   //seek
         {

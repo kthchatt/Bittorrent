@@ -40,7 +40,7 @@
 
 
 swarm_t swarm[MAX_SWARMS];
-pthread_t torrents;
+pthread_t torrents[MAX_SWARMS];
 
 void debug(int postal) 
 { 
@@ -64,8 +64,27 @@ void generate_id(char peer_id[21])
 			peer_id[i] = (char) (rand()%25+65); //generate A-Z
 }
 
+static void* tracking(void* arg)
+{
+	int i;
+	swarm_t *swarm = (swarm_t*) arg;
 
-void notrack(char* info_hash)
+	srand(time(NULL));
+
+	while (swarm->taken == true)
+	{
+		sleep(rand()%10+5);
+		
+		for (i = 0; i < MAX_TRACKERS; i++)
+		{
+		//swarm needs to be URL_ENCODED
+		tracker_scrape(swarm->tracker[i], swarm->info_hash);
+		tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
+		}
+	}
+}
+
+void untrack(char* info_hash)
 {
 	int i, j;
 
@@ -85,7 +104,6 @@ void notrack(char* info_hash)
 		}
 	}
 }
-
 
 //add a torrent to track.
 //info_hash, tracker urls
@@ -110,7 +128,10 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 				strcpy(swarm[i].tracker[j], trackers[j]);
 			}
 
-			printf("\nTracking: %s", swarm[i].info_hash);
+			if(!(pthread_create(&torrents[i], NULL, tracking, &swarm[i])))
+			{
+				printf("\nTracking: %s", swarm[i].info_hash);
+			}
 
 			return;
 		}
@@ -135,12 +156,22 @@ int main(int argc, char ** argv)
 		tracker_scrape("http://127.0.0.1/tracker/announce.php", "INFOHASHAAAAAAAAAAAA"); //include struct ptr to save scrape data
 		tracker_announce("http://127.0.0.1/tracker/announce.php", "INFOHASHAAAAAAAAAAAA", 
 					   peer_id, "10.0.0.0", "completed", 8016, 123918);*/
-		char *trackers[MAX_TRACKERS] = {"one", "two", "three", "four"};;
+		char *trackers[MAX_TRACKERS] = {"", 
+										"http://127.0.0.1:80/tracker/", 
+										"http://127.0.0.1:80/tracker/announce", 
+										"http://127.0.0.1:80/tracker/announce.php"};;
 
-		track("INFO_HASH", trackers);
-		track("INFO_HASH1", trackers);
-		track("INFO_HASH2", trackers);
-		track("INFO_HASH3", trackers);
-		track("INFO_HASH4", trackers);
-		track("INFO_HASH5", trackers);
+		track("00000000000000000000", trackers); usleep(1000);
+		track("00000000000000000001", trackers);usleep(1000);
+		track("00000000000000000002", trackers);usleep(1000);
+		track("00000000000000000003", trackers);usleep(1000);
+		track("00000000000000000004", trackers);usleep(1000);
+		track("00000000000000000005", trackers);usleep(1000);
+
+		while (1)
+		{
+			usleep(50000);
+			printf("!");
+			fflush(stdout);
+		}
 }
