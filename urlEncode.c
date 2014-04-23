@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <ctype.h>
 #include "urlEncode.h"
 
 /* Example
