@@ -20,24 +20,18 @@
 
  //todo: save a peerlist with ip:port and info_hash.
 
-void debug(int postal) 
-{ 
-    printf("\n__point_%d_exec__\n", postal); 
-    fflush(stdout); 
-}
-
 //construct a http query
 static int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
               char* event, int downloaded, int left) 
 {
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
-    int port = 5689;    //bound port: listener for info_hash.
+    int port = rand()%64519+1024;    //bound port: listener for info_hash.
 
     url_hostname(tracker, hostname);
     url_announce(tracker, announce);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s&numwant=50 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, info_hash, peer_id, port, downloaded, left, event, hostname);
 
     printf("\n\n%s\n%s\n%s\n%s\n\n", request, tracker, hostname, announce);
@@ -91,7 +85,7 @@ static void response(int* sockfd)
     if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
         recvbuf[num] = 0;
-        printf("%s", recvbuf);
+        //printf("%s", recvbuf);
 
         for (i = 0; i < num; i++)   //seek
         {
