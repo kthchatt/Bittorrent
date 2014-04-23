@@ -20,12 +20,6 @@
 
  //todo: save a peerlist with ip:port and info_hash.
 
-void debug(int postal) 
-{ 
-    printf("\n__point_%d_exec__\n", postal); 
-    fflush(stdout); 
-}
-
 //construct a http query
 static int build(char request[200], char* tracker, char* info_hash, char* peer_id, char* ip, 
               char* event, int downloaded, int left) 
