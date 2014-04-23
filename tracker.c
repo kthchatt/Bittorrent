@@ -4,9 +4,7 @@
  *  Peer Tracker.
  */
 
- //CALL INIT WHEN INCLUDING THIS FILE.
-
- //todo: add listen.c for peerwire, 
+ //todo: add listen.c for peerwire.
 
 #include <string.h>
 #include <stdlib.h>
@@ -14,32 +12,7 @@
 #include <pthread.h>
 #include "announce.h"
 #include "scrape.h" 
-
-//max swarms should not be lesser than max torrents.
-#define SIGNATURE "-XX0000-"
-#define MAX_SWARMS 4
-#define MAX_SWARM_SIZE 200
-#define MAX_TRACKERS 4
-#define MAX_URL_LEN  100
-#define boolean int
-#define true 1
-#define false 0
-
-//swarms contain all swarm-connected peers, built from tracker queries.
-//before every scrape, clear scrape data and repopulate.
- typedef struct
- {
- 	boolean taken;
- 	char* tracker 	[MAX_TRACKERS];
- 	char* ip  		[MAX_SWARM_SIZE];
- 	char* port		[MAX_SWARM_SIZE];
- 	char* peer_id;
- 	char  info_hash [20];
- 	int listenport;
- 	//scrape data
- 	pthread_mutex_t lock;
- } swarm_t;
-
+#include "tracker.h"
 
 swarm_t swarm[MAX_SWARMS];
 pthread_t torrents[MAX_SWARMS];
@@ -50,8 +23,7 @@ void debug(int postal)
     fflush(stdout); 
 }
 
-//generates 20bytes long swarm-unique peer identifier.
-//one id per swarm should be generated.
+//generates 20bytes long swarm-unique peer identifier. (one id per swarm)
 void generate_id(char* peer_id)
 {
 	int i, len;
@@ -91,10 +63,6 @@ static void* tracking(void* arg)
 	}
 }
 
-//add a torrent to track.
-//info_hash, tracker urls
-//one thread per torrent, swarm is global.
-//find a free swarm allocation
 void track(char* info_hash, char* trackers[MAX_TRACKERS])
 {
 	int i, j;
@@ -108,7 +76,6 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 			generate_id(swarm[i].peer_id);
 			strcpy(swarm[i].info_hash, info_hash);
 
-			//copy trackers
 			for (j = 0; j < MAX_TRACKERS; j++)
 			{
 				swarm[i].tracker[j] = (char*) malloc(MAX_URL_LEN);
@@ -116,9 +83,7 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 			}
 
 			if(!(pthread_create(&torrents[i], NULL, tracking, &swarm[i])))
-			{
 				printf("\nTracking: %s as [%s]", swarm[i].info_hash, swarm[i].peer_id);
-			}
 
 			return;
 		}
@@ -140,42 +105,22 @@ void untrack(char* info_hash)
 
 			free(swarm[i].peer_id);
 
-			// FREE/CLEAR IP
-			// FREE/CLEAR PORT
-			// FREE THREAD.
-
+			// FREE: IP/PORT/THREAD
 			swarm[i].taken = false;
 		}
 	}
 }
 
-//initialize.
-void init()
-{
-
-	//generate_id();
-	//swarm_init();
-	//listen();
-	//spawn a thread for every torrent, include all tracker urls. 
-	//thread should maintain the swarm, and listen for new peers. "peerwire.c"
-}
-
 int main(int argc, char ** argv)
 {
-		/*generate_id();
-		tracker_scrape("http://127.0.0.1/tracker/announce.php", "INFOHASHAAAAAAAAAAAA"); //include struct ptr to save scrape data
-		tracker_announce("http://127.0.0.1/tracker/announce.php", "INFOHASHAAAAAAAAAAAA", 
-					   peer_id, "10.0.0.0", "completed", 8016, 123918);*/
 		char *trackers[MAX_TRACKERS] = {"", 
 										"", 
 										"", 
 										"http://127.0.0.1:80/tracker/announce.php"};;
 
-		track("00000000000000000001", trackers);usleep(1500000);
-		track("00000000000000000001", trackers);usleep(1500000);
-		track("00000000000000000001", trackers);usleep(1500000);
-		track("00000000000000000001", trackers);usleep(1500000);
-		track("00000000000000000001", trackers);usleep(1500000);
+		track("00000000000000000001", trackers);usleep(500000);
+		track("00000000000000000001", trackers);usleep(500000);
+		track("00000000000000000001", trackers);usleep(500000);
 
 		while (1)
 		{
