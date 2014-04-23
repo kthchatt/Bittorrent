@@ -144,7 +144,7 @@ void url_announce(char* url, char* announce)
             announce_started = 1;
             j++;
         }
-    };
+    }
 }
 
 

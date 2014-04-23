@@ -9,5 +9,7 @@
  void url_protocol(char* url, char* protocol);		//get protocol from url. (http/udp)
  void url_announce(char* url, char* announce);		//get file pointer form url. (/a_tracker/annunce.php)
  void url_port(char* url, int *port);				//get url 					 (:xx..)
+ void url_path(char* url, char* path);
+ 
 
 #endif
