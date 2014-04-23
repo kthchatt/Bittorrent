@@ -5,14 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-//max swarms should be equal to max torrents.
-const char* SIGNATURE = "-XX0000-";
-const int MAX_SWARMS = 4;
-const int MAX_SWARM_SIZE = 200;
-const int MAX_TRACKERS = 4;
-const int MAX_URL_LEN = 100;
-const int true = 1;
-const int false = 1;
+//max swarms should be equal to max torrent
+#define SIGNATURE "-XX0000-"
+#define MAX_SWARMS 4
+#define MAX_SWARM_SIZE 200
+#define MAX_TRACKERS 4
+#define MAX_URL_LEN 100
+#define boolean int
+#define true 1
+#define false 0
 
 //swarms contain all swarm-connected peers, built from tracker queries.
 //before every scrape, clear scrape data and repopulate.

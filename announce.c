@@ -34,7 +34,7 @@ static int build(char request[200], char* tracker, char* info_hash, char* peer_i
     sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, info_hash, peer_id, port, downloaded, left, event, hostname);
 
-    //printf("\n\n%s\n%s\n%s\n%s\n\n", request, tracker, hostname, announce);
+    printf("\n\nAnounce\n%s\n%s\n%s\n%s\n\n", request, tracker, hostname, announce);
 
 
     free(announce);
@@ -140,6 +140,7 @@ int tracker_announce(char* tracker, char* info_hash, char* peer_id, char* ip,
 
     build(request, tracker, info_hash, peer_id, ip, event, downloaded, left);   //bound port
     query(request, tracker, &sockfd);                                                           //target port in url
-    response(&sockfd);                                                                                 //todo: bind/listen
+    response(&sockfd);    
+    close(sockfd);                                                                             //todo: bind/listen
     return 0;
 } 

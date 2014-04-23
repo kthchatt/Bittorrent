@@ -49,15 +49,15 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		sleep(rand()%5+3);
+		sleep(rand()%2+3);
 		
 		for (i = 0; i < MAX_TRACKERS; i++)
 		{
 		//swarm needs to be URL_ENCODED
 			if (strlen(swarm->tracker[i]) > 0)
 			{
-				//tracker_scrape(swarm->tracker[i], swarm->info_hash);
 				tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
+				tracker_scrape(swarm->tracker[i], swarm->info_hash);
 			}
 		}
 	}
