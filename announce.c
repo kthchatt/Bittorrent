@@ -34,7 +34,7 @@ static int build(char request[200], char* tracker, char* info_hash, char* peer_i
     sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, info_hash, peer_id, port, downloaded, left, event, hostname);
 
-    printf("\n\n%s\n%s\n%s\n%s\n\n", request, tracker, hostname, announce);
+    //printf("\n\n%s\n%s\n%s\n%s\n\n", request, tracker, hostname, announce);
 
 
     free(announce);
@@ -85,7 +85,7 @@ static void response(int* sockfd)
     if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
         recvbuf[num] = 0;
-        //printf("%s", recvbuf);
+        printf("%s", recvbuf);
 
         for (i = 0; i < num; i++)   //seek
         {

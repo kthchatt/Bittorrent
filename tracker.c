@@ -17,7 +17,7 @@
 
 //max swarms should not be lesser than max torrents.
 #define SIGNATURE "-XX0000-"
-#define MAX_SWARMS 5
+#define MAX_SWARMS 4
 #define MAX_SWARM_SIZE 200
 #define MAX_TRACKERS 4
 #define MAX_URL_LEN  100
@@ -26,6 +26,7 @@
 #define false 0
 
 //swarms contain all swarm-connected peers, built from tracker queries.
+//before every scrape, clear scrape data and repopulate.
  typedef struct
  {
  	boolean taken;
@@ -35,6 +36,7 @@
  	char* peer_id;
  	char  info_hash [20];
  	int listenport;
+ 	//scrape data
  	pthread_mutex_t lock;
  } swarm_t;
 
@@ -82,7 +84,7 @@ static void* tracking(void* arg)
 		//swarm needs to be URL_ENCODED
 			if (strlen(swarm->tracker[i]) > 0)
 			{
-				tracker_scrape(swarm->tracker[i], swarm->info_hash);
+				//tracker_scrape(swarm->tracker[i], swarm->info_hash);
 				tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
 			}
 		}
@@ -115,7 +117,7 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 
 			if(!(pthread_create(&torrents[i], NULL, tracking, &swarm[i])))
 			{
-				printf("\nTracking: %s", swarm[i].info_hash);
+				printf("\nTracking: %s as [%s]", swarm[i].info_hash, swarm[i].peer_id);
 			}
 
 			return;
@@ -169,12 +171,11 @@ int main(int argc, char ** argv)
 										"", 
 										"http://127.0.0.1:80/tracker/announce.php"};;
 
-		track("00000000000000000001", trackers); usleep(1000);
-		track("00000000000000000001", trackers);usleep(1000);
-		track("00000000000000000001", trackers);usleep(1000);
-		track("00000000000000000001", trackers);usleep(1000);
-		track("00000000000000000001", trackers);usleep(1000);
-		track("00000000000000000001", trackers);usleep(1000);
+		track("00000000000000000001", trackers);usleep(1500000);
+		track("00000000000000000001", trackers);usleep(1500000);
+		track("00000000000000000001", trackers);usleep(1500000);
+		track("00000000000000000001", trackers);usleep(1500000);
+		track("00000000000000000001", trackers);usleep(1500000);
 
 		while (1)
 		{
