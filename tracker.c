@@ -32,8 +32,8 @@
  	char* tracker 	[MAX_TRACKERS];
  	char* ip  		[MAX_SWARM_SIZE];
  	char* port		[MAX_SWARM_SIZE];
+ 	char* peer_id;
  	char  info_hash [20];
- 	char  peer_id   [20];
  	int listenport;
  	pthread_mutex_t lock;
  } swarm_t;
@@ -50,7 +50,7 @@ void debug(int postal)
 
 //generates 20bytes long swarm-unique peer identifier.
 //one id per swarm should be generated.
-void generate_id(char peer_id[21])
+void generate_id(char* peer_id)
 {
 	int i, len;
 
@@ -62,6 +62,8 @@ void generate_id(char peer_id[21])
 			peer_id[i] = (char) (rand()%9+48);	//generate 0..9
 		else
 			peer_id[i] = (char) (rand()%25+65); //generate A-Z
+
+		printf("\n%s\n", peer_id);
 }
 
 static void* tracking(void* arg)
@@ -73,34 +75,16 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		sleep(rand()%10+5);
+		sleep(rand()%5+3);
 		
 		for (i = 0; i < MAX_TRACKERS; i++)
 		{
 		//swarm needs to be URL_ENCODED
-		tracker_scrape(swarm->tracker[i], swarm->info_hash);
-		tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
-		}
-	}
-}
-
-void untrack(char* info_hash)
-{
-	int i, j;
-
-	for (i = 0; j < MAX_SWARMS; i++)
-	{
-		if (strcmp(swarm[i].info_hash, info_hash) == 0)
-		{
-			//deallocate swarm.
-			for (j = 0; j < MAX_TRACKERS; j++)
-				free(swarm[i].tracker[j]);
-
-			// FREE/CLEAR IP
-			// FREE/CLEAR PORT
-			// FREE THREAD.
-
-			swarm[i].taken = false;
+			if (strlen(swarm->tracker[i]) > 0)
+			{
+				tracker_scrape(swarm->tracker[i], swarm->info_hash);
+				tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
+			}
 		}
 	}
 }
@@ -118,6 +102,7 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 		if (swarm[i].taken == false)
 		{
 			swarm[i].taken = true;
+			swarm[i].peer_id = (char*) malloc(21);
 			generate_id(swarm[i].peer_id);
 			strcpy(swarm[i].info_hash, info_hash);
 
@@ -139,6 +124,29 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 	printf("Swarms are busy! Please increase MAX_SWARMS or fix a memory leak!");
 }
 
+void untrack(char* info_hash)
+{
+	int i, j;
+
+	for (i = 0; j < MAX_SWARMS; i++)
+	{
+		if (strcmp(swarm[i].info_hash, info_hash) == 0)
+		{
+			//deallocate swarm.
+			for (j = 0; j < MAX_TRACKERS; j++)
+				free(swarm[i].tracker[j]);
+
+			free(swarm[i].peer_id);
+
+			// FREE/CLEAR IP
+			// FREE/CLEAR PORT
+			// FREE THREAD.
+
+			swarm[i].taken = false;
+		}
+	}
+}
+
 //initialize.
 void init()
 {
@@ -157,16 +165,16 @@ int main(int argc, char ** argv)
 		tracker_announce("http://127.0.0.1/tracker/announce.php", "INFOHASHAAAAAAAAAAAA", 
 					   peer_id, "10.0.0.0", "completed", 8016, 123918);*/
 		char *trackers[MAX_TRACKERS] = {"", 
-										"http://127.0.0.1:80/tracker/", 
-										"http://127.0.0.1:80/tracker/announce", 
+										"", 
+										"", 
 										"http://127.0.0.1:80/tracker/announce.php"};;
 
-		track("00000000000000000000", trackers); usleep(1000);
+		track("00000000000000000001", trackers); usleep(1000);
 		track("00000000000000000001", trackers);usleep(1000);
-		track("00000000000000000002", trackers);usleep(1000);
-		track("00000000000000000003", trackers);usleep(1000);
-		track("00000000000000000004", trackers);usleep(1000);
-		track("00000000000000000005", trackers);usleep(1000);
+		track("00000000000000000001", trackers);usleep(1000);
+		track("00000000000000000001", trackers);usleep(1000);
+		track("00000000000000000001", trackers);usleep(1000);
+		track("00000000000000000001", trackers);usleep(1000);
 
 		while (1)
 		{
