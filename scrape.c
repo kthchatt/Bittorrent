@@ -38,15 +38,36 @@ static int build(char request[200], char info_hash[20], char tracker[MAX_URL_LEN
 
 static void response(int* sockfd, swarm_t* swarm)
 {
-    int num;
-    char recvbuf[2048];
+    int num, i, linefeed = 0;
+    char recvbuf[256], benstring[100];
 
-    memset(recvbuf, '0', sizeof(recvbuf));
+    memset(recvbuf, '\0', sizeof(recvbuf));
+    memset(benstring, '\0', sizeof(benstring));
 
     if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
         recvbuf[num] = 0;
         printf("%s", recvbuf);
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        //find start of data, skip http-header.
+        if ((recvbuf[i]   == 13 && recvbuf[i+1] == 10) &&
+            (recvbuf[i+2] == 13 && recvbuf[i+3] == 10))
+            {
+                strncpy(benstring, recvbuf+i+4, num-i-4);
+                printf("\n\n---%s---\n", benstring);
+
+                //extracting the benstring.
+                /* d5:filesd20:00000000000000000001d8:completei0e10:downloadedi0e10:incompletei0eeee */
+                swarm->scrape_completed  = bdecode_value(benstring, "completed");
+                swarm->scrape_downloaded = bdecode_value(benstring, "downloaded");
+                swarm->scrape_incomplete = bdecode_value(benstring, "incomplete");
+
+                printf("\nSwarm completed = %d, downloaded = %d, incomplete = %d.\n", 
+                    swarm->scrape_completed, swarm->scrape_downloaded, swarm->scrape_incomplete);
+            }
     }
 }
 

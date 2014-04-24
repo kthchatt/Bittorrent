@@ -16,7 +16,7 @@
     int i, path_start = 0, path_end, len;
 
     len = strlen(url);
-    memset(path, 0, len);
+    memset(path, '\0', len);
 
     for (i = 7; i < len; i++)
     {
@@ -37,7 +37,7 @@ void url_hostname(char* url, char* host)
     int i, pos = 0, domain_start = 0, domain_end, len;
 
     len = strlen(url);
-    memset(host, 0, len);
+    memset(host, '\0', len);
     domain_end = len;
 
     for (i = 0; i < len; i++)
@@ -68,7 +68,7 @@ void url_protocol(char* url, char* protocol)
     int i = 0, len, protocol_end = 0, k = 0;
     
     len = strlen(url);
-    memset(protocol, 0, len);
+    memset(protocol, '\0', len);
 
     for (i = 0; i < len; i++)
     {
@@ -131,7 +131,7 @@ void url_announce(char* url, char* announce)
     int len, i, j = 0, announce_started = 0;
 
     len = strlen(url);
-    memset(announce, 0, len);
+    memset(announce, '\0', len);
 
     if (len < 6)
         return;
@@ -147,6 +147,38 @@ void url_announce(char* url, char* announce)
     }
 }
 
+
+//extracts a bencoded value dictionary-wise, bencoded returns 38: bencodedi38estring.
+ int bdecode_value(char* source, char* search)
+ {
+    int i, intlen = 0, value = 0;
+    int source_len = strlen(source);
+    int search_len = strlen(search);
+    char* seek = (char*) malloc(search_len);
+    char tmp[5];
+
+    memset(tmp, '\0', sizeof(tmp));
+    
+    for (i = 0; i < source_len; i++)
+    {
+        strncpy(seek, source+i, search_len);
+        
+        if (strcmp(seek, search) == 0)
+        {   
+            i += search_len+1;
+            while (47 < source[i] && source[i] < 58)    //while is digit read.
+            {
+                tmp[intlen] = source[i];  //convert to integer.
+                intlen++;
+                i++;
+            }
+            value = atoi(tmp);  //safe to use here.
+            break;
+        }
+    }
+    free(seek);
+    return value;
+ }
 
 /*------------------------------- BEGIN: REMOVE WHEN COMPLETE ----------------------------------*/
 /*void testing(char* urls)

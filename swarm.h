@@ -26,7 +26,7 @@
  	char* port		[MAX_SWARM_SIZE];
  	char  peer_id   [20];
  	char  info_hash [20];
- 	int listenport, scrape_completed, scrape_incomplete;
+ 	int listenport, scrape_completed, scrape_incomplete, scrape_downloaded;
  	//scrape data
  	pthread_mutex_t lock;
  } swarm_t;
