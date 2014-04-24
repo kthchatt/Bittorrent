@@ -85,7 +85,7 @@ void url_protocol(char* url, char* protocol)
         k++;
     }
 
-    //if protocol omitted default to http
+    //if protocol omitted default to http (https not supported, will default to http)
     if (protocol_end > 4 || protocol_end == 0)
     {
         strcpy(protocol, "http");
@@ -126,6 +126,7 @@ void url_port(char* url, int *port)
         *port = 80;
 }
 
+//extracts the announce url from url, "http://tracker:80/announce.php" = /announce.php
 void url_announce(char* url, char* announce)
 {
     int len, i, j = 0, announce_started = 0;
@@ -148,7 +149,7 @@ void url_announce(char* url, char* announce)
 }
 
 
-//extracts a bencoded value dictionary-wise, bencoded returns 38: bencodedi38estring.
+//extracts a bencoded value dictionary-wise.
  int bdecode_value(char* source, char* search)
  {
     int i, intlen = 0, value = 0;
@@ -162,17 +163,17 @@ void url_announce(char* url, char* announce)
     for (i = 0; i < source_len; i++)
     {
         strncpy(seek, source+i, search_len);
-        
+
         if (strcmp(seek, search) == 0)
         {   
             i += search_len+1;
             while (47 < source[i] && source[i] < 58)    //while is digit read.
             {
-                tmp[intlen] = source[i];  //convert to integer.
+                tmp[intlen] = source[i]; 
                 intlen++;
                 i++;
             }
-            value = atoi(tmp);  //safe to use here.
+            value = atoi(tmp);                          //safe to use here.
             break;
         }
     }
