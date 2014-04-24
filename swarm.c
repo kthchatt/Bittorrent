@@ -11,11 +11,7 @@
 #include <pthread.h>
 #include "swarm.h"
 
-
-//swarm_t swarm[MAX_SWARMS];
-
 //all swarm methods need be thread-safe.
-
 
 //generates 20bytes long swarm-unique peer identifier. (one id per swarm)
 void generate_id(char peer_id[20])

@@ -91,6 +91,7 @@ static void response(int* sockfd)
 
         for (i = 0; i < num; i++)   //seek
         {
+
             if (recvbuf[i] == ':') //match keyword
             {
                 seekpos = &recvbuf[i];

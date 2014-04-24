@@ -26,23 +26,16 @@ void debug(int postal)
 static void* tracking(void* arg)
 {
 	int i;
-	swarm_t *swarm = (swarm_t*) arg;
+	swarm_t* swarm = (swarm_t*) arg;
 
 	srand(time(NULL));
 
 	while (swarm->taken == true)
 	{
-		sleep(rand()%2+3);
-		
-		for (i = 0; i < MAX_TRACKERS; i++)
-		{
-		//hash needs to be URL_ENCODED
-			if (strlen(swarm->tracker[i]) > 0)
-			{
-				tracker_scrape(swarm->tracker[i], swarm->info_hash);
-				tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
-			}
-		}
+		sleep(3);
+		printf("\nScrape Commencing!\n");
+		tracker_scrape(swarm);
+		//tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
 	}
 }
 
