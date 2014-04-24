@@ -38,7 +38,7 @@ static int build(char request[200], char* tracker, char* info_hash)
 
     sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, info_hash, hostname);
 
-        printf("\n\nSCRAPE\n%s\n%s\n%s\n\n", path, info_hash, hostname);
+    printf("\n\nSCRAPE\n%s\n%s\n%s\n\n", path, info_hash, hostname);
 
     free(path);
     free(hostname);
@@ -85,7 +85,7 @@ static void response(int* sockfd)
     if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
         recvbuf[num] = 0;
-       // printf("%s", recvbuf);
+        printf("%s", recvbuf);
 	}
 }
 

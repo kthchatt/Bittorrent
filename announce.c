@@ -76,7 +76,9 @@ static void query(char request[200], char* tracker, int* sockfd)
 //read uncompressed 
 static void response(int* sockfd)
 {
-    int num, port, i, j, data;
+    int num, i, j;
+    unsigned char data;
+    unsigned short int port;
     char recvbuf[2048], seek[5];
     char* seekpos;
 
@@ -92,38 +94,37 @@ static void response(int* sockfd)
             if (recvbuf[i] == ':') //match keyword
             {
                 seekpos = &recvbuf[i];
-                strncpy(seek, recvbuf+i, 5);
+                strncpy(seek, recvbuf+i, 6);
 
-                if (strcmp(seek, ":peer") == 0)
+                if (strcmp(seek, ":peers") == 0)
                 {   
                     i++;
                     while (recvbuf[i] != ':')
                         i++;
                     i++;
 
-
-                    while (i + 6 < num)           //keep reading
+                    while (i + 6 <= num)           //keep reading
                     {
-                        port = 0;
-
                         printf("\nIP: ");
 
                         //read IP, 4 ordered bytes.
                         for (j = 0; j < 4; j++)
                         {
                             data = recvbuf[i+j];
-                            printf("%d.", data);    //todo: STORE IP
+                            printf("%d.", (unsigned) data);    //todo: STORE IP
                         }
 
                         i += 4;
                         data = recvbuf[i];
-                        port = (data * 256) ;
-                        port += recvbuf[i+1];
+                        port = 0;
+                        port = (unsigned char) data << 8;
+                        port += (unsigned char) recvbuf[i+1];
                         i += 2;
 
-                        printf("port: %d", port);   //todo: STORE PORT
+                        printf("\nport: %d", (unsigned) port);   //todo: STORE PORT
                     }
                     printf("\n");
+                    fflush(stdout);
                 }
             }
         }       

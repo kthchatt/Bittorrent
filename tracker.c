@@ -13,31 +13,14 @@
 #include "announce.h"
 #include "scrape.h" 
 #include "tracker.h"
+#include "swarm.h"
 
-swarm_t swarm[MAX_SWARMS];
 pthread_t torrents[MAX_SWARMS];
 
 void debug(int postal) 
 { 
     printf("\n__point_%d_exec__\n", postal); 
     fflush(stdout); 
-}
-
-//generates 20bytes long swarm-unique peer identifier. (one id per swarm)
-void generate_id(char* peer_id)
-{
-	int i, len;
-
-	strcpy(peer_id, SIGNATURE);
-	len = strlen(SIGNATURE);
-
-	for (i = len; i < 20; i++)
-		if (rand()%2 == 0)
-			peer_id[i] = (char) (rand()%9+48);	//generate 0..9
-		else
-			peer_id[i] = (char) (rand()%25+65); //generate A-Z
-
-		printf("\n%s\n", peer_id);
 }
 
 static void* tracking(void* arg)
@@ -53,11 +36,11 @@ static void* tracking(void* arg)
 		
 		for (i = 0; i < MAX_TRACKERS; i++)
 		{
-		//swarm needs to be URL_ENCODED
+		//hash needs to be URL_ENCODED
 			if (strlen(swarm->tracker[i]) > 0)
 			{
-				tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
 				tracker_scrape(swarm->tracker[i], swarm->info_hash);
+				tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
 			}
 		}
 	}
@@ -65,9 +48,21 @@ static void* tracking(void* arg)
 
 void track(char* info_hash, char* trackers[MAX_TRACKERS])
 {
-	int i, j;
+	int swarm_id;
 
-	for (i = 0; i < MAX_SWARMS; i++)
+	//printf("\n\nAttempting track.. \nSwarmID: %d\nPeerID: %s\nInfoHash: %s\n\n", swarm[swarm_id].peer_id);
+
+	if ((swarm_id = swarm_select(info_hash, trackers)) > -1)
+	{
+		if(!(pthread_create(&torrents[swarm_id], NULL, tracking, &swarm[swarm_id])))
+			printf("\nTracking: %s as [%s]", swarm[swarm_id].info_hash, swarm[swarm_id].peer_id);
+	}
+	else printf("\nSwarms are busy! Increase MAX_SWARMS of fix a memory leak!\n");
+
+	return;
+
+
+	/*for (i = 0; i < MAX_SWARMS; i++)
 	{
 		if (swarm[i].taken == false)
 		{
@@ -88,7 +83,7 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 			return;
 		}
 	}
-	printf("Swarms are busy! Please increase MAX_SWARMS or fix a memory leak!");
+	printf("Swarms are busy! Please increase MAX_SWARMS or fix a memory leak!");*/
 }
 
 void untrack(char* info_hash)
@@ -116,10 +111,8 @@ int main(int argc, char ** argv)
 		char *trackers[MAX_TRACKERS] = {"", 
 										"", 
 										"", 
-										"http://127.0.0.1:80/tracker/announce.php"};;
+										"http://94.228.192.98/announce"};;
 
-		track("00000000000000000001", trackers);usleep(500000);
-		track("00000000000000000001", trackers);usleep(500000);
 		track("00000000000000000001", trackers);usleep(500000);
 
 		while (1)
