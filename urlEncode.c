@@ -13,15 +13,21 @@ int main()
 }*/
 
 
-char *hexToChar(unsigned char *hex, int length){
 
-
-void urlEncode(unsigned char *str, char *newStr)
+char *urlEncode(char *hash)
 {	
 	char buffer[60];
-	int i;
-	for(i=0; i<40; i++)
-		i%2 ? buffer[i] = '%' : buffer[i] = str[i*0.5];
+	int i, counter, pos;
+	for(i=0; i<60; i++){
+		if(counter >= 2){
+			buffer[i] = str[pos];
+			pos++;
+		}else
+			buffer[i] = '%';
+
+		counter++;
+		//i%2 ? buffer[i] = '%' : buffer[i] = str[i*0.5];
+	}
 	
 	return buffer;
 	/*
