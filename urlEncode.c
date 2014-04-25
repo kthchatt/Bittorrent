@@ -21,7 +21,7 @@ void urlEncode(unsigned char *str, char *newStr)
 	char buffer[40];
 	int i;
 	for(i=0; i<40; i++)
-		i/2==i%2 ? buffer[i] = str[i] : buffer[i] = '%';
+		i%2 ? buffer[i] = str[i*0.5] : buffer[i] = '%';
 	
 	return buffer;
 	/*
