@@ -9,8 +9,8 @@ int main()
 	urlEncode(str, encodedStr);
 
 	printf("%s", encodedStr);
-	return 0;
-}*/
+	return 0;}*/
+
 
 
 char *urlEncode(char *hash)
@@ -24,10 +24,8 @@ char *urlEncode(char *hash)
 			counter++;
 		}else{
             buffer[i] = '%';
-            coutner = 0;
+            counter = 0;
 		}
-
-
 		//i%2 ? buffer[i] = '%' : buffer[i] = str[i*0.5];
 	}
 	return buffer;
