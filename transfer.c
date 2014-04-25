@@ -3,7 +3,7 @@
 int recievePiece(char *filePath, int pieceSize, int pieceIndex){
 	struct sockaddr_in client, server;
 	int s, i, slen=sizeof(server);
-	char buffer[pieceSize];
+	unsigned char buffer[pieceSize];
 
 	FILE *file = fopen(filePath, "wb");	
 	if(!file) return 0;
@@ -30,10 +30,11 @@ int recievePiece(char *filePath, int pieceSize, int pieceIndex){
 int sendPiece(char *filePath, char *destIP, int pieceSize, int pieceIndex){
 	struct sockaddr_in server;
 	int s, i, slen=sizeof(server);
-	char buffer[pieceSize];
+	unsigned char buffer[pieceSize];
 
 	FILE *file = fopen(filePath, "rb");	
 	if(!file) return 0;
+	fread(&buffer, pieceSize, 1, file);
 
 	if((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) return 0;
 
