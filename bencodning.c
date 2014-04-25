@@ -31,7 +31,6 @@ int decode_bencode(char *file_name, torrent_info *data){
 	FILE *fp;
 	fp = fopen(file_name, "r");
 	if (fp != NULL){
-		fprintf(stderr, "File %s is open\n", file_name);
 	} else {
 		fprintf(stderr, "Error opening file\n");
 		return(-1);
@@ -53,7 +52,7 @@ int decode_bencode(char *file_name, torrent_info *data){
 			fprintf(stderr, "Next\n");
 		break;
 	}
-	for (i = 0; i < 50; ++i)
+/*	for (i = 0; i < 50; ++i)
 	{
 		for (j = 0; j < 20; ++j)
 		{
@@ -62,117 +61,66 @@ int decode_bencode(char *file_name, torrent_info *data){
 		}
 		fprintf(stderr, "\n");
 	}
+	for (i = 0; i < data->_number_of_files; ++i)
+	{
+		fprintf(stderr, "File %d: %55s \t Length: %lli \n", i, data->_file_path[i], data->_file_length[i]);
+	}
 
 	//Skriver ut allt som inte har lästs in än. 
+	fprintf(stderr, "\n\n\n\n");
 	fgets(bencode, 3000, fp);
 	for (i = 0; i < 3000; ++i)
 	{
 		printf("%c", bencode[i]);
-	}
+	}*/
 	return 1;
 
 }
 
-int init_file (char *name, FILE *fp){
-}
 
-//TODO Files handler. 
-/*
-void files_handler (FILE *sfp, torrent_info *data){
-	int index = 0;
-	char file_path [500];
-	char string_name[100];
-	char one_char;
-	int length_of_next_int = 0;
-	while (length_of_next_int == 0){
-		length_of_next_int = read_length_of_next(sfp);
-	}
-	one_char = read_one_char(sfp)
-	read_specific_length(sfp, length_of_next_int, string_value);
-}*/
-void path_handler(FILE *sfp, torrent_info *data){
-	char one_char = 'a';
-	char string_value[250];
-	int length_of_next_int = 0;
-	char file_path [500] = "\0";
-	one_char = read_one_char(sfp);
-	while(one_char != 'e'){
-		length_of_next_int = read_length_of_next(sfp);
-		if (length_of_next_int == 0){
-			one_char = read_one_char(sfp);
-			if (one_char == 'e'){
-				break;
-			} else {
-				fprintf(stderr, "ERROR MIDDLE OF STRING\n");
-			}
-		}else {
-			strcat(file_path, "/");
+void path_handler(char *string_value, int ready_to_store, torrent_info *data){
+	static char file_path[500] = "\0";
+	if ( ready_to_store == 1){
+		if(strcmp(file_path, "") == 0){
+			return;
 		}
-		read_specific_length(sfp, length_of_next_int, string_value);
-		strcat(file_path, string_value);
-		//strcat(file_path, "/");
-		fprintf(stderr, "Current status of file path %s\n", string_value);
+		complete_dictonarry("path", file_path, data);
+		file_path[0] = '\0';
+		data->_multi_file = 1;
+		return;
 	}
-	strcpy(data->_file_path[place_files++], file_path);
-	fprintf(stderr, "File path: %s File length: %lld File number: &d\n", data->_file_path[(place_files-1)], data->_file_length[(place_files-1)], place_files);
+	strcat(file_path, "/");	
+	strcat(file_path, string_value);
 	return;
-
 }
 
 void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 	char one_char;
-	char string_value[250];
-	int length_of_next_int = 0;
-	if (strcmp(string_name, "announce-list") == 0){
-		while((one_char = read_one_char(sfp)) != 'e'){
-			//fprintf(stderr, "One char from list_handler %c\n", one_char);
-			if (one_char == 'l'){
-				list_handler(sfp, string_name, data);
-			} else {
-				fseek(sfp,-1, SEEK_CUR);
-			}
-			length_of_next_int = read_length_of_next(sfp);
-			read_specific_length(sfp, length_of_next_int, string_value);
-			strcpy(data->_announce_list[place_announce_list++], string_value);
-			if (length_of_next_int == 0){
-				fseek(sfp,-1, SEEK_CUR);
-				//break;
-			}
-			
+	char string_value[500];
+	char file_path[500];
+	int length_of_next_int = 0;	
+	while((one_char = read_one_char(sfp)) != 'e'){
+		//fprintf(stderr, "One char from list_handler %c\n", one_char);
+		if (one_char == 'l'){
+			list_handler(sfp, string_name, data);
+		} else if (one_char == 'd') {
+			dictonarry_handler(sfp, data, "kakor");
+			continue;
+		} else {
+			fseek(sfp,-1, SEEK_CUR);
 		}
-	} else if (strcmp(string_name, "files") == 0){
-		fprintf(stderr, "list handler got %s\n", string_name);
-		if ((one_char = read_one_char(sfp)) == 'd' ){
-			length_of_next_int = read_length_of_next(sfp);
-			read_specific_length(sfp, length_of_next_int, string_value);
-			one_char = read_one_char(sfp);
-			switch(one_char){
-				case 'l':
-					list_handler(sfp, string_name, data);
-				break;
-				/*case 'd':
-				break;*/
-				case 'i':
-					int_handler(sfp, string_value, data);
-				break;
-				default:
-					fseek(sfp,-1, SEEK_CUR);
-					//fprintf(stderr, "Next\n");
-					return;
-				break;
-			}
-			length_of_next_int = read_length_of_next(sfp);
-			if (length_of_next_int == 0){
-			} else {
-				read_specific_length(sfp, length_of_next_int, string_value);
-			}
-			if (strcmp(string_value, "path") == 0){
-				path_handler(sfp, data);
-				one_char
-			}
+		length_of_next_int = read_length_of_next(sfp);
+		read_specific_length(sfp, length_of_next_int, string_value);
+		if (strcmp(string_name, "path") == 0){
+			path_handler(string_value, 0, data);
+		} else {
+			complete_dictonarry(string_name, string_value, data);
 		}
+		if (length_of_next_int == 0){
+			fseek(sfp,-1, SEEK_CUR);
+		}
+		
 	}
-	fprintf(stderr, "%s = %s\n", string_name, data->_announce_list[(place_announce_list-1)]);
 	return;
 }
 /*Dictonarry handler tar hand om när det kommer en ordlista 
@@ -194,18 +142,21 @@ void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 			switch(one_char){
 				case 'l':
 					list_handler(sfp, string_name, data);
+					path_handler("kakor", 1, data);
 					continue;
 				break;
 				case 'd':
-					break;
 					continue;
 				break;
 				case 'i':
 					int_handler(sfp, string_name, data);
 					continue;
 				break;
+				case 'e':
+					return;
+				break;
 				default:
-					fprintf(stderr, "MIDDLE OF STRING ERROR\n");
+					fprintf(stderr, "MIDDLE OF STRING ERROR FROM FIRST dictonarry_handler, last char was: %c\n", one_char);
 					return;
 				break;
 			}
@@ -216,10 +167,7 @@ void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 		if(strcmp(string_name, "pieces") == 0){
 			hash_handler(sfp, data);
 			break;
-		} else if  (strcmp(string_name, "files") == 0){
-			fprintf(stderr, "WE GOT FILES\n");
-			//continue;
-		}
+		} 
 		length_of_next_int = read_length_of_next(sfp);
 		if (length_of_next_int == 0){
 			not_complete_dictonarry = 1;
@@ -228,6 +176,7 @@ void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 			switch(one_char){
 				case 'l':
 					list_handler(sfp, string_name, data);
+					path_handler("kakor", 1, data);
 					continue;
 				break;
 				case 'd':
@@ -258,23 +207,8 @@ void hash_handler(FILE *sfp, torrent_info *data){
 	length_of_next_int = read_length_of_next(sfp);
 	data->_hash_length = length_of_next_int;
 	char *picesptr = &data->_pieces[0][0];
-	fprintf(stderr, "Hash handler, hash length = %d\n", length_of_next_int);
+	//fprintf(stderr, "Hash handler, hash length = %d\n", length_of_next_int);
 	fread(data->_pieces[0], length_of_next_int, 1, sfp);
-	
-	/*
-	//This section is a backup
-	fread(test, length_of_next_int, 1, sfp);
-	strcpy(data->_pieces[0], test);
-
-	for (i = 0; i < 5000; ++i){
-		for (j = 0; j < 20; ++j)
-		{
-			data->_pieces[i][j] = test[k++];
-		}
-	}
-	fprintf(stderr, "TESTTEST\n");*/
-	
-	
 
 }
 
@@ -317,8 +251,15 @@ void complete_dictonarry (char *string_name, char *string_value, torrent_info *d
 	} else if (strcmp(string_name, "pice length") == 0)
 	{	
 		data->_piece_length = atoll(string_value);
+	} else if (strcmp(string_name, "announce-list") == 0)
+	{	
+		strcpy(data->_announce_list[place_announce_list++], string_value);
+	} else if (strcmp(string_name, "path") == 0)
+	{	
+		strcpy(data->_file_path[place_files++], string_value);
+		data->_number_of_files = place_files;
 	}
-	fprintf(stderr, "%s = %s\n", string_name, string_value);
+	//fprintf(stderr, "%s = %s\n", string_name, string_value);
 	return;
 
 }
