@@ -1,9 +1,9 @@
 #include "transfer.h"
 
-int recievePiece(char *filePath, int pieceSize, int pieceIndex){
+int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex){
 	struct sockaddr_in client, server;
 	int s, i, slen=sizeof(server);
-	unsigned char buffer[pieceSize];
+	unsigned char buffer[pieceSize], hash[SHA_DIGEST_LENGTH];
 
 	FILE *file = fopen(filePath, "wb");	
 	if(!file) return 0;
@@ -21,6 +21,11 @@ int recievePiece(char *filePath, int pieceSize, int pieceIndex){
 
 	if(recvfrom(s, buffer, pieceSize, 0, &server, &slen)==-1) return 0;	// Recieve piece and write to buffer
 
+	SHA1(buffer, sizeof(buffer), hash);
+	for(i=0; i<SHA_DIGEST_LENGTH; i++){
+		if(hash[i] != pieceHash[i]) return 0;	// check if hashes match
+	}
+
 	fwrite(buffer, sizeof(buffer), 1, file); // Write piece to file
 	fclose(file);
 
@@ -29,7 +34,7 @@ int recievePiece(char *filePath, int pieceSize, int pieceIndex){
 
 int sendPiece(char *filePath, char *destIP, int pieceSize, int pieceIndex){
 	struct sockaddr_in server;
-	int s, i, slen=sizeof(server);
+	int s, slen=sizeof(server);
 	unsigned char buffer[pieceSize];
 
 	FILE *file = fopen(filePath, "rb");	
