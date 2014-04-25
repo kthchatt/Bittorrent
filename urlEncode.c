@@ -13,8 +13,18 @@ int main()
 }*/
 
 
+char *hexToChar(unsigned char *hex, int length){
+
+
 void urlEncode(unsigned char *str, char *newStr)
-{
+{	
+	char buffer[40];
+	int i;
+	for(i=0; i<40; i++)
+		i/2==i%2 ? buffer[i] = str[i] : buffer[i] = '%';
+	
+	return buffer;
+	/*
     int i;
     char tbl[256];
     for(i=0; i<256; i++)
@@ -25,6 +35,6 @@ void urlEncode(unsigned char *str, char *newStr)
 	for (; *str; str++) {
 		ptbl[*str] ? sprintf(newStr, "%c", ptbl[*str]) : sprintf(newStr, "%%%02X", *str);
 		while (*++newStr);
-	}
+	}*/
 }
 
