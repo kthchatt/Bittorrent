@@ -15,12 +15,12 @@ int main()
 
 
 char *urlEncode(char *hash)
-{	
+{
 	char buffer[60];
 	int i, counter, pos;
 	for(i=0; i<60; i++){
 		if(counter >= 2){
-			buffer[i] = str[pos];
+			buffer[i] = hash[pos];
 			pos++;
 		}else
 			buffer[i] = '%';
@@ -28,7 +28,7 @@ char *urlEncode(char *hash)
 		counter++;
 		//i%2 ? buffer[i] = '%' : buffer[i] = str[i*0.5];
 	}
-	
+
 	return buffer;
 	/*
     int i;
