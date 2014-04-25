@@ -183,6 +183,19 @@ void url_announce(char* url, char* announce)
     return value;
  }
 
+ //output = 60+nullterm
+void url_encode(char* hash, char* output)
+{
+    int i;
+    for (i = 0; i < 20; i++)
+    { 
+        strcat(output, "%");
+        strncat(output, hash, 2);
+        hash += 2;  
+    }
+}
+
+
 /*------------------------------- BEGIN: REMOVE WHEN COMPLETE ----------------------------------*/
 /*void testing(char* urls)
 {
