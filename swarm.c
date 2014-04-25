@@ -28,7 +28,6 @@ void generate_id(char peer_id[21])
 			peer_id[i] = (char) (rand()%25+65); //generate A-Z
 
 		peer_id[20] = '\0';
-		printf("\n%s\n", peer_id);
 }
 
 //return a free swarm
@@ -52,7 +51,6 @@ int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS])
 				memset(swarm[i].tracker[j].url, '\0', sizeof(MAX_URL_LEN));
 				strcpy(swarm[i].tracker[j].url, trackers[j]);
 			}
-
 			break;
 		}
 	}

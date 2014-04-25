@@ -41,7 +41,7 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 		if(!(pthread_create(&torrents[swarm_id], NULL, tracking, &swarm[swarm_id])))
 			printf("\nTracking: %s as [%s]\n", swarm[swarm_id].info_hash, swarm[swarm_id].peer_id);
 	}
-	else printf("\nSwarms are busy! Increase MAX_SWARMS of fix a memory leak!\n");
+	else printf("\nSwarms are busy! Increase MAX_SWARMS or fix a memory leak!\n");
 
 	return;
 }
@@ -54,7 +54,7 @@ void untrack(char* info_hash)
 	{
 		if (strcmp(swarm[i].info_hash, info_hash) == 0)
 		{
-			//deallocate swarm.
+			//notify tracker of event=stopped.
 			//call swarm_free/swarm_release
 			swarm[i].taken = false;
 		}
@@ -63,12 +63,12 @@ void untrack(char* info_hash)
 
 int main(int argc, char ** argv)
 {
-		char *trackers[MAX_TRACKERS] = {"", 
+		char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", 
 										"", 
 										"", 
-										"http://127.0.0.1:80/tracker/announce.php"};;
+										""};
 
-		track("00000000000000000001", trackers);usleep(500000);
+		track("00000000000000000001", trackers);
 
 		while (1)
 		{
