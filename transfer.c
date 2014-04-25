@@ -22,9 +22,8 @@ int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pi
 	if(recvfrom(s, buffer, pieceSize, 0, &server, &slen)==-1) return 0;	// Recieve piece and write to buffer
 
 	SHA1(buffer, sizeof(buffer), hash);
-	for(i=0; i<SHA_DIGEST_LENGTH; i++){
+	for(i=0; i<SHA_DIGEST_LENGTH; i++)
 		if(hash[i] != pieceHash[i]) return 0;	// check if hashes match
-	}
 
 	fwrite(buffer, sizeof(buffer), 1, file); // Write piece to file
 	fclose(file);
