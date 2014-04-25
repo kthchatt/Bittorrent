@@ -55,12 +55,7 @@ void untrack(char* info_hash)
 		if (strcmp(swarm[i].info_hash, info_hash) == 0)
 		{
 			//deallocate swarm.
-			//for (j = 0; j < MAX_TRACKERS; j++)
-			//	free(swarm[i].tracker[j]);
-
-			//free(swarm[i].peer_id);
-
-			// FREE: IP/PORT/THREAD
+			//call swarm_free/swarm_release
 			swarm[i].taken = false;
 		}
 	}
