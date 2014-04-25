@@ -18,10 +18,10 @@ char *hexToChar(unsigned char *hex, int length){
 
 void urlEncode(unsigned char *str, char *newStr)
 {	
-	char buffer[40];
+	char buffer[60];
 	int i;
 	for(i=0; i<40; i++)
-		i%2 ? buffer[i] = str[i*0.5] : buffer[i] = '%';
+		i%2 ? buffer[i] = '%' : buffer[i] = str[i*0.5];
 	
 	return buffer;
 	/*
