@@ -159,15 +159,17 @@ void url_announce(char* url, char* announce)
     char tmp[5];
 
     memset(tmp, '\0', sizeof(tmp));
+    memset(seek, '\0', search_len);
     
     for (i = 0; i < source_len; i++)
     {
         strncpy(seek, source+i, search_len);
+        seek[search_len] = '\0';
 
         if (strcmp(seek, search) == 0)
         {   
             i += search_len+1;
-            while (47 < source[i] && source[i] < 58)    //while is digit read.
+            while (i < source_len && intlen < 5 && 47 < source[i] && source[i] < 58)    //while is digit read.
             {
                 tmp[intlen] = source[i]; 
                 intlen++;

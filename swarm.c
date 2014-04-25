@@ -14,7 +14,7 @@
 //all swarm methods need be thread-safe.
 
 //generates 20bytes long swarm-unique peer identifier. (one id per swarm)
-void generate_id(char peer_id[20])
+void generate_id(char peer_id[21])
 {
 	int i, len;
 
@@ -27,6 +27,7 @@ void generate_id(char peer_id[20])
 		else
 			peer_id[i] = (char) (rand()%25+65); //generate A-Z
 
+		peer_id[20] = '\0';
 		printf("\n%s\n", peer_id);
 }
 
@@ -41,20 +42,34 @@ int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS])
 		{
 			swarm_id = i;
 			swarm[i].taken = true;
+			swarm[i].peercount = 0;
 
 			generate_id(swarm[i].peer_id);
 			strcpy(swarm[i].info_hash, info_hash);
 
 			for (j = 0; j < MAX_TRACKERS; j++)
 			{
-				swarm[i].tracker[j] = (char*) malloc(MAX_URL_LEN);
-				strcpy(swarm[i].tracker[j], trackers[j]);
+				memset(swarm[i].tracker[j].url, '\0', sizeof(MAX_URL_LEN));
+				strcpy(swarm[i].tracker[j].url, trackers[j]);
 			}
 
 			break;
 		}
 	}
   	return swarm_id;
+}
+
+//clear swarm peers.
+void swarm_reset(swarm_t* swarm)
+{
+	int i;
+
+	for (i = 0; i < MAX_SWARM_SIZE; i++)
+	{
+		memset(swarm->ip[i], '\0', 21);
+		memset(swarm->port[i], '\0', 6); 
+		swarm->peercount = 0;
+	}
 }
 
 //free resources allocated by the swarm.
