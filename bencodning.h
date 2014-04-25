@@ -35,13 +35,13 @@ typedef struct metainfodecode
 	char _file_MD5 [32];
 
 //For multi file torrent
+	int _number_of_files;
 	char _file_path[4000][500];
 
 	long int _hash_length;
 	char _pieces [5000][20];
 } torrent_info;
 
-int init_file (char *, FILE *);
 void list_handler(FILE *, char *, torrent_info *);
 char read_one_char (FILE *);
 void read_specific_length (FILE *, int, char *);
@@ -52,7 +52,7 @@ void complete_dictonarry (char *, char *, torrent_info *);
 void dictonarry_handler (FILE *, torrent_info *, char *);
 void announce_list_handler(FILE *, torrent_info *);
 void int_handler(FILE *, char *, torrent_info *);
-void path_handler(FILE *, torrent_info *);
+void path_handler(char *, int, torrent_info *);
 
 int decode_bencode(char *, torrent_info *);
 
