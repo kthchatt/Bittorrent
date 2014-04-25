@@ -34,15 +34,17 @@ int sendPiece(char *filePath, char *destIP, int pieceSize, int pieceIndex){
 
 	FILE *file = fopen(filePath, "rb");	
 	if(!file) return 0;
-	fread(&buffer, pieceSize, 1, file);
+	fseek(file, pieceSize*pieceIndex, SEEK_SET); // Set file pointer to requested piece
+	fread(&buffer, pieceSize, 1, file);	// Read piece from file into buffer
 
 	if((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) return 0;
 
 	memset((char *) &server, 0, sizeof(server));
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
+
 	if(inet_aton(destIP, &server.sin_addr)==0) return 0;
-	if(sendto(s, buffer, pieceSize, 0, &server, slen)==-1) return 0;
+	if(sendto(s, buffer, pieceSize, 0, &server, slen)==-1) return 0; // Send piece to server
 	
 	fclose(file);
 	close(s);

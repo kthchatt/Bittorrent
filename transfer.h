@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <string.h>
 
-int recievePiece(char *filePath, int pieceSize, int pieceIndex); // 1 == SUCCESS, 0 == ERROR
+int recievePiece(char *filePath, int pieceSize, int pieceIndex); 			// 1 == SUCCESS, 0 == ERROR
 int sendPiece(char *filePath, char *destIP, int pieceSize, int pieceIndex); // 1 == SUCCESS, 0 == ERROR
 
 #endif
