@@ -3,7 +3,7 @@
 int main()
 {
 	// example
-    unsigned char *test = getHash("t.torrent", 2, 20); // get first hash, second hash = 1 etc
+    unsigned char *test = getHash("t.torrent", 0, 20); // get first hash, second hash = 1 etc
     printf("%d", findHash(test, "t.torrent", 20));
 	return 0;
 }

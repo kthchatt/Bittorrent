@@ -23,7 +23,7 @@ int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pi
 
 	SHA1(buffer, sizeof(buffer), hash);
 	for(i=0; i<SHA_DIGEST_LENGTH; i++)
-		if(hash[i] != pieceHash[i]) return 0;	// check if hashes match
+		if(hash[i] != pieceHash[i]) return -1;	// check if hashes match
 
 	fwrite(buffer, sizeof(buffer), 1, file); // Write piece to file
 	fclose(file);

@@ -12,7 +12,7 @@
 #include <string.h>
 #include <openssl/sha.h>
 
-int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex); 			// 1 == SUCCESS, 0 == ERROR
+int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex); // 1 == SUCCESS, 0 == ERROR, -1 == PIECE HASH MISSMATCH
 int sendPiece(char *filePath, char *destIP, int pieceSize, int pieceIndex); // 1 == SUCCESS, 0 == ERROR
 
 #endif
