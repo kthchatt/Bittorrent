@@ -4,9 +4,6 @@
  *   Read data from URL.
  */
 
-#include <stdlib.h>
-#include <stdio.h> 
-#include <string.h>
 #include "urlparse.h"
 
 //returns url path, fx: http://www.tracker.domain.com:port/sft/tracker/announce.php

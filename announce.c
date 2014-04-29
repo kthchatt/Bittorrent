@@ -5,19 +5,7 @@
  * Announces presence to tracker and fetches peers in the swarm.
  */
 
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h> 
-#include "urlparse.h"
 #include "announce.h"
-#include "swarm.h"
 
  //todo: save a peerlist with ip:port and info_hash.
 
@@ -31,7 +19,7 @@ static int build(char request[200], char info_hash[20], char peer_id[20], char t
     url_hostname(tracker, hostname);
     url_announce(tracker, announce);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s&numwant=10 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, info_hash, peer_id, port, 0, 12379, "started", hostname);
 
     free(announce);
@@ -60,8 +48,10 @@ static void response(int* sockfd, swarm_t* swarm, int index)
         swarm->tracker[index].announce_interval   = bdecode_value(recvbuf, ":interval");
         swarm->tracker[index].announce_minterval  = bdecode_value(recvbuf, ":min interval");
 
-        printf("\nInterval = %d, Min Interval = %d.\n", 
-                swarm->tracker[index].announce_interval, swarm->tracker[index].announce_minterval);
+        printf("\n%s \t[Interval = %d, Min Interval = %d]", 
+                swarm->tracker[index].url, 
+                swarm->tracker[index].announce_interval, 
+                swarm->tracker[index].announce_minterval);
 
         for (i = 0; i < num; i++)   //seek
         {

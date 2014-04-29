@@ -6,14 +6,7 @@
 
  //todo: add listen.c for peerwire.
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <pthread.h>
-#include "announce.h"
-#include "scrape.h" 
 #include "tracker.h"
-#include "swarm.h"
 
 pthread_t torrents[MAX_SWARMS];
 
@@ -26,9 +19,11 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		sleep(2);
+		usleep(5000);
 		tracker_scrape(swarm);
 		tracker_announce(swarm);				//completed/stopped events are to be sent at a later stage.
+
+		printf("Peercount: %d\n", swarm->peercount);
 	}
 }
 
@@ -61,6 +56,8 @@ void untrack(char* info_hash)
 	}
 }
 
+
+//memory leak confirmed.
 int main(int argc, char ** argv)
 {
 		char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", 
@@ -68,6 +65,8 @@ int main(int argc, char ** argv)
 										"", 
 										""};
 
+		track("00000000000000000001", trackers);
+		track("00000000000000000001", trackers);
 		track("00000000000000000001", trackers);
 
 		while (1)

@@ -1,9 +1,14 @@
 #ifndef _tracker_h
 #define _tracker_h
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+#include "announce.h"
+#include "scrape.h" 
+#include "swarm.h"
+#include "peerwire.h"
 
 #define MAX_TRACKERS 4
 
