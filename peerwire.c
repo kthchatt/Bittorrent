@@ -3,10 +3,28 @@
 
 #include "peerwire.h"
 
+/*
+	PIECE INDEXES ARE ZERO-BASED
+	BLOCK SPECIFIES BYTE OFFSET IN PIECE
+	DROP PACKETS WITH INVALID LENGTH
 
-//4 byte message length
-//1 byte message type
-//4 byte piece index
+	MESSAGE HEADER
+		4 BYTES LENGHT SPECIFIER
+		1 BYTE MESSAGE TYPE
+		4 BYTE INDEX | VARIABLE SIZE PAYLOAD
+
+	NON-PAYLOAD MESSAGES
+		choke: 			<len=0001><id=0> 						
+		unchoke: 		<len=0001><id=1>						
+		interested: 	<len=0001><id=2>					.
+		not interested: <len=0001><id=3>				
+		have: 			<len=0005><id=4><piece index>
+
+	PAYLOAD MESSAGES
+		piece: 	<len=0009+X><id=7><index><begin><block> 
+		cancel: <len=0013>  <id=8><index><begin><length>		
+		port: 	<len=0003>  <id=9><listen-port>
+*/
 
 void main(void)
 {
