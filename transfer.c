@@ -1,5 +1,17 @@
 #include "transfer.h"
 
+int prepareFile(char *filePath, int fileSize){
+	int i;
+	FILE *file = fopen(filePath, "wb");
+	if(!file) return 0;
+
+	for(i=0; i<fileSize; i++)
+		fwrite('0', 1, sizeof('0'), file); // write each byte to file
+	
+	fclose(file);
+	return 1;
+}
+
 int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex){
 	struct sockaddr_in client, server;
 	int s, i, slen=sizeof(server);
