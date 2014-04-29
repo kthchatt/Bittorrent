@@ -4,20 +4,7 @@
  * Get tracker state.
  */
 
-
- #include <netdb.h>
- #include <unistd.h>
- #include <errno.h>
- #include <stdio.h>
- #include <string.h>
- #include <stdlib.h>
- #include <sys/socket.h>
- #include <sys/types.h>
- #include <netinet/in.h>
- #include <arpa/inet.h> 
- #include "urlparse.h" 
  #include "scrape.h"
- #include "swarm.h"
 
  static void debug(int postal)
  {
@@ -55,7 +42,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
         swarm->tracker[index].scrape_completed  = bdecode_value(recvbuf, "complete");
         swarm->tracker[index].scrape_downloaded = bdecode_value(recvbuf, "downloaded");
         swarm->tracker[index].scrape_incomplete = bdecode_value(recvbuf, "incomplete");
-        printf("\nTracker: %s\ncompleted = %d, downloaded = %d, incomplete = %d", 
+        printf("\n%s\t[completed = %d, downloaded = %d, incomplete = %d]", 
             swarm->tracker[index].url, swarm->tracker[index].scrape_completed, 
             swarm->tracker[index].scrape_downloaded, swarm->tracker[index].scrape_incomplete);
      }
