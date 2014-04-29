@@ -2,17 +2,18 @@
 
 int prepareFile(char *filePath, int fileSize){
 	int i;
+	char zero[] = '0';
 	FILE *file = fopen(filePath, "wb");
 	if(!file) return 0;
 
 	for(i=0; i<fileSize; i++)
-		fwrite('0', 1, sizeof('0'), file); // write each byte to file
+		fwrite(&zero, 1, zero, file); // write each byte to file
 
 	fclose(file);
 	return 1;
 }
 
-int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex){
+int receivePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex){
 	struct sockaddr_in client, server;
 	int s, i, slen=sizeof(server);
 	unsigned char buffer[pieceSize], hash[SHA_DIGEST_LENGTH];

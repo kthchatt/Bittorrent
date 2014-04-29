@@ -13,7 +13,7 @@
 #include <openssl/sha.h>
 
 int prepareFile(char *filePath, int fileSize); // 0 == unable to open file, fileSize = bytes to be written, creates a file filled with 0's
-int recievePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex); // 1 == SUCCESS, 0 == ERROR, -1 == PIECE HASH MISMATCH
+int receivePiece(char *filePath, unsigned char *pieceHash, int pieceSize, int pieceIndex); // 1 == SUCCESS, 0 == ERROR, -1 == PIECE HASH MISMATCH
 int sendPiece(char *filePath, char *destIP, int pieceSize, int pieceIndex); // 1 == SUCCESS, 0 == ERROR
 
 #endif
