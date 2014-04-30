@@ -8,9 +8,7 @@
 #include <netdb.h>
 
 typedef struct RSS{
-	char title[],
-		 description[],
-		 link[];
+	char *title;
 }RSS;
 
 
@@ -18,23 +16,27 @@ int getFeed(char *destAddr, char *dir){
 	struct hostent *server;
 	struct sockaddr_in serverAddr;
 	int s, slen=sizeof(server);
-	char request[] "GET /feeds/27.rss HTTP/1.1\r\nHost: showrss.info\r\nConnection: keep-alive\r\nCache-Control: max-age=0\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n";
-	char buffer[100];
+	char *request;
+	char buffer[900];
 
-	//request = malloc(sizeof(dir)+sizeof(destAddr)+16*sizeof(char));
-	//sprintf(request, "GET%cHTTP/1.1Host:%c", dir, destAddr);
+	request = malloc(sizeof(dir)+sizeof(destAddr)+31*sizeof(char));
+	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", dir, destAddr);
 
-	if((s=socket(AF_INET, SOCK_STREAM, 0))==-1) return 0;
+	if((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))==-1) return 0;
 
-	server = gethostsbyname(destAddr);
+	server = gethostbyname(destAddr);
+	if(server==NULL) return 0;
+	bzero((char *) &serverAddr.sin_addr.s_addr, sizeof(serverAddr));
+
 	serverAddr.sin_family = AF_INET;
+	bcopy((char *)server->h_addr, (char *)&serverAddr.sin_addr.s_addr, server->h_length);
 	serverAddr.sin_port = htons(80);
 
-	if(connect(s, (struct serveraddr*) &serverAddr, sizeof(serverAddr))<0) return 0;
-	if(send(s, request, sizeof(request), 0)<0) return 0;
+	if(connect(s, (struct sockaddr*) &serverAddr, sizeof(serverAddr))<0) perror("Connect : ");
+	if(send(s, request, strlen(request), 0)<strlen(request)) perror("Send : ");
 
-	while(recv(s, buffer, 100, 0)){
-		puts(buffer);
+	if(recv(s, buffer, 900, 0)==0){
+		perror("Recv : ");
 	}
 	puts(buffer);
 	close(s);
