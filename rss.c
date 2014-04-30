@@ -7,12 +7,17 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-typedef struct RSS{
-	char *title;
-}RSS;
+typedef struct Item{
+	char *title,
+		 *description,
+		 *link;
+}Item;
 
+int getFeed(char *destAddr, char *dir);
+char *getBetweenTags(char *haystack, char *start, char *stop);
 
-int getFeed(char *destAddr, char *dir){
+Item getFeed(char *destAddr, char *dir){
+	Item item;
 	struct hostent *server;
 	struct sockaddr_in serverAddr;
 	int s, slen=sizeof(server);
@@ -22,10 +27,10 @@ int getFeed(char *destAddr, char *dir){
 	request = malloc(sizeof(dir)+sizeof(destAddr)+31*sizeof(char));
 	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", dir, destAddr);
 
-	if((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))==-1) return 0;
+	if((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))==-1) perror("Socket : ");
 
 	server = gethostbyname(destAddr);
-	if(server==NULL) return 0;
+	if(server==NULL) return NULL;
 	bzero((char *) &serverAddr.sin_addr.s_addr, sizeof(serverAddr));
 
 	serverAddr.sin_family = AF_INET;
@@ -35,16 +40,32 @@ int getFeed(char *destAddr, char *dir){
 	if(connect(s, (struct sockaddr*) &serverAddr, sizeof(serverAddr))<0) perror("Connect : ");
 	if(send(s, request, strlen(request), 0)<strlen(request)) perror("Send : ");
 
-	if(recv(s, buffer, 900, 0)==0){
+	if(recv(s, buffer, 900, 0)==0)
 		perror("Recv : ");
-	}
-	puts(buffer);
+
+	item.title = getBetweenTags(buffer, "<title>", "</title>");
+	item.description = getBetweenTags(buffer, "<description>", "</description>");
+	item.link = getBetweenTags(buffer, "<link>", "</link>");
+
 	close(s);
-	return 1;
+	return item;
 }
 
+char *getBetweenTags(char *haystack, char *start, char *stop){
+	char *tmp  = strstr(haystack, start);
+	int c = strlen(tmp) - strlen(strstr(haystack, stop)) - strlen(start);
+	int i;
+	char *newstr;
+	newstr = malloc(sizeof(char)*c);
+
+	for(i=0; i<c; i++)
+		newstr[i] = tmp[i+strlen(start)];
+
+	return newstr;
+}
 
 int main(){
-	getFeed("showrss.info", "/feeds/27.rss");
+	Item test = getFeed("showrss.info", "/feeds/27.rss");
+	puts(test.title);
 	return 1;
 }
