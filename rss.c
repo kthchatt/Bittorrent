@@ -2,7 +2,7 @@
 
 Items getFeed(char *destAddr, char *dir){
 	Item item;
-	Items items;
+	Items sitems;
 	struct hostent *server;
 	struct sockaddr_in serverAddr;
 	int s, i, counter=0, slen=sizeof(server);
@@ -31,7 +31,7 @@ Items getFeed(char *destAddr, char *dir){
 	while(recv(s, buffer, 3000, 0)!=0){
 		while(buffer!=NULL){
 			// allocate memmory for new item
-			counter==0 ? items = (Items *) malloc(sizeof(Items)) : items = (Items *) realloc(items, sizeof(Items)*(counter+1));
+			counter==0 ? sitems->items = (Item *) malloc(sizeof(Item)) : sitems->items = (Item *) realloc(sitems->items, sizeof(Item)*(counter+1));
 			// make sure data from other items is not read if data from current item is missing
 			tmp = getBetweenTags(buffer, "<item>", "</item>");
 			// parse ttle, link and description into item
@@ -39,7 +39,7 @@ Items getFeed(char *destAddr, char *dir){
 			item.link  = getBetweenTags(tmp, "<link>", "</link>");
 			item.description = getBetweenTags(tmp, "<description>", "</description>");
 			// put item in array
-			items.items[counter] = item; 
+			sitems.items[counter] = item; 
 			// remove parsed item from buffer
 			buffer = strstr(buffer, "</item>");
 			 // destroy tag so strstr wont find the same tag next round
@@ -51,7 +51,7 @@ Items getFeed(char *destAddr, char *dir){
 	items.totalItems = counter;
 
 	close(s);
-	return items;
+	return sitems;
 }
 
 char *getBetweenTags(char *haystack, char *start, char *stop){
