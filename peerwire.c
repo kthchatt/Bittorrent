@@ -105,6 +105,7 @@ void handshake(peer_t* peer, char info_hash[20], char peer_id[20])
             //receive?
         } 
     }
+    free(request);
 }
 
 
@@ -121,7 +122,8 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
     memcpy(request + payload, &offset_begin, 4);	payload += 4;
     memcpy(request + payload, &offset_length,4);	payload += 4;
 
-    send(peer->sockfd, request, payload, 0);	//strlen will find the reserved byte.
+    send(peer->sockfd, request, payload, 0);
+    free(request);
 }
 
 
@@ -135,12 +137,27 @@ void message(peer_t* peer, unsigned char message)
     memcpy(request, &len, 4);						payload += 4;
     memcpy(request + payload, &message, 1);			payload += 1;
 
-    send(peer->sockfd, request, payload, 0);	//strlen will find the reserved byte.	
+    send(peer->sockfd, request, payload, 0);		
+    free(request);
 }
 
 void have(peer_t* peer)
 {
-	peer_t* peer, 
+	int payload, len = htonl(5);
+	unsigned char id = 4;
+	char* request = malloc(4 + 1 + 4);
+
+	//for every piece have in swarm
+	//{
+	payload = 0;
+	memcpy(request, &len, 4); 								payload += 4;
+	memcpy(request + payload, &id, 1);						payload += 1;
+	//memcpy(request + payload, &swarm->piece[x].index, 4); payload += 4;
+	send(peer->sockfd, request, payload, 0);	
+	//}
+
+
+	free(request);
 }
                                                                          
 
@@ -192,9 +209,16 @@ void main(void)
 	//strcpy(info_hash, hash);
 	//strcpy(peer_id,   hash);
 
+	//OOO
+	//handshake -> extended/bitfield/have -> interested/not interested -> unchoke/choke -> request/piece(reply)
+
+
+	//piece transfer over TCP.
 	handshake(&peer, info_hash, peer_id);
 	sleep(1);
-	request(&peer, 0, 0, 16384);
+	message(&peer, INTERESTED);
+	sleep(6);
+	request(&peer, htonl(0), htonl(0), htonl(16384));
 	//message(&peer, CHOKE);
 	//message(&peer, NOT_INTERESTED);
 	//message(&peer, UNCHOKE);
