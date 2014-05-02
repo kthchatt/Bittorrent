@@ -7,7 +7,7 @@ Items getFeed(char *destAddr, char *dir){
 	struct sockaddr_in serverAddr;
 	int s, i, counter=0, slen=sizeof(server);
 	char *request;
-	char buffer[2048], tmp[2048];
+	char buffer[2048], *tmp;
 
 	// allocate memmory for request string
 	request = malloc(sizeof(dir)+sizeof(destAddr)+31*sizeof(char));
@@ -18,7 +18,7 @@ Items getFeed(char *destAddr, char *dir){
 
 	// convert dns to IP
 	server = gethostbyname(destAddr);
-	if(server==NULL) return NULL;
+	if(server==NULL) return sitems;
 	bzero((char *) &serverAddr.sin_addr.s_addr, sizeof(serverAddr));
 
 	serverAddr.sin_family = AF_INET;
@@ -31,7 +31,10 @@ Items getFeed(char *destAddr, char *dir){
 	while(recv(s, buffer, 3000, 0)!=0){
 		while(buffer!=NULL){
 			// allocate memmory for new item
-			counter==0 ? sitems->items = (Item *) malloc(sizeof(Item)) : sitems->items = (Item *) realloc(sitems->items, sizeof(Item)*(counter+1));
+			if(counter==0) 
+				sitems.items = (Item *) malloc(sizeof(Item)); 
+			else
+				sitems.items = (Item *) realloc(sitems.items, sizeof(Item)*(counter+1));
 			// make sure data from other items is not read if data from current item is missing
 			tmp = getBetweenTags(buffer, "<item>", "</item>");
 			// parse ttle, link and description into item
@@ -41,14 +44,15 @@ Items getFeed(char *destAddr, char *dir){
 			// put item in array
 			sitems.items[counter] = item; 
 			// remove parsed item from buffer
-			buffer = strstr(buffer, "</item>");
-			 // destroy tag so strstr wont find the same tag next round
+			tmp = strstr(buffer, "</item>");
+			strcpy(buffer, tmp); 
+			// destroy tag so strstr wont find the same tag next round
 			buffer[0] = '0';
 			counter++;
 		}
 	}
 
-	items.totalItems = counter;
+	sitems.totalItems = counter;
 
 	close(s);
 	return sitems;

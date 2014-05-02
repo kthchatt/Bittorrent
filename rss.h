@@ -9,17 +9,17 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
- 
-typedef struct Items{
-	int totalItems;
-	Item *items;
-}Items;
 
 typedef struct Item{
 	char *title,
 		 *description,
 		 *link;
 }Item;
+
+typedef struct Items{
+	int totalItems;
+	Item *items;
+}Items;
 
 // Returns array of all rss items found and the total amount of items
 Items getFeed(char *destAddr, char *dir);
