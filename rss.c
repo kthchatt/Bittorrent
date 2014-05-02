@@ -6,8 +6,7 @@ Items getFeed(char *destAddr, char *dir){
 	struct hostent *server;
 	struct sockaddr_in serverAddr;
 	int s, i, counter=0, slen=sizeof(server);
-	char *request;
-	char buffer[2048], *tmp;
+	char *request, *buffer, *tmp, tmpBuffer[2048];
 
 	// allocate memmory for request string
 	request = malloc(sizeof(dir)+sizeof(destAddr)+31*sizeof(char));
@@ -28,32 +27,42 @@ Items getFeed(char *destAddr, char *dir){
 	if(connect(s, (struct sockaddr*) &serverAddr, sizeof(serverAddr))<0) perror("Connect : ");
 	if(send(s, request, strlen(request), 0)<strlen(request)) perror("Send : ");
 
-	while(recv(s, buffer, 3000, 0)!=0){
-		while(buffer!=NULL){
-			// allocate memmory for new item
-			if(counter==0) 
-				sitems.items = (Item *) malloc(sizeof(Item)); 
-			else
-				sitems.items = (Item *) realloc(sitems.items, sizeof(Item)*(counter+1));
-			// make sure data from other items is not read if data from current item is missing
-			tmp = getBetweenTags(buffer, "<item>", "</item>");
-			// parse ttle, link and description into item
-			item.title = getBetweenTags(tmp, "<title>", "</title>");
-			item.link  = getBetweenTags(tmp, "<link>", "</link>");
-			item.description = getBetweenTags(tmp, "<description>", "</description>");
-			// put item in array
-			sitems.items[counter] = item; 
-			// remove parsed item from buffer
-			tmp = strstr(buffer, "</item>");
-			strcpy(buffer, tmp); 
-			// destroy tag so strstr wont find the same tag next round
-			buffer[0] = '0';
-			counter++;
-		}
+	// load entire feed into buffer (max 100*2048 bytes)
+	buffer = malloc(sizeof(tmpBuffer)+1);
+	while(recv(s, tmpBuffer, 2048, 0)!=0 && counter < 500){
+		buffer = realloc(buffer, sizeof(tmpBuffer)*(counter+1)+1);
+		strcpy(buffer, tmpBuffer);
+		counter++;
 	}
+	counter = 0;
 
-	sitems.totalItems = counter;
+	// parse buffer into items (max 50 items are loaded)
+	while(strstr(buffer, "<item>")!=NULL && counter < 50){
+		// allocate memmory for new item
+		if(counter==0) 
+			sitems.items = (Item *) malloc(sizeof(Item)); 
+		else
+			sitems.items = (Item *) realloc(sitems.items, sizeof(Item)*(counter+1));
+		// make sure data from other items is not read if data from current item is missing
+		tmp = malloc(strlen(getBetweenTags(buffer, "<item>", "</item>"))+1);
+		tmp = getBetweenTags(buffer, "<item>", "</item>");
+		// parse title, link and description into item
+		item.title = getBetweenTags(tmp, "<title>", "</title>");
+		item.link  = getBetweenTags(tmp, "<link>", "</link>");
+		item.description = getBetweenTags(tmp, "<description>", "</description>");
+		// put item in array
+		sitems.items[counter] = item; 
+		// remove parsed item from buffer
+		free(tmp);
+		tmp = strstr(buffer, "</item>");
+		strcpy(buffer, tmp); 
+		// destroy tag so strstr wont find the same tag next round
+		buffer[0] = '0';
+		counter++;
+	}
+	//sitems.totalItems = counter;
 
+	free(buffer);
 	close(s);
 	return sitems;
 }
@@ -61,13 +70,22 @@ Items getFeed(char *destAddr, char *dir){
 char *getBetweenTags(char *haystack, char *start, char *stop){
 	char *tmp  = strstr(haystack, start);
 	int i, c = strlen(tmp) - strlen(strstr(haystack, stop)) - strlen(start);
-
 	char *newstr;
-	newstr = malloc(sizeof(char)*c);
+	newstr = malloc(c+1);
 
 	for(i=0; i<c; i++)
 		newstr[i] = tmp[i+strlen(start)];
 
 	return newstr;
+}
+
+int main(){
+	int i;
+	Items test = getFeed("showrss.info", "/feeds/27.rss");
+	
+	//for(i=0; i<test.totalItems; i++)
+	//	puts(test.items[i].title);		// print all titles found in feed
+	
+	return 1;
 }
 
