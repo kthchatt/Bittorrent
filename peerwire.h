@@ -12,4 +12,19 @@
  #include <netinet/in.h>
  #include <arpa/inet.h> 
 
+
+typedef struct
+{
+	int sockfd;
+	int am_choking;
+	int peer_choking;
+	int am_interested;
+	int peer_interested;
+	char  ip  [21];
+ 	char  port[06];
+} peer_t;
+
+
+
+
 #endif

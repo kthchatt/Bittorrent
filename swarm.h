@@ -28,6 +28,7 @@ typedef struct
  {
  	int taken;
  	tracker_t tracker 	[MAX_TRACKERS];
+ 	//peer_t peer 		[MAX_SWARM_SIZE];
  	char  ip  			[MAX_SWARM_SIZE][21];
  	char  port			[MAX_SWARM_SIZE][6];
  	char  peer_id   	[21];

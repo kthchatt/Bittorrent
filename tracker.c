@@ -19,7 +19,7 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		usleep(5000);
+		usleep(50000);
 		tracker_scrape(swarm);
 		tracker_announce(swarm);				//completed/stopped events are to be sent at a later stage.
 
