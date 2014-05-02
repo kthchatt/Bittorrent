@@ -4,6 +4,13 @@
 #include "peerwire.h"
 #include "swarm.h"
 
+/* todo:
+ * pseudo
+ * for every piece in swarm, tell every peer at handshake with have message.
+ * for piece download, for pieces not existent, trylock and download
+ * for piece upload, for pieces have, trylock copy unlock and upload.
+ */
+
 /*
 	PIECE INDEXES ARE ZERO-BASED
 	BLOCK SPECIFIES BYTE OFFSET IN PIECE
@@ -32,7 +39,7 @@
 #define CHOKE 		0
 #define UNCHOKE 	1
 #define INTERESTED 	2
-#define NINTERESTED 3
+#define NOT_INTERESTED 3
 #define HAVE 		4
 #define PIECE       7
 #define CANCEL      8
@@ -104,12 +111,12 @@ void handshake(peer_t* peer, char info_hash[20], char peer_id[20])
 //<len=0013><id=6><piece index><begin offset><requested length, piece len?>
 void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
 {
-	int payload = 0, len = 13;
+	int payload = 0, len = htonl(13);
 	unsigned char id = 6;
     char* request = malloc(4 + 1 + 4 + 4 + 4);
 
     memcpy(request, &len, 4);						payload += 4;
-    memcpy(request, &id, 1);						payload += 1;
+    memcpy(request + payload, &id, 1);				payload += 1;
     memcpy(request + payload, &piece_index,  4);	payload += 4;
     memcpy(request + payload, &offset_begin, 4);	payload += 4;
     memcpy(request + payload, &offset_length,4);	payload += 4;
@@ -117,26 +124,25 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
     send(peer->sockfd, request, payload, 0);	//strlen will find the reserved byte.
 }
 
-void choke(void)
-{
 
+
+//message [choke, unchoke, interested, not interested]
+void message(peer_t* peer, unsigned char message)
+{
+	int payload = 0, len = htonl(1);
+    char* request = malloc(1 + 1);
+
+    memcpy(request, &len, 4);						payload += 4;
+    memcpy(request + payload, &message, 1);			payload += 1;
+
+    send(peer->sockfd, request, payload, 0);	//strlen will find the reserved byte.	
 }
 
-void unchoke()
+void have(peer_t* peer)
 {
-
+	peer_t* peer, 
 }
-
-void sendpiece(void)
-{
-	//send a piece, udp.
-}
-
-void enqueue(void)
-{
-	//queue requests?
-}
-                                                                            
+                                                                         
 
 void main(void)
 {
@@ -155,38 +161,45 @@ void main(void)
 
 	// gcc sha1Openssl.c -o sha1Openssl -lssl -lcrypto
 
-	strcpy(peer.port, "51413");
-	strcpy(peer.ip,   "127.0.0.1");
+	strcpy(peer_id, "NSA-PirateBust-05Ac7");
+	strcpy(peer.port, "21488");
+	strcpy(peer.ip,   "192.168.0.13");
 
 	//sprintf(info_hash, "%x", "d15b9f7471d78dd64f1419d630a8c48d708924dd");
 
-	info_hash[0] = 0xd1;
-	info_hash[1] = 0x5b;
-	info_hash[2] = 0x9f;
-	info_hash[3] = 0x74;
-	info_hash[4] = 0x71;
-	info_hash[5] = 0xd7;
-	info_hash[6] = 0x8d;
-	info_hash[7] = 0xd6;
-	info_hash[8] = 0x4f;
-	info_hash[9] = 0x14;
-	info_hash[10] = 0x19;
-	info_hash[11] = 0xd6;
-	info_hash[12] = 0x30;
-	info_hash[13] = 0xa8;
-	info_hash[14] = 0xc4;
-	info_hash[15] = 0x8d;
-	info_hash[16] = 0x70;
-	info_hash[17] = 0x89;
-	info_hash[18] = 0x24;
-	info_hash[19] = 0xdd;
+	info_hash[0] = 0xf4;
+	info_hash[1] = 0x3e;
+	info_hash[2] = 0x6d;
+	info_hash[3] = 0x2b;
+	info_hash[4] = 0x91;
+	info_hash[5] = 0x3f;
+	info_hash[6] = 0x22;
+	info_hash[7] = 0xc3;
+	info_hash[8] = 0xb0;
+	info_hash[9] = 0x61;
+	info_hash[10] = 0x25;
+	info_hash[11] = 0x95;
+	info_hash[12] = 0xf0;
+	info_hash[13] = 0x25;
+	info_hash[14] = 0xb1;
+	info_hash[15] = 0x25;
+	info_hash[16] = 0x2a;
+	info_hash[17] = 0x99;
+	info_hash[18] = 0x85;
+	info_hash[19] = 0xdf;
 
 
 	//strcpy(info_hash, hash);
 	//strcpy(peer_id,   hash);
 
-	handshake(&peer, info_hash, info_hash);
-	//request(&peer, 0, 0, 1024);
+	handshake(&peer, info_hash, peer_id);
+	sleep(1);
+	request(&peer, 0, 0, 16384);
+	//message(&peer, CHOKE);
+	//message(&peer, NOT_INTERESTED);
+	//message(&peer, UNCHOKE);
+	//message(&peer, INTERESTED);
+	sleep(30);
 }
 
 //
