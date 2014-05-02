@@ -7,7 +7,7 @@ Items getFeed(char *destAddr, char *dir){
 	struct sockaddr_in serverAddr;
 	int s, i, counter=0, slen=sizeof(server);
 	char *request;
-	char buffer[900];
+	char buffer[2048], tmp[2048];
 
 	// allocate memmory for request string
 	request = malloc(sizeof(dir)+sizeof(destAddr)+31*sizeof(char));
@@ -28,25 +28,26 @@ Items getFeed(char *destAddr, char *dir){
 	if(connect(s, (struct sockaddr*) &serverAddr, sizeof(serverAddr))<0) perror("Connect : ");
 	if(send(s, request, strlen(request), 0)<strlen(request)) perror("Send : ");
 
-	if(recv(s, buffer, 900, 0)==0)
-		perror("Recv : ");
-
-	while(buffer!=NULL){
-		// allocate memmory for new item
-		counter==0 ? items = (Items *) malloc(sizeof(Items)) : items = (Items *) realloc(items, sizeof(Items)*(counter+1));
-
-		// parse ttle, link and description into item
-		item.title = getBetweenTags(buffer, "<title>", "</title>");
-		item.link  = getBetweenTags(buffer, "<link>", "</link>");
-		item.description = getBetweenTags(buffer, "<description>", "</description>");
-		// put item in array
-		items.items[counter] = item; 
-
-		buffer = strstr(buffer, "</description>");
-		 // destroy tag so strstr wont find the same tag next round
-		buffer[0] = '0';
-		counter++;
+	while(recv(s, buffer, 3000, 0)!=0){
+		while(buffer!=NULL){
+			// allocate memmory for new item
+			counter==0 ? items = (Items *) malloc(sizeof(Items)) : items = (Items *) realloc(items, sizeof(Items)*(counter+1));
+			// make sure data from other items is not read if data from current item is missing
+			tmp = getBetweenTags(buffer, "<item>", "</item>");
+			// parse ttle, link and description into item
+			item.title = getBetweenTags(tmp, "<title>", "</title>");
+			item.link  = getBetweenTags(tmp, "<link>", "</link>");
+			item.description = getBetweenTags(tmp, "<description>", "</description>");
+			// put item in array
+			items.items[counter] = item; 
+			// remove parsed item from buffer
+			buffer = strstr(buffer, "</item>");
+			 // destroy tag so strstr wont find the same tag next round
+			buffer[0] = '0';
+			counter++;
+		}
 	}
+
 	items.totalItems = counter;
 
 	close(s);
