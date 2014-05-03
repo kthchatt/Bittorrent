@@ -1,4 +1,4 @@
- //entry point in tracker threads. (functions will be threaded too.)
+ //entry point in tracker thread.
 
 
 #include "peerwire.h"
@@ -68,6 +68,13 @@ peer_t* piecefinder(swarm_t* swarm, int piece_id)
 	return NULL;
 }
 */
+
+//locks X amount of peers from unconnected in swarm, contact them and find their pieces
+//set cooldown on their
+void ping()
+{
+
+}
 
 void handshake(peer_t* peer, char info_hash[20], char peer_id[20])
 {
