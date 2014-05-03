@@ -95,12 +95,12 @@ static void* get_feed(void* arg)
 		item.title = extract_content(tmp, "<title>", "</title>");		//title contained cruft, fixed in extract_content ~RD
 		item.link  = extract_content(tmp, "<link>", "</link>");
 		item.description = extract_content(tmp, "<description>", "</description>");
-		content->item[counter] = item; 									//readded: update item counter. ~RD
 		free(tmp);
 
 		strcpy(buffer, strstr(buffer, "</item>"));	//~RD
-		buffer[0] = 128;					//safer character (unset ascii), 0 leading tags would crash the RSS. ~RD
-		counter++;
+		buffer[0] = 128;							//safer character (unset ascii), 0 leading tags would crash the RSS. ~RD
+		content->item[counter] = item; 
+		counter++;									//readded: update item counter. ~RD
 	}
 	content->item_count = counter;
 	free(buffer);
