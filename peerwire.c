@@ -161,6 +161,7 @@ void have(peer_t* peer)
 }
                                                                          
 
+/*
 void main(void)
 {
 	peer_t peer;
@@ -169,18 +170,12 @@ void main(void)
 
 	printf("-----"); fflush(stdout);
 
-   /* char data[] = "Hello, world!";
-	size_t length = sizeof(data);
-	unsigned char hash[SHA_DIGEST_LENGTH];
-	SHA1(data, length, hash);
-
-	printf("--%s--", hash); fflush(stdout);*/
 
 	// gcc sha1Openssl.c -o sha1Openssl -lssl -lcrypto
 
 	strcpy(peer_id, "NSA-PirateBust-05Ac7");
-	strcpy(peer.port, "21488");
-	strcpy(peer.ip,   "192.168.0.13");
+	strcpy(peer.port, "6881");
+	strcpy(peer.ip,   "192.168.0.10");
 
 	//sprintf(info_hash, "%x", "d15b9f7471d78dd64f1419d630a8c48d708924dd");
 
@@ -225,5 +220,6 @@ void main(void)
 	//message(&peer, INTERESTED);
 	sleep(30);
 }
+*/
 
-//
+S

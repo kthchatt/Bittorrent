@@ -23,6 +23,8 @@ static void* tracking(void* arg)
 		tracker_scrape(swarm);
 		tracker_announce(swarm);				//completed/stopped events are to be sent at a later stage.
 
+		//download, upload, messaging. main torrent loop.
+
 		printf("Peercount: %d\n", swarm->peercount);
 	}
 }

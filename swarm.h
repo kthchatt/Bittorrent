@@ -7,7 +7,7 @@
 
 
 //max swarms should be equal to max torrent
-#define SIGNATURE "-XX0000-"
+#define SIGNATURE "NSA PirateBust-"
 #define MAX_SWARMS 4
 #define MAX_SWARM_SIZE 200
 #define MAX_TRACKERS 4
@@ -29,6 +29,7 @@ typedef struct
  	int taken;
  	tracker_t tracker 	[MAX_TRACKERS];
  	//peer_t peer 		[MAX_SWARM_SIZE];
+ 	//piece				[];						//piece container, store all piece data, index, have/missing
  	char  ip  			[MAX_SWARM_SIZE][21];
  	char  port			[MAX_SWARM_SIZE][6];
  	char  peer_id   	[21];
