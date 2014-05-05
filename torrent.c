@@ -12,7 +12,7 @@ char *getInfoHash(char *torrentPath){
 
 	// Get file length
 	fseek(file, 0, SEEK_END);
-	fileLen=ftell(file);
+	fileLen = ftell(file);
 	fseek(file, 0, SEEK_SET);
 
 	buffer = malloc(fileLen+1);
@@ -35,7 +35,7 @@ int addTorrent(char *torrentPath){
 	char infoHash[20],
 		 destination[] = "/my/path/t.torrent",
 		 trackers[MAX_TRACKERS];
-		 metainfodecode m;
+	metainfodecode m;
 	int i;
 
 	pid_t pid = fork();
