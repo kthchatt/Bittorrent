@@ -2,12 +2,12 @@
 
 int prepareFile(char *filePath, int fileSize){
 	int i;
-	char zero[] = '0';
+	char zero[] = "0";
 	FILE *file = fopen(filePath, "wb");
 	if(!file) return 0;
 
 	for(i=0; i<fileSize; i++)
-		fwrite(&zero, 1, zero, file); // write each byte to file
+		fwrite(&zero, 1, 1, file); // write each byte to file
 
 	fclose(file);
 	return 1;

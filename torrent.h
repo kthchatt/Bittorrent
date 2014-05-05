@@ -2,17 +2,15 @@
 #define _torrent_h
 
 #include <stdio.h>
-#include <openssl/sha>
+#include <openssl/sha.h>
 #include "tracker.h"
-#define MAX_TRACKERS 4
 
-
-typedef struct tFile(){
+typedef struct tFile{
 	char *path;
 	int length;
 }tFile;
 
-typedef struct Torrent(){
+typedef struct Torrent{
 	char *announce; 		// tracker url
 	char *info;		
 	char *name; 			// file/dir name
