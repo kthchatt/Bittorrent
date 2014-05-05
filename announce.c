@@ -10,22 +10,25 @@
  //todo: save a peerlist with ip:port and info_hash.
 
 //construct a http query
-static int build(char request[200], char info_hash[20], char peer_id[20], char tracker[MAX_URL_LEN]) 
+static int build(char request[300], char info_hash[21], char peer_id[21], char tracker[MAX_URL_LEN]) 
 {
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
+    char* hash_escape = (char*) malloc(61);
     int port = rand()%64519+1024;    //bound port: listener for info_hash.
 
     url_hostname(tracker, hostname);
     url_announce(tracker, announce);
+    url_encode(info_hash, hash_escape);
 
     sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s&numwant=10 HTTP/1.1\r\nhost: %s\r\n\r\n", 
-                                    announce, info_hash, peer_id, port, 0, 12379, "started", hostname);
+                                    announce, hash_escape, peer_id, port, 0, 12379, "started", hostname);
 
+    free(hash_escape);
     free(announce);
     free(hostname);
 
-    return strlen(request);
+    return;
 }
 
 
@@ -36,7 +39,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
     int num, i, j;
     unsigned char data;
     unsigned short int port;
-    char recvbuf[2048], seek[5], ip[4];
+    char recvbuf[2048], seek[6], ip[4];
     char* seekpos;
 
     memset(recvbuf, '\0', sizeof(recvbuf));
@@ -59,9 +62,11 @@ static void response(int* sockfd, swarm_t* swarm, int index)
             {
                 seekpos = &recvbuf[i];
                 strncpy(seek, recvbuf+i, 6);
+                seek[6] = '\0';
 
                 if (strcmp(seek, ":peers") == 0)
                 {   
+
                     i++;
                     while (recvbuf[i] != ':')
                         i++;
@@ -103,7 +108,7 @@ static void query(swarm_t* swarm)
     int n = 0, port = 80, sockfd, url_len = 200, i;
     char* hostname = (char*) malloc(url_len);
     char* protocol = (char*) malloc(url_len);
-    char request[200];
+    char request[300];
     struct addrinfo hints, *res;
 
 

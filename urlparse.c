@@ -183,13 +183,16 @@ void url_announce(char* url, char* announce)
  //output = 60+nullterm
 void url_encode(char* hash, char* output)
 {
-    int i;
+    memset(output, '\0', 61);
+
+    int i, k = 1;
     for (i = 0; i < 20; i++)
     { 
         strcat(output, "%");
-        strncat(output, hash, 2);
-        hash += 2;  
+        snprintf(output+k, 61, "%x", (unsigned char) hash[i]);
+        k += 3;
     }
+    output[60] = '\0';
 }
 
 

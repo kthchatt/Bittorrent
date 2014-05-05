@@ -19,7 +19,7 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		usleep(50000);
+		usleep(500000);
 		tracker_scrape(swarm);
 		tracker_announce(swarm);				//completed/stopped events are to be sent at a later stage.
 
@@ -59,7 +59,6 @@ void untrack(char* info_hash)
 }
 
 
-//memory leak confirmed.
 int main(int argc, char ** argv)
 {
 		char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", 
@@ -67,9 +66,9 @@ int main(int argc, char ** argv)
 										"", 
 										""};
 
-		track("00000000000000000001", trackers);
-		track("00000000000000000001", trackers);
-		track("00000000000000000001", trackers);
+		track("0A000000a0000F00f001", trackers);
+		//track("00000000000000000001", trackers);
+		//track("00000000000000000001", trackers);
 
 		while (1)
 		{

@@ -228,5 +228,3 @@ void main(void)
 	sleep(30);
 }
 */
-
-S

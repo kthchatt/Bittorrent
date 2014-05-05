@@ -1,5 +1,5 @@
- #ifndef _swarm_h
- #define _swarm_h
+ #ifndef _peerwire_h
+ #define _peerwire_h
 
  #include <netdb.h>
  #include <unistd.h>
@@ -10,22 +10,7 @@
  #include <sys/socket.h>
  #include <sys/types.h>
  #include <netinet/in.h>
- #include <arpa/inet.h> 
-
-
-typedef struct
-{
-	int sockfd;
-	int am_choking;
-	int peer_choking;
-	int am_interested;
-	int peer_interested;
-	char  ip  [20];
- 	char  port[05];
- 	//list pieces at peer
-} peer_t;
-
-
+ #include <arpa/inet.h>
 
 
 #endif

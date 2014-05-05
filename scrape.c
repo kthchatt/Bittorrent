@@ -13,18 +13,21 @@
  }
 
 //construct a http query
-static int build(char request[200], char info_hash[20], char tracker[MAX_URL_LEN]) 
+static int build(char request[200], char info_hash[21], char tracker[MAX_URL_LEN]) 
 {
     char* path =     (char*) malloc(MAX_URL_LEN);
     char* hostname = (char*) malloc(MAX_URL_LEN);
+    char* hash_escape = (char*) malloc(61);
 
     url_hostname(tracker, hostname);
     url_path(tracker, path);
+    url_encode(info_hash, hash_escape);
 
-    sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, info_hash, hostname);
+    sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, hash_escape, hostname);
 
     free(path);
     free(hostname);
+    free(hash_escape);
     return strlen(request);
 }
 

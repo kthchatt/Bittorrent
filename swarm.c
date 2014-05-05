@@ -6,7 +6,7 @@
 
 #include "swarm.h"
 
-//all swarm methods need be thread-safe.
+//todo add threading for peer.
 
 //generates 20bytes long swarm-unique peer identifier. (one id per swarm)
 void generate_id(char peer_id[21])

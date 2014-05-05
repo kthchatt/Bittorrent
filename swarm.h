@@ -4,10 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "peerwire.h"
 
 
 //max swarms should be equal to max torrent
-#define SIGNATURE "NSA PirateBust-"
+#define SIGNATURE "NSA-PirateBust-"
 #define MAX_SWARMS 4
 #define MAX_SWARM_SIZE 200
 #define MAX_TRACKERS 4
@@ -21,6 +22,15 @@ typedef struct
 	char url [MAX_URL_LEN];
 	int scrape_completed, scrape_incomplete, scrape_downloaded, announce_interval, announce_minterval;
 } tracker_t;
+
+typedef struct 
+{
+	int sockfd;
+	int choked, choking;
+	int interested, interesting;
+	char ip[21];
+	char port[6];
+} peer_t;
 
 //swarms contain all swarm-connected peers, built from tracker queries.
 //before every scrape, clear scrape data and repopulate.
