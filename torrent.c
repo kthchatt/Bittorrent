@@ -28,7 +28,9 @@ char *getInfoHash(char *torrentPath){
 int addTorrent(char *torrentPath){
 	char infoHash[20],
 		 destination[] = "/my/path/t.torrent",
-		 trackers[MAX_TRACKERS] = {"udp://tracker.ccc.de:80/announce","","",""};
+		 trackers[MAX_TRACKERS];
+		 metainfodecode m;
+	int i;
 
 	pid_t pid = fork();
 
@@ -38,8 +40,11 @@ int addTorrent(char *torrentPath){
 	}else{
 		wait(0);
 		strcpy(infoHash, getInfoHash(destination));
+		decode_bencode(torrentPath, m);
+		for(i=0; i<MAX_TRACKERS, i++)
+			strcpy(trackers[i], m._announce_list[i]);
 		track(infoHash, trackers);
-		// ????
+		// ???? get peers?
 	}
 	return 1;
 }
