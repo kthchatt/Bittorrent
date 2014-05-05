@@ -4,6 +4,11 @@
 #include <string.h>
 #include <stdio.h>
 
-int saveStats(char *configPath, int uploaded, int downloaded);
+typedef struct Stats{
+	int uploaded;
+	int downloaded;
+}Stats;
+
+int saveStats(char *configPath, Stats s);
 
 #endif 
