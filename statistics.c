@@ -27,7 +27,7 @@ Stats loadStats(char *configPath){
 
 	fread(buffer, fileLen, 1, file);
 	len = strlen(strstr(buffer, ":"));
-
+	
 	tmp = malloc(fileLen-len+1);
 	strncpy(tmp, buffer, fileLen-len);
 	s.uploaded = atoi(tmp);

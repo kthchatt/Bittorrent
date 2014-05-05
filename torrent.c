@@ -26,6 +26,8 @@ char *getInfoHash(char *torrentPath){
 	fread(buffer, fileLen-pLen, 1, file);
 	// Calculate info hash
 	SHA1(buffer, fileLen-pLen+1, infoHash);
+
+	fclose(file);
 	return infoHash;
 }
 
