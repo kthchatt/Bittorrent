@@ -18,7 +18,7 @@ Stats loadStats(char *configPath){
 	int len;
 	Stats s;
 
-	if(!file) return -1;
+	if(!file) return s;
 	fseek(file, 0, SEEK_END);
 	fileLen=ftell(file);
 	fseek(file, 0, SEEK_SET);
