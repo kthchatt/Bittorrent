@@ -28,7 +28,7 @@ char *getInfoHash(char *torrentPath){
 int addTorrent(char *torrentPath){
 	char infoHash[20],
 		 destination[] = "/my/path/t.torrent",
-		 trackers[MAX_TRACKERS] = {"udp://tracker.ccc.de:80/announce","","";""};
+		 trackers[MAX_TRACKERS] = {"udp://tracker.ccc.de:80/announce","","",""};
 
 	pid_t pid = fork();
 
