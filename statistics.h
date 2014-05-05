@@ -10,5 +10,6 @@ typedef struct Stats{
 }Stats;
 
 int saveStats(char *configPath, Stats s);
+Stats loadStats(char *configPath);
 
 #endif 
