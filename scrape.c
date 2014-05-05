@@ -4,20 +4,13 @@
  * Get tracker state.
  */
 
-
- #include <netdb.h>
- #include <unistd.h>
- #include <errno.h>
- #include <stdio.h>
- #include <string.h>
- #include <stdlib.h>
- #include <sys/socket.h>
- #include <sys/types.h>
- #include <netinet/in.h>
- #include <arpa/inet.h> 
- #include "urlparse.h" 
  #include "scrape.h"
- #include "swarm.h"
+
+ static void debug(int postal)
+ {
+    printf("\n__debug_%d_point__\n", postal);
+    fflush(stdout);
+ }
 
 //construct a http query
 static int build(char request[200], char info_hash[20], char tracker[MAX_URL_LEN]) 
@@ -30,45 +23,30 @@ static int build(char request[200], char info_hash[20], char tracker[MAX_URL_LEN
 
     sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, info_hash, hostname);
 
-
     free(path);
     free(hostname);
     return strlen(request);
 }
 
-static void response(int* sockfd, swarm_t* swarm)
+static void response(int* sockfd, swarm_t* swarm, int index)
 {
-    int num, i, linefeed = 0;
-    char recvbuf[256], benstring[100];
+    int num = 0, tnum = 0;
+    char recvbuf[2048];
 
     memset(recvbuf, '\0', sizeof(recvbuf));
-    memset(benstring, '\0', sizeof(benstring));
 
     if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
-        recvbuf[num] = 0;
-        printf("%s", recvbuf);
-    }
+        recvbuf[num] = '\0';
 
-    for (i = 0; i < num; i++)
-    {
-        //find start of data, skip http-header.
-        if ((recvbuf[i]   == 13 && recvbuf[i+1] == 10) &&
-            (recvbuf[i+2] == 13 && recvbuf[i+3] == 10))
-            {
-                strncpy(benstring, recvbuf+i+4, num-i-4);
-                printf("\n\n---%s---\n", benstring);
-
-                //extracting the benstring.
-                /* d5:filesd20:00000000000000000001d8:completei0e10:downloadedi0e10:incompletei0eeee */
-                swarm->scrape_completed  = bdecode_value(benstring, "completed");
-                swarm->scrape_downloaded = bdecode_value(benstring, "downloaded");
-                swarm->scrape_incomplete = bdecode_value(benstring, "incomplete");
-
-                printf("\nSwarm completed = %d, downloaded = %d, incomplete = %d.\n", 
-                    swarm->scrape_completed, swarm->scrape_downloaded, swarm->scrape_incomplete);
-            }
-    }
+        swarm->tracker[index].scrape_completed  = bdecode_value(recvbuf, "complete");
+        swarm->tracker[index].scrape_downloaded = bdecode_value(recvbuf, "downloaded");
+        swarm->tracker[index].scrape_incomplete = bdecode_value(recvbuf, "incomplete");
+        printf("\n%s\t[completed = %d, downloaded = %d, incomplete = %d]", 
+            swarm->tracker[index].url, swarm->tracker[index].scrape_completed, 
+            swarm->tracker[index].scrape_downloaded, swarm->tracker[index].scrape_incomplete);
+     }
+      
 }
 
 static void query(swarm_t* swarm)
@@ -82,12 +60,12 @@ static void query(swarm_t* swarm)
     //loop through tracker urls and scrape them all.
     for (i = 0; i < MAX_TRACKERS; i++)
     {
-        if (strlen(swarm->tracker[i]) > 0)
+        if (strlen(swarm->tracker[i].url) > 0)
         {
-            build(request, swarm->info_hash, swarm->tracker[i]);
-            url_hostname(swarm->tracker[i], hostname);
-            url_protocol(swarm->tracker[i], protocol);
-            url_port(swarm->tracker[i], &port);
+            build(request, swarm->info_hash, swarm->tracker[i].url);
+            url_hostname(swarm->tracker[i].url, hostname);
+            url_protocol(swarm->tracker[i].url, protocol);
+            url_port(swarm->tracker[i].url, &port);
 
             memset(&hints, 0, sizeof(hints));
             hints.ai_family = AF_UNSPEC;
@@ -100,14 +78,14 @@ static void query(swarm_t* swarm)
                 if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
                 {
                     send(sockfd, request, strlen(request), 0);
-                    response(&sockfd, swarm);
+                    response(&sockfd, swarm, i);
                 } 
             }
         }
     }
-
     free(hostname);
     free(protocol);
+    close(sockfd);
 }
 
  void tracker_scrape(swarm_t* swarm)

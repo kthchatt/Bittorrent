@@ -6,22 +6,9 @@
 
  //todo: add listen.c for peerwire.
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <pthread.h>
-#include "announce.h"
-#include "scrape.h" 
 #include "tracker.h"
-#include "swarm.h"
 
 pthread_t torrents[MAX_SWARMS];
-
-void debug(int postal) 
-{ 
-    printf("\n__point_%d_exec__\n", postal); 
-    fflush(stdout); 
-}
 
 static void* tracking(void* arg)
 {
@@ -32,10 +19,13 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		sleep(3);
-		printf("\nScrape Commencing!\n");
+		usleep(50000);
 		tracker_scrape(swarm);
-		//tracker_announce(swarm->tracker[i], swarm->info_hash, swarm->peer_id, "10.0.0.0", "started", 8016, 123918);
+		tracker_announce(swarm);				//completed/stopped events are to be sent at a later stage.
+
+		//download, upload, messaging. main torrent loop.
+
+		printf("Peercount: %d\n", swarm->peercount);
 	}
 }
 
@@ -46,9 +36,9 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 	if ((swarm_id = swarm_select(info_hash, trackers)) > -1)
 	{
 		if(!(pthread_create(&torrents[swarm_id], NULL, tracking, &swarm[swarm_id])))
-			printf("\nTracking: %s as [%s]", swarm[swarm_id].info_hash, swarm[swarm_id].peer_id);
+			printf("\nTracking: %s as [%s]\n", swarm[swarm_id].info_hash, swarm[swarm_id].peer_id);
 	}
-	else printf("\nSwarms are busy! Increase MAX_SWARMS of fix a memory leak!\n");
+	else printf("\nSwarms are busy! Increase MAX_SWARMS or fix a memory leak!\n");
 
 	return;
 }
@@ -61,30 +51,25 @@ void untrack(char* info_hash)
 	{
 		if (strcmp(swarm[i].info_hash, info_hash) == 0)
 		{
-			//deallocate swarm.
-			for (j = 0; j < MAX_TRACKERS; j++)
-				free(swarm[i].tracker[j]);
-
-			free(swarm[i].peer_id);
-
-			// FREE: IP/PORT/THREAD
+			//notify tracker of event=stopped.
+			//call swarm_free/swarm_release
 			swarm[i].taken = false;
 		}
 	}
 }
 
+
+//memory leak confirmed.
 int main(int argc, char ** argv)
 {
-		char *trackers[MAX_TRACKERS] = {"", 
+		char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", 
 										"", 
 										"", 
-										"http://94.228.192.98/announce"};;
+										""};
 
-		track("00000000000000000001", trackers);usleep(500000);
-		track("00000000000000000001", trackers);usleep(500000);
-		track("00000000000000000001", trackers);usleep(500000);
-		track("00000000000000000001", trackers);usleep(500000);
-		track("00000000000000000001", trackers);usleep(500000);
+		track("00000000000000000001", trackers);
+		track("00000000000000000001", trackers);
+		track("00000000000000000001", trackers);
 
 		while (1)
 		{

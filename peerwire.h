@@ -1,5 +1,5 @@
-#ifndef _scrape_h
-#define _scrape_h
+ #ifndef _swarm_h
+ #define _swarm_h
 
  #include <netdb.h>
  #include <unistd.h>
@@ -11,12 +11,21 @@
  #include <sys/types.h>
  #include <netinet/in.h>
  #include <arpa/inet.h> 
- #include "urlparse.h" 
- #include "swarm.h"
 
- 
-//return data in scrape-struct.
-void tracker_scrape(swarm_t* swarm);
+
+typedef struct
+{
+	int sockfd;
+	int am_choking;
+	int peer_choking;
+	int am_interested;
+	int peer_interested;
+	char  ip  [20];
+ 	char  port[05];
+ 	//list pieces at peer
+} peer_t;
+
+
 
 
 #endif

@@ -7,7 +7,7 @@
 
 
 //max swarms should be equal to max torrent
-#define SIGNATURE "-XX0000-"
+#define SIGNATURE "NSA PirateBust-"
 #define MAX_SWARMS 4
 #define MAX_SWARM_SIZE 200
 #define MAX_TRACKERS 4
@@ -16,18 +16,25 @@
 #define true 1
 #define false 0
 
+typedef struct
+{
+	char url [MAX_URL_LEN];
+	int scrape_completed, scrape_incomplete, scrape_downloaded, announce_interval, announce_minterval;
+} tracker_t;
+
 //swarms contain all swarm-connected peers, built from tracker queries.
 //before every scrape, clear scrape data and repopulate.
  typedef struct
  {
  	int taken;
- 	char* tracker 	[MAX_TRACKERS];
- 	char* ip  		[MAX_SWARM_SIZE];
- 	char* port		[MAX_SWARM_SIZE];
- 	char  peer_id   [20];
- 	char  info_hash [20];
- 	int listenport, scrape_completed, scrape_incomplete, scrape_downloaded;
- 	//scrape data
+ 	tracker_t tracker 	[MAX_TRACKERS];
+ 	//peer_t peer 		[MAX_SWARM_SIZE];
+ 	//piece				[];						//piece container, store all piece data, index, have/missing
+ 	char  ip  			[MAX_SWARM_SIZE][21];
+ 	char  port			[MAX_SWARM_SIZE][6];
+ 	char  peer_id   	[21];
+ 	char  info_hash 	[21];
+ 	int listenport, peercount;
  	pthread_mutex_t lock;
  } swarm_t;
 
@@ -41,5 +48,7 @@ void swarm_release(int index);
 void swarm_lock(int index);
 //unlock the mutex of swarm index
 void swarm_unlock(int index);
+//clear the swarm, before announcing to get rid of stale peers.
+void swarm_reset(swarm_t* swarm);
 
 #endif
