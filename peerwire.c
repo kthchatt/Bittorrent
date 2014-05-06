@@ -151,9 +151,12 @@ void* peerwire_thread_tcp(void* arg)
 	//for pieces have tell peer have
 	printf("\nConnected! [%s:%s]\n", peer->ip, peer->port); fflush(stdout);
 
+	//todo: listen thread.
+
 	while (peer->sockfd != 0)
 	{
 		//do peerstuff. //choke, unchoke, interested, not nterested, have, piece
+		printf("\ndoing peerstuff. ^^");
 		sleep(1);
 	}
 	printf("Peer disconnected.");
