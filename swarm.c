@@ -143,11 +143,21 @@ void swarm_scour(swarm_t* swarm)
 
     for (i = 0; i < swarm->peercount; i++)
     {
-    	printf("this peer has sockfd = %d\n", swarm->peer[i].sockfd);
+    	//printf("this peer has sockfd = %d\n", swarm->peer[i].sockfd);
     	if (swarm->peer[i].sockfd == 0)
     	{
-    		if (!(pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread, swarm->peer[i].sockfd)))
-    			printf("Connecting to peer.. %s:%d", swarm->peer[i].ip, swarm->peer[i].port);
+    		//printf("\nPointing Pointers!"); fflush(stdout);
+    		swarm->peer[i].info_hash = swarm->info_hash;
+    		swarm->peer[i].peer_id = swarm->peer_id;
+
+    		//printf("\nSpawning pwp-thread!"); fflush(stdout);
+    		//printf("\nSpawning pwp-thread! hash: %s, peer_id: %s", swarm->peer[i].info_hash, swarm->peer[i].peer_id);
+
+    		if (!(pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
+    			printf("Connecting to peer..");
+    			//printf("Connecting to peer.. %s:%s", swarm->peer[i].ip, swarm->peer[i].port);
+
+    		//printf("\npwp-thread spawned in progress?"); fflush(stdout);
     	}
     }
 }

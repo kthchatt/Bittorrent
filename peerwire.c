@@ -4,9 +4,7 @@
  *  Peerwiring.
  */
 
-
 #include "peerwire.h"
-#include "swarm.h"
 
 /*
 	PIECE INDEXES ARE ZERO-BASED
@@ -32,17 +30,7 @@
 		port: 	<len=0003>  <id=9><listen-port>
 */
 
-#define PROTOCOL    "BitTorrent protocol"
-#define CHOKE 		0
-#define UNCHOKE 	1
-#define INTERESTED 	2
-#define NOT_INTERESTED 3
-#define HAVE 		4
-#define PIECE       7
-#define CANCEL      8
-#define PORT        9
-
-void handshake(peer_t* peer, char info_hash[21], char peer_id[21])
+void handshake(peer_t* peer, char* info_hash, char* peer_id)
 {
 	int payload = 0;
     struct addrinfo hints, *res;
@@ -140,9 +128,10 @@ void* peerwire_thread_udp(peer_t* peer)
 
 //connect and get sockfd (if sockfd == 0)
 //this thread may be invoked from the listener, where the sockfd is already set.
-void* peerwire_thread_tcp(peer_t* peer, char info_hash[21], char peer_id[21])
+void* peerwire_thread_tcp(void* arg)
 {
     struct addrinfo hints, *res;
+    peer_t* peer = (peer_t*) arg;
 
 	if (peer->sockfd == 0)
 	{
@@ -150,22 +139,24 @@ void* peerwire_thread_tcp(peer_t* peer, char info_hash[21], char peer_id[21])
             hints.ai_family = AF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
             hints.ai_flags = AI_PASSIVE;
-            getaddrinfo(hostname, protocol, &hints, &res);
+            getaddrinfo(peer->ip, peer->port, &hints, &res);
 
-            if !(sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
+            if (!((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
 				printf("Could not set up socket.");
-            if !(connect(sockfd, res->ai_addr, res->ai_addrlen) > -1))
+            if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
 				printf("Could not connect.");
 	}
 
-	//handshake
-	handshake(peer, );
+	handshake(peer, peer->info_hash, peer->peer_id);
+	//for pieces have tell peer have
+	printf("\nConnected! [%s:%s]\n", peer->ip, peer->port); fflush(stdout);
 
-	while (peer->sockfd == 0)
+	while (peer->sockfd != 0)
 	{
 		//do peerstuff. //choke, unchoke, interested, not nterested, have, piece
 		sleep(1);
 	}
+	printf("Peer disconnected.");
 }
                                                                          
 

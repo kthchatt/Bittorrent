@@ -1,14 +1,30 @@
-#ifndef _swarm_h
-#define _swarm_h
+ #ifndef _protocol_meta_h
+ #define _protocol_meta_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include "peerwire.h"
-#include "protocol_meta.h"
 
-/*
+//swarm-tracker
+#define SIGNATURE "NSA-PirateBust-"
+#define BACKLOG 5
+#define MAX_SWARMS 4
+#define MAX_SWARM_SIZE 200
+#define MAX_TRACKERS 4
+#define MAX_URL_LEN 100
+#define boolean int
+#define true 1
+#define false 0
+#define MAX_TRACKERS 4
+
+//peerwire
+#define PROTOCOL    "BitTorrent protocol"
+#define CHOKE 		0
+#define UNCHOKE 	1
+#define INTERESTED 	2
+#define NOT_INTERESTED 3
+#define HAVE 		4
+#define PIECE       7
+#define CANCEL      8
+#define PORT        9
+
 typedef struct
 {
 	char url [MAX_URL_LEN];
@@ -43,19 +59,5 @@ typedef struct
  } swarm_t;
 
  swarm_t swarm[MAX_SWARMS];
- */
 
- //return a free swarm
-int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS]);
-//lock the mutex of swarm index
-void swarm_lock(int index);
-//unlock the mutex of swarm index
-void swarm_unlock(int index);
-//clear the swarm, before announcing to get rid of stale peers.
-void swarm_reset(swarm_t* swarm);
-//sets the swarm to listen mode
-void swarm_listen(swarm_t* swarm);
-//release the swarm, tracker stopped or failure.
-void swarm_release(swarm_t* swarm);
-
-#endif
+ #endif

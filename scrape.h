@@ -12,7 +12,7 @@
  #include <netinet/in.h>
  #include <arpa/inet.h> 
  #include "urlparse.h" 
- #include "swarm.h"
+ #include "protocol_meta.h"
 
 
 void tracker_scrape(swarm_t* swarm);

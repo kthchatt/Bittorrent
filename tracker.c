@@ -28,7 +28,7 @@ static void* tracking(void* arg)
 		//download, upload, messaging. main torrent loop.
 		printf("\nPeercount: %d\n", swarm->peercount);
 		swarm_scour(swarm);							//find new peers and initiate connections.
-
+		sleep(5);
 	}
 
 	printf("\nError: Undefined. Releasing swarm...");
@@ -68,8 +68,8 @@ void untrack(char* info_hash)
 
 int main(int argc, char ** argv)
 {
-	char *trackers[MAX_TRACKERS] = {"http://mgtracker.org:2710/announce.php", 
-									"", //http://127.0.0.1:80/tracker/announce.php 
+	char *trackers[MAX_TRACKERS] = {"", //http://mgtracker.org:2710/announce.php 
+									"http://127.0.0.1:80/tracker/announce.php", //http://127.0.0.1:80/tracker/announce.php 
 									"", 
 									""};
 

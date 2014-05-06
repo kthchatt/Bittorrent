@@ -9,9 +9,7 @@
 #include "scrape.h" 
 #include "swarm.h"
 #include "peerwire.h"
-
-#define MAX_TRACKERS 4
-
+#include "protocol_meta.h"
 
 //adds a info_hash to be tracked, specify trackers in char* name[MAX_TRACKERS] format.
 void track(char* info_hash, char* trackers[MAX_TRACKERS]);
