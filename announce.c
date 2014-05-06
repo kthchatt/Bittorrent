@@ -15,14 +15,14 @@ static int build(char request[300], char info_hash[21], char peer_id[21], char t
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
     char* hash_escape = (char*) malloc(61);
-    int port = rand()%64519+1024;    //bound port: listener for info_hash.
 
     url_hostname(tracker, hostname);
     url_announce(tracker, announce);
     url_encode(info_hash, hash_escape);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&downloaded=%d&left=%d&event=%s&numwant=10 HTTP/1.1\r\nhost: %s\r\n\r\n", 
-                                    announce, hash_escape, peer_id, port, 0, 12379, "started", hostname);
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=192.168.0.10&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+                                    announce, hash_escape, peer_id, swarm->listenport, 12008, 12379, "started", hostname);
+
 
     free(hash_escape);
     free(announce);
@@ -78,10 +78,10 @@ static void response(int* sockfd, swarm_t* swarm, int index)
                         for (j = 0; j < 4; j++)
                             ip[j] = recvbuf[i+j];
 
-                        sprintf(swarm->ip[swarm->peercount], "%d.%d.%d.%d", 
-                              (unsigned) ip[0], (unsigned) ip[1], (unsigned) ip[2], (unsigned) ip[3]);
-
-                        printf("\nip = [%s]\n", swarm->ip[swarm->peercount]);
+                        sprintf(swarm->peer[swarm->peercount].ip, "%hd.%hd.%hd.%hd", 
+                              (unsigned char) ip[0], (unsigned char) ip[1], (unsigned char) ip[2], (unsigned char) ip[3]);
+                        
+                        printf("\nip = [%s]\n", swarm->peer[swarm->peercount].ip);
 
                         i += 4;
                         data = recvbuf[i];
@@ -90,8 +90,8 @@ static void response(int* sockfd, swarm_t* swarm, int index)
                         port += (unsigned char) recvbuf[i+1];
                         i += 2;
 
-                        sprintf(swarm->port[swarm->peercount], "%d", (unsigned) port);
-                        printf("port [%s]", swarm->port[swarm->peercount]);
+                        sprintf(swarm->peer[swarm->peercount].port, "%d", (unsigned) port);
+                        printf("port [%s]", swarm->peer[swarm->peercount].port);
                         swarm->peercount++;
                     }
                     printf("\n");
@@ -120,6 +120,7 @@ static void query(swarm_t* swarm)
             url_hostname(swarm->tracker[i].url, hostname);
             url_protocol(swarm->tracker[i].url, protocol);
             url_port(swarm->tracker[i].url, &port);
+            sprintf(protocol, "%d", (unsigned int) port);
 
             memset(&hints, 0, sizeof(hints));
             hints.ai_family = AF_UNSPEC;
@@ -142,11 +143,9 @@ static void query(swarm_t* swarm)
     close(sockfd);
 }
 
-//ip is set to 0 for non-proxy connections.
-//TODO: Return list of peers.
 int tracker_announce(swarm_t* swarm) 
 {
     swarm_reset(swarm);  //clear all current peers
-    query(swarm);   //bound port                                                                           //todo: bind/listen
+    query(swarm);   //bound port
     return 0;
 } 

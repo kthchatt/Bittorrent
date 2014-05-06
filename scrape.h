@@ -14,8 +14,7 @@
  #include "urlparse.h" 
  #include "swarm.h"
 
- 
-//return data in scrape-struct.
+
 void tracker_scrape(swarm_t* swarm);
 
 

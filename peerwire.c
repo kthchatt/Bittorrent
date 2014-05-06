@@ -1,15 +1,12 @@
- //entry point in tracker thread.
+/* peerwire.c
+ * 2014-05-06
+ * Robin Duda
+ *  Peerwiring.
+ */
 
 
 #include "peerwire.h"
 #include "swarm.h"
-
-/* todo:
- * pseudo
- * for every piece in swarm, tell every peer at handshake with have message.
- * for piece download, for pieces not existent, trylock and download
- * for piece upload, for pieces have, trylock copy unlock and upload.
- */
 
 /*
 	PIECE INDEXES ARE ZERO-BASED
@@ -45,40 +42,8 @@
 #define CANCEL      8
 #define PORT        9
 
-	#include <openssl/sha.h>
-
-
-//finds a peer in the swarm with piece_id. (todo: ignore peers who are choking client), in swarm or peerwire?
-/*
-peer_t* piecefinder(swarm_t* swarm, int piece_id)
+void handshake(peer_t* peer, char info_hash[21], char peer_id[21])
 {
-	int i, j, peer_index;
-
-	//for all peers in swarm
-	for (i = 0; i < swarm->peercount; i++)
-	{
-		//for all pieces in peer
-		for (j = 0; j < swarm->peer[i].piece_count; j++)
-			if (swarm->peer[i].piece[j] == piece_id)
-			{
-				return swarm->peer[i].sockfd;
-			}
-	}
-
-	return NULL;
-}
-*/
-
-//locks X amount of peers from unconnected in swarm, contact them and find their pieces
-//set cooldown on their
-void ping()
-{
-
-}
-
-void handshake(peer_t* peer, char info_hash[20], char peer_id[20])
-{
-	//handshake
 	int payload = 0;
     struct addrinfo hints, *res;
     unsigned char protocol_len = strlen(PROTOCOL);
@@ -133,8 +98,6 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
     free(request);
 }
 
-
-
 //message [choke, unchoke, interested, not interested]
 void message(peer_t* peer, unsigned char message)
 {
@@ -163,8 +126,46 @@ void have(peer_t* peer)
 	send(peer->sockfd, request, payload, 0);	
 	//}
 
-
 	free(request);
+}
+
+//todo not yet implemented
+void* peerwire_thread_udp(peer_t* peer)
+{
+	while (peer->sockfd == 0)
+	{
+		sleep(1);
+	}
+}
+
+//connect and get sockfd (if sockfd == 0)
+//this thread may be invoked from the listener, where the sockfd is already set.
+void* peerwire_thread_tcp(peer_t* peer, char info_hash[21], char peer_id[21])
+{
+    struct addrinfo hints, *res;
+
+	if (peer->sockfd == 0)
+	{
+            memset(&hints, 0, sizeof(hints));
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_flags = AI_PASSIVE;
+            getaddrinfo(hostname, protocol, &hints, &res);
+
+            if !(sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
+				printf("Could not set up socket.");
+            if !(connect(sockfd, res->ai_addr, res->ai_addrlen) > -1))
+				printf("Could not connect.");
+	}
+
+	//handshake
+	handshake(peer, );
+
+	while (peer->sockfd == 0)
+	{
+		//do peerstuff. //choke, unchoke, interested, not nterested, have, piece
+		sleep(1);
+	}
 }
                                                                          
 

@@ -4,29 +4,36 @@
  *  Peer Tracker.
  */
 
- //todo: add listen.c for peerwire.
 
 #include "tracker.h"
 
+
 pthread_t torrents[MAX_SWARMS];
+
 
 static void* tracking(void* arg)
 {
 	int i;
 	swarm_t* swarm = (swarm_t*) arg;
 
-	srand(time(NULL));
+	//set the swarm to listen for peers.
+	swarm_listen(swarm);
 
 	while (swarm->taken == true)
 	{
-		usleep(500000);
-		tracker_scrape(swarm);
-		tracker_announce(swarm);				//completed/stopped events are to be sent at a later stage.
+		usleep(5000000);							//wait for the swarm to bind.
+		tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
+ 		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
 
 		//download, upload, messaging. main torrent loop.
+		printf("\nPeercount: %d\n", swarm->peercount);
+		swarm_scour(swarm);							//find new peers and initiate connections.
 
-		printf("Peercount: %d\n", swarm->peercount);
 	}
+
+	printf("\nError: Undefined. Releasing swarm...");
+	swarm_release(swarm);
+	//notify gui that swarm failed.
 }
 
 void track(char* info_hash, char* trackers[MAX_TRACKERS])
@@ -61,19 +68,42 @@ void untrack(char* info_hash)
 
 int main(int argc, char ** argv)
 {
-		char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", 
-										"", 
-										"", 
-										""};
+	char *trackers[MAX_TRACKERS] = {"http://mgtracker.org:2710/announce.php", 
+									"", //http://127.0.0.1:80/tracker/announce.php 
+									"", 
+									""};
 
-		track("0A000000a0000F00f001", trackers);
-		//track("00000000000000000001", trackers);
-		//track("00000000000000000001", trackers);
+	char* info_hash = (char*) malloc(21);	//for testing ;!
+	info_hash[0] = 0xf4;
+	info_hash[1] = 0x3e;
+	info_hash[2] = 0x6d;
+	info_hash[3] = 0x2b;
+	info_hash[4] = 0x91;
+	info_hash[5] = 0x3f;
+	info_hash[6] = 0x22;
+	info_hash[7] = 0xc3;
+	info_hash[8] = 0xb0;
+	info_hash[9] = 0x61;
+	info_hash[10] = 0x25;
+	info_hash[11] = 0x95;
+	info_hash[12] = 0xf0;
+	info_hash[13] = 0x25;
+	info_hash[14] = 0xb1;
+	info_hash[15] = 0x25;
+	info_hash[16] = 0x2a;
+	info_hash[17] = 0x99;
+	info_hash[18] = 0x85;
+	info_hash[19] = 0xdf;
+	info_hash[20] = '\0';
 
-		while (1)
-		{
-			usleep(50000);
-			printf("!");
-			fflush(stdout);
-		}
+
+	track(info_hash, trackers);
+
+
+	while (1)
+	{
+		usleep(50000);
+		printf("!");
+		fflush(stdout);
+	}
 }

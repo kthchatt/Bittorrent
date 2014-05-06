@@ -6,12 +6,6 @@
 
  #include "scrape.h"
 
- static void debug(int postal)
- {
-    printf("\n__debug_%d_point__\n", postal);
-    fflush(stdout);
- }
-
 //construct a http query
 static int build(char request[200], char info_hash[21], char tracker[MAX_URL_LEN]) 
 {
@@ -48,8 +42,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
         printf("\n%s\t[completed = %d, downloaded = %d, incomplete = %d]", 
             swarm->tracker[index].url, swarm->tracker[index].scrape_completed, 
             swarm->tracker[index].scrape_downloaded, swarm->tracker[index].scrape_incomplete);
-     }
-      
+     }    
 }
 
 static void query(swarm_t* swarm)
@@ -69,6 +62,7 @@ static void query(swarm_t* swarm)
             url_hostname(swarm->tracker[i].url, hostname);
             url_protocol(swarm->tracker[i].url, protocol);
             url_port(swarm->tracker[i].url, &port);
+            sprintf(protocol, "%d", (unsigned int) port);
 
             memset(&hints, 0, sizeof(hints));
             hints.ai_family = AF_UNSPEC;

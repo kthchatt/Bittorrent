@@ -12,5 +12,10 @@
  #include <netinet/in.h>
  #include <arpa/inet.h>
 
+//create a peerwire connection using tcp.
+void* peerwire_thread_tcp(peer_t* peer, char info_hash[21], char peer_id[21]);
+//create a peerwire connection usind udp.
+void* peerwire_thread_udp(peer_t* peer);
+
 
 #endif
