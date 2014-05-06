@@ -117,12 +117,34 @@ void have(peer_t* peer)
 	free(request);
 }
 
+void* listener_udp(peer_t* peer)
+{
+	//while .. read.. dgram..
+}
+
 //todo not yet implemented
 void* peerwire_thread_udp(peer_t* peer)
 {
-	while (peer->sockfd == 0)
+	while (peer->sockfd != 0)
 	{
 		sleep(1);
+	}
+}
+
+//listens to incoming data/messages
+void* listener_tcp(void* arg)
+{
+	peer_t* peer = (peer_t*) arg;
+	char recvbuf[2048] = '\0';
+	int num;
+
+	while (peer->sockfd != 0)
+	{
+		if ((num = read(peer->sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
+		{
+			recvbuf[num] = '\0';
+			printf("read: %s", recvbuf);
+		}
 	}
 }
 
@@ -131,6 +153,7 @@ void* peerwire_thread_udp(peer_t* peer)
 void* peerwire_thread_tcp(void* arg)
 {
     struct addrinfo hints, *res;
+    pthread_t listen_thread;
     peer_t* peer = (peer_t*) arg;
 
 	if (peer->sockfd == 0)
@@ -148,10 +171,12 @@ void* peerwire_thread_tcp(void* arg)
 	}
 
 	handshake(peer, peer->info_hash, peer->peer_id);
-	//for pieces have tell peer have
-	printf("\nConnected! [%s:%s]\n", peer->ip, peer->port); fflush(stdout);
+	//tell pieces have! (must be threadsafe)
 
-	//todo: listen thread.
+	if (!(pthread_create(&listen_thread, NULL, listener_tcp, &peer)))
+		printf("Starting peer listener.");
+
+	printf("\nConnected! [%s:%s]\n", peer->ip, peer->port); fflush(stdout);
 
 	while (peer->sockfd != 0)
 	{

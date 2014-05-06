@@ -11,6 +11,7 @@
  #include <sys/types.h>
  #include <netinet/in.h>
  #include <arpa/inet.h>
+ #include <pthread.h>
  #include "protocol_meta.h"
 
 //create a peerwire connection using tcp.
