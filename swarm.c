@@ -7,7 +7,6 @@
 #include "swarm.h"
 
 //todo add threading for peer listener, bound to port etc.
-
 //generates 20bytes long swarm-unique peer identifier. (one id per swarm)
 void generate_id(char peer_id[21])
 {
@@ -124,12 +123,9 @@ void* peerlisten(void* arg)
 	while (swarm->taken == true)
 	{
 		//while accept.. create new thread to run peerwire-thread..
-
     	addr_size = sizeof their_addr;
     	remote_sockfd = accept(swarm->sockfd, (struct sockaddr *)&their_addr, &addr_size);
-
     	printf("\n----- there was an incoming connection! --------\n"); fflush(stdout);
-
     	//todo
     	//check if peer in swarms peerlist, if so then set it's fd to new_fd.
     	//else add peer to swarms peerlist.
@@ -143,21 +139,13 @@ void swarm_scour(swarm_t* swarm)
 
     for (i = 0; i < swarm->peercount; i++)
     {
-    	//printf("this peer has sockfd = %d\n", swarm->peer[i].sockfd);
     	if (swarm->peer[i].sockfd == 0)
     	{
-    		//printf("\nPointing Pointers!"); fflush(stdout);
     		swarm->peer[i].info_hash = swarm->info_hash;
     		swarm->peer[i].peer_id = swarm->peer_id;
 
-    		//printf("\nSpawning pwp-thread!"); fflush(stdout);
-    		//printf("\nSpawning pwp-thread! hash: %s, peer_id: %s", swarm->peer[i].info_hash, swarm->peer[i].peer_id);
-
     		if (!(pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
     			printf("Connecting to peer..");
-    			//printf("Connecting to peer.. %s:%s", swarm->peer[i].ip, swarm->peer[i].port);
-
-    		//printf("\npwp-thread spawned in progress?"); fflush(stdout);
     	}
     }
 }

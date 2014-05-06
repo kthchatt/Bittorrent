@@ -135,7 +135,7 @@ void* peerwire_thread_udp(peer_t* peer)
 void* listener_tcp(void* arg)
 {
 	peer_t* peer = (peer_t*) arg;
-	char recvbuf[2048] = '\0';
+	char recvbuf[2048] = {'\0'};
 	int num;
 
 	while (peer->sockfd != 0)
@@ -182,7 +182,7 @@ void* peerwire_thread_tcp(void* arg)
 	{
 		//do peerstuff. //choke, unchoke, interested, not nterested, have, piece
 		printf("\ndoing peerstuff. ^^");
-		sleep(1);
+		sleep(2);
 	}
 	printf("Peer disconnected.");
 }

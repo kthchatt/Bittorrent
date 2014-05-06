@@ -21,14 +21,13 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		usleep(5000000);							//wait for the swarm to bind.
+		usleep(2000000);							//wait for the swarm to bind.
 		tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
  		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
 
 		//download, upload, messaging. main torrent loop.
 		printf("\nPeercount: %d\n", swarm->peercount);
 		swarm_scour(swarm);							//find new peers and initiate connections.
-		sleep(5);
 	}
 
 	printf("\nError: Undefined. Releasing swarm...");
@@ -68,10 +67,10 @@ void untrack(char* info_hash)
 
 int main(int argc, char ** argv)
 {
-	char *trackers[MAX_TRACKERS] = {"http://mgtracker.org:2710/announce.php", //http://mgtracker.org:2710/announce.php 
+	char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", //http://mgtracker.org:2710/announce.php 
 									"http://127.0.0.1:80/tracker/announce.php", //http://127.0.0.1:80/tracker/announce.php 
-									"", 
-									""};
+									"http://127.0.0.1:80/tracker/announce.php", 
+									"http://127.0.0.1:80/tracker/announce.php"};
 
 	char* info_hash = (char*) malloc(21);	//for testing ;!
 	info_hash[0] = 0xf4;
@@ -97,6 +96,7 @@ int main(int argc, char ** argv)
 	info_hash[20] = '\0';
 
 
+	track(info_hash, trackers);
 	track(info_hash, trackers);
 	track(info_hash, trackers);
 	track(info_hash, trackers);

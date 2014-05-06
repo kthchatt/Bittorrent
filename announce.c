@@ -145,6 +145,10 @@ static void query(swarm_t* swarm)
 
 int tracker_announce(swarm_t* swarm) 
 {
+    //todo: swarm_reset? query should check if the peer already exists. (threads will die!)
+    //in swarm_reset check maxpeers before adding a new peer, if full call clear_stale_peers. 
+    //call clear_stale_peers before announcing.
+    
     swarm_reset(swarm);  //clear all current peers
     query(swarm);   //bound port
     return 0;

@@ -1,6 +1,10 @@
  #ifndef _protocol_meta_h
  #define _protocol_meta_h
 
+//sys-global
+#define true 1
+#define false 0
+#define boolean char
 
 //swarm-tracker
 #define SIGNATURE "NSA-PirateBust-"
@@ -9,9 +13,6 @@
 #define MAX_SWARM_SIZE 200
 #define MAX_TRACKERS 4
 #define MAX_URL_LEN 100
-#define boolean int
-#define true 1
-#define false 0
 #define MAX_TRACKERS 4
 
 //peerwire

@@ -14,6 +14,8 @@
  #include "urlparse.h" 
  #include "protocol_meta.h"
 
+//announce all trackers in trackerlist, algorithm for announcing only on trackers with
+//enough peers not added yet.
 int tracker_announce(swarm_t* swarm);
 
 #endif
