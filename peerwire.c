@@ -33,7 +33,6 @@
 void handshake(peer_t* peer, char* info_hash, char* peer_id)
 {
 	int payload = 0;
-    struct addrinfo hints, *res;
     unsigned char protocol_len = strlen(PROTOCOL);
     unsigned char reserved[8];
     char* request = malloc(1 + protocol_len + 8 + 20 + 20);
@@ -47,7 +46,7 @@ void handshake(peer_t* peer, char* info_hash, char* peer_id)
     memcpy(request + payload, info_hash, 20);			payload += 20;
     memcpy(request + payload, peer_id, 20);				payload += 20;
 
-    memset(&hints, 0, sizeof(hints));
+    /*memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
@@ -60,11 +59,11 @@ void handshake(peer_t* peer, char* info_hash, char* peer_id)
     if ((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1)
     {
         if (connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)
-        {
+        {*/
             send(peer->sockfd, request, payload, 0);	//strlen will find the reserved byte.
             //receive?
-        } 
-    }
+       /* } 
+    }*/
     free(request);
 }
 
@@ -99,7 +98,7 @@ void message(peer_t* peer, unsigned char message)
     free(request);
 }
 
-void have(peer_t* peer)
+void have(peer_t* peer, int piece_index)
 {
 	int payload, len = htonl(5);
 	unsigned char id = 4;
@@ -108,9 +107,9 @@ void have(peer_t* peer)
 	//for every piece have in swarm
 	//{
 	payload = 0;
-	memcpy(request, &len, 4); 								payload += 4;
-	memcpy(request + payload, &id, 1);						payload += 1;
-	//memcpy(request + payload, &swarm->piece[x].index, 4); payload += 4;
+	memcpy(request, &len, 4); 							payload += 4;
+	memcpy(request + payload, &id, 1);					payload += 1;
+	memcpy(request + payload, &piece_index, 4); 		payload += 4;
 	send(peer->sockfd, request, payload, 0);	
 	//}
 
@@ -131,20 +130,37 @@ void* peerwire_thread_udp(peer_t* peer)
 	}
 }
 
+//every time data is received update lastrecv with system tick.
 //listens to incoming data/messages
 void* listener_tcp(void* arg)
 {
 	peer_t* peer = (peer_t*) arg;
 	char recvbuf[2048] = {'\0'};
-	int num;
+	int num, i;
+
+	printf("\n[sockfd = %d]\tTCP Listener init.", peer->sockfd);
 
 	while (peer->sockfd != 0)
 	{
-		if ((num = read(peer->sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
-		{
-			recvbuf[num] = '\0';
-			printf("read: %s", recvbuf);
+		memset(recvbuf, '\0', 2048);
+		printf("\n[sockfd = %d]\tReading...", peer->sockfd);
+
+		if ((num = read(peer->sockfd, recvbuf, 2048) > 0))
+		{	
+			printf("\n[sockfd = %d]\tHex Dump %d Byte(s)\n", peer->sockfd, num);
+			for (i = 0; i < num; i++)
+			{
+				printf("%x  ", recvbuf[i]);
+				if ((i%8 == 0))
+					printf("\t");
+
+				if ((i%16 == 0))
+					printf("\n");
+			}
+			printf("\n------------------------------------");
+			//printf("read: %s", recvbuf);
 		}
+		sleep(0);
 	}
 }
 
@@ -156,6 +172,8 @@ void* peerwire_thread_tcp(void* arg)
     pthread_t listen_thread;
     peer_t* peer = (peer_t*) arg;
 
+	printf("\nConnecting to peer..");
+
 	if (peer->sockfd == 0)
 	{
             memset(&hints, 0, sizeof(hints));
@@ -165,26 +183,37 @@ void* peerwire_thread_tcp(void* arg)
             getaddrinfo(peer->ip, peer->port, &hints, &res);
 
             if (!((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
-				printf("Could not set up socket.");
+				printf("\nCould not set up socket.");
             if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
-				printf("Could not connect.");
+				printf("\nCould not connect.");
 	}
 
+	if (!(pthread_create(&listen_thread, NULL, listener_tcp, peer)))
+		printf("\n[sockfd = %d]\tStarting peer listener..", peer->sockfd);
+
+	sleep(1);
+
+	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
+
 	handshake(peer, peer->info_hash, peer->peer_id);
+	sleep(7);
+	message(peer, UNCHOKE);
+	sleep(2);
+	message(peer, INTERESTED);
+	sleep(4);
+	//have(peer, 1);
+	request(peer, htonl(0), htonl(0), htonl(16384));
+	printf("\n[sockfd = %d]Handshake sent.", peer->sockfd);
 	//tell pieces have! (must be threadsafe)
-
-	if (!(pthread_create(&listen_thread, NULL, listener_tcp, &peer)))
-		printf("Starting peer listener.");
-
-	printf("\nConnected! [%s:%s]\n", peer->ip, peer->port); fflush(stdout);
 
 	while (peer->sockfd != 0)
 	{
 		//do peerstuff. //choke, unchoke, interested, not nterested, have, piece
-		printf("\ndoing peerstuff. ^^");
+		printf("\n[sockfd = %d]\tdoing peerstuff. ^^", peer->sockfd);
 		sleep(2);
 	}
-	printf("Peer disconnected.");
+	printf("\n[sockfd = %d]\tPeer disconnected.", peer->sockfd);
+	//pthread_exit_listener
 }
                                                                          
 
