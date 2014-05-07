@@ -58,6 +58,9 @@ void swarm_reset(swarm_t* swarm)
 
 	for (i = 0; i < MAX_SWARM_SIZE; i++)
 	{
+		//set sockfd to 0 !!
+		//close(&swarm->peer[i].sockfd);
+		//swarm->peer[i].sockfd = 0;
 		memset(swarm->peer[i].ip, '\0', 21);
 		memset(swarm->peer[i].port, '\0', 6); 
 	}
@@ -118,7 +121,7 @@ void* peerlisten(void* arg)
 	  swarm->listenport = ntohs(myaddr.sin_port);
 
 	listen(swarm->sockfd, BACKLOG);
-	printf("\nSwarm listening on.. %d\n", swarm->listenport); fflush(stdout);
+	printf("\n[info_hash = %s]\tSwarm listening on.. %d\n", swarm->info_hash, swarm->listenport); fflush(stdout);
 
 	while (swarm->taken == true)
 	{
@@ -145,7 +148,7 @@ void swarm_scour(swarm_t* swarm)
     		swarm->peer[i].peer_id = swarm->peer_id;
 
     		if (!(pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
-    			printf("Connecting to peer..");
+    			printf("\nStarting peerwire_thread_tcp..");
     	}
     }
 }
@@ -153,5 +156,5 @@ void swarm_scour(swarm_t* swarm)
 void swarm_listen(swarm_t* swarm)
 {
 	if(!(pthread_create(&swarm->thread, NULL, peerlisten, swarm)))
-			printf("\nSwarm is Listening.");
+			printf("\nAdding swarm listener..");
 }

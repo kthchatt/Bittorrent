@@ -1,7 +1,16 @@
 #include "torrent.h"
 
 int createTorrent(Torrent t){
+	FILE *file = fopen("newTorrent.torrent", "wb");
+	int i;
 
+	fprintf(file, "d8:announce%d:%s13:announce-listll", strlen(t.announce), t.announce);
+	for(i=0; i<sizeof(t.announceList)/sizeof(t.announceList[0])-1; i++)
+		fprintf(file, "%d:%sel", strlen(t.announceList[i]), t.announceList[i]);
+	fprintf(file, "%d:%see:comment5:Hello", strlen(t.announceListi[i]), t.announceList[i]);
+	// osv.....
+
+	fclose(file);
 }
 
 char *getInfoHash(char *torrentPath){
@@ -48,7 +57,7 @@ int addTorrent(char *torrentPath){
 		// get infohash from torrent file
 		strcpy(infoHash, getInfoHash(destination));
 		// get trackers from torrent file
-		decode_bencode(torrentPath, m);
+		decode_bencode(destination, m);
 		// add trackers to array with length MAX_TRACKERS
 		for(i=0; i<MAX_TRACKERS, i++)
 			strcpy(trackers[i], m._announce_list[i]);

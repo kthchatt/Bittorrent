@@ -11,7 +11,6 @@
 #define BACKLOG 5
 #define MAX_SWARMS 4
 #define MAX_SWARM_SIZE 200
-#define MAX_TRACKERS 4
 #define MAX_URL_LEN 100
 #define MAX_TRACKERS 4
 

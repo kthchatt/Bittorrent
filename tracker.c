@@ -4,7 +4,6 @@
  *  Peer Tracker.
  */
 
-
 #include "tracker.h"
 
 
@@ -21,7 +20,7 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		usleep(2000000);							//wait for the swarm to bind.
+		usleep(8000000);							//wait for the swarm to bind.
 		tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
  		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
 
@@ -68,9 +67,9 @@ void untrack(char* info_hash)
 /*int main(int argc, char ** argv)
 {
 	char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", //http://mgtracker.org:2710/announce.php 
-									"http://127.0.0.1:80/tracker/announce.php", //http://127.0.0.1:80/tracker/announce.php 
-									"http://127.0.0.1:80/tracker/announce.php", 
-									"http://127.0.0.1:80/tracker/announce.php"};
+									"", //http://127.0.0.1:80/tracker/announce.php 
+									"", 
+									""};
 
 	char* info_hash = (char*) malloc(21);	//for testing ;!
 	info_hash[0] = 0xf4;
@@ -96,10 +95,6 @@ void untrack(char* info_hash)
 	info_hash[20] = '\0';
 
 
-	track(info_hash, trackers);
-	track(info_hash, trackers);
-	track(info_hash, trackers);
-	track(info_hash, trackers);
 	track(info_hash, trackers);
 
 
