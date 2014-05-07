@@ -12,12 +12,13 @@ typedef struct tFile{
 }tFile;
 
 typedef struct Torrent{
-	char *announce; 		// tracker url
-	char *info;		
-	char *name; 			// file/dir name
+	char *announce, 		// tracker url
+		 *announceList,
+		 *info,		
+		 *name; 			// file/dir name
 	unsigned char *pieces; 	// hash list
-	int	pieceLength;		// bytes per piece
-	int fileSize;			// filesize
+	int	pieceLength,		// bytes per piece
+	    fileSize;			// filesize
 	tFile file;				
 } Torrent;
 

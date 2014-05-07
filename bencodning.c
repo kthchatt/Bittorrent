@@ -52,6 +52,16 @@ int decode_bencode(char *file_name, torrent_info *data){
 			fprintf(stderr, "Next\n");
 		break;
 	}
+	fprintf(stderr, "Calculating hash.....\n:");
+	info_hash(fp, data);
+	fprintf(stderr, "The info hash is:");
+	for (j = 0; j < 20; ++j)
+		{
+			fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
+			//dataptr++;
+		}
+	fprintf(stderr, "\n");
+
 /*	for (i = 0; i < 50; ++i)
 	{
 		for (j = 0; j < 20; ++j)
@@ -75,6 +85,27 @@ int decode_bencode(char *file_name, torrent_info *data){
 	}*/
 	return 1;
 
+}
+
+//Calculates the info hash.
+void info_hash (FILE *sfp, torrent_info *data){
+	int end = fseek(sfp, 0, SEEK_END);
+	end = ftell(sfp) - 1;
+	int toread = end - data->_location;
+	//fprintf(stderr, "End = %d Start = %ld To Read = %d\n", end, data->_location, toread);
+	char *indata = (char *) malloc(toread);
+	fseek(sfp, data->_location, SEEK_SET);
+	//fprintf(stderr, "The current possition is: %ld \n", ftell(sfp));
+	fread(indata, 1, toread, sfp);
+	//fprintf(stderr, "Read is done \n");
+	unsigned char hash[21];
+	//fprintf(stderr, "Attempting to hash \n");
+	SHA1(indata, toread, hash);
+	//fprintf(stderr, "Hash is done\n");
+	strncpy(data->_info_hash, hash, 20);
+	//fprintf(stderr, "String is copied\n");
+	free(indata);
+	return;
 }
 
 
@@ -168,6 +199,10 @@ void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 			hash_handler(sfp, data);
 			break;
 		} 
+		if (strcmp("info", string_name) == 0){
+			data->_location = ftell(sfp);
+			fprintf(stderr, "We got: %s at possition %ld \n", string_name, data->_location);
+		}
 		length_of_next_int = read_length_of_next(sfp);
 		if (length_of_next_int == 0){
 			not_complete_dictonarry = 1;
