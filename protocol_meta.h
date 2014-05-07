@@ -31,7 +31,7 @@ typedef struct
 	int scrape_completed, scrape_incomplete, scrape_downloaded, announce_interval, announce_minterval;
 } tracker_t;
 
-//ing = local, ed = remote
+//ing = local, ed = remote, todo: add pointer to swarm, remove peer_id & info_hash. (taken is required?)
 typedef struct 
 {
 	int sockfd;

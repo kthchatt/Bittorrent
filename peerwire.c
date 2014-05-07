@@ -46,24 +46,7 @@ void handshake(peer_t* peer, char* info_hash, char* peer_id)
     memcpy(request + payload, info_hash, 20);			payload += 20;
     memcpy(request + payload, peer_id, 20);				payload += 20;
 
-    /*memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-    getaddrinfo(peer->ip, peer->port, &hints, &res);
-
-    //if sock open, close first.
-    if (peer->sockfd != 0)
-    	close(peer->sockfd);
-
-    if ((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1)
-    {
-        if (connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)
-        {*/
-            send(peer->sockfd, request, payload, 0);	//strlen will find the reserved byte.
-            //receive?
-       /* } 
-    }*/
+    send(peer->sockfd, request, payload, 0);	//strlen will find the reserved byte.
     free(request);
 }
 
@@ -85,6 +68,28 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
     free(request);
 }
 
+//get available pieces, get piece_count, bitfield id=5
+void bitfield(peer_t* peer)
+{
+	int piece_count = 154, i;						//piece_count from include.
+	int payload = 0, len = htons(1 + piece_count);
+    char* request = malloc(1 + 1);
+    unsigned char id = 5; 		
+
+    memcpy(request, &len, 4);					payload += 4;
+    memcpy(request + payload, &id, 1);			payload += 1;
+
+    //for bitwise append: multiply by i/8 to find byte, bit-shift with i%8 and OR 
+	for (i = 0; i < piece_count; i++)
+    {
+    	//if has piece, append 1, if not has piece append 0
+    	payload += 1;
+    }
+
+    send(peer->sockfd, request, payload, 0);		
+    free(request);	
+}
+
 //message [choke, unchoke, interested, not interested]
 void message(peer_t* peer, unsigned char message)
 {
@@ -98,6 +103,7 @@ void message(peer_t* peer, unsigned char message)
     free(request);
 }
 
+//call when a piece has been successfully downloaded.
 void have(peer_t* peer, int piece_index)
 {
 	int payload, len = htonl(5);
@@ -136,21 +142,25 @@ void* listener_tcp(void* arg)
 {
 	peer_t* peer = (peer_t*) arg;
 	char recvbuf[2048] = {'\0'};
-	int num, i;
+	int num, i, inputlen;
 
 	printf("\n[sockfd = %d]\tTCP Listener init.", peer->sockfd);
 
+	//uses ioctl for non-blocking read.
 	while (peer->sockfd != 0)
 	{
 		memset(recvbuf, '\0', 2048);
 		printf("\n[sockfd = %d]\tReading...", peer->sockfd);
 
-		if ((num = read(peer->sockfd, recvbuf, 2048) > 0))
-		{	
-			printf("\n[sockfd = %d]\tHex Dump %d Byte(s)\n", peer->sockfd, num);
+		//if ((inputlen = ioctl(peer->sockfd, FIONREAD, &inputlen)) > 0)
+		//{	
+		if ((num = recv(peer->sockfd, recvbuf, 2048, 0)) > 0)
+		{
+			printf("\n[sockfd = %d]\tHex Dump %d Byte(s)\n------------------------------------\n", peer->sockfd, num);
 			for (i = 0; i < num; i++)
 			{
-				printf("%x  ", recvbuf[i]);
+				printf("%02x  ", (unsigned char) recvbuf[i]);
+
 				if ((i%8 == 0))
 					printf("\t");
 
@@ -160,7 +170,8 @@ void* listener_tcp(void* arg)
 			printf("\n------------------------------------");
 			//printf("read: %s", recvbuf);
 		}
-		sleep(0);
+		printf("\n[data in buffer =  %d]", num);
+		sleep(1); //poll
 	}
 }
 
@@ -185,7 +196,10 @@ void* peerwire_thread_tcp(void* arg)
             if (!((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
 				printf("\nCould not set up socket.");
             if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
+            {
 				printf("\nCould not connect.");
+				return; //thread_exit, peer_free/peer_stale
+			}
 	}
 
 	if (!(pthread_create(&listen_thread, NULL, listener_tcp, peer)))
@@ -196,6 +210,8 @@ void* peerwire_thread_tcp(void* arg)
 	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
 
 	handshake(peer, peer->info_hash, peer->peer_id);
+	sleep(1);
+	bitfield(peer);
 	sleep(7);
 	message(peer, UNCHOKE);
 	sleep(2);
