@@ -1,11 +1,15 @@
 //gcc main.c tracker.c announce.c bencodning.c scrape.c swarm.c peerwire.c urlparse.c -o main.out -pthread -lssl -lcrypto
+
 #define MAX_TORRENTS 100
 #include "tracker.h"
 #include "bencodning.h"
+#include "torrent.c"
+
 
 torrent_info *torrents[MAX_TORRENTS];
 
 int main (int argc, char *argv[]){
+
 	int i;
 	torrents[0] = malloc(sizeof(torrent_info));
 
@@ -23,4 +27,7 @@ int main (int argc, char *argv[]){
 	sleep(30);
 	//untrack("00000000000000000000");
 	fprintf(stderr, "Stopping\n");
+
+	addTorrent(argv[1]);
+	return 1;
 } 

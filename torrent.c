@@ -25,16 +25,11 @@ char *getInfoHash(char *torrentPath){
 	fseek(file, 0, SEEK_SET);
 
 	buffer = malloc(fileLen+1);
-	// read file into buffer
-	fread(buffer, fileLen, 1, file);
-	// get length of all pieces + ":pieces"
-	pLen = strlen(strstr(buffer, ":pieces"));
-	// allocate memmory for file without pieces
-	buffer = realloc(buffer, fileLen-pLen+1);
-	// read file without pieces into buffer
-	fread(buffer, fileLen-pLen, 1, file);
-	// Calculate info hash
-	SHA1(buffer, fileLen-pLen+1, infoHash);
+	fread(buffer, fileLen, 1, file);				// read file into buffer
+	pLen = strlen(strstr(buffer, ":pieces"));		// get length of all pieces + ":pieces"
+	buffer = realloc(buffer, fileLen-pLen+1);		// allocate memmory for file without pieces
+	fread(buffer, fileLen-pLen, 1, file);			// read file without pieces into buffer
+	SHA1(buffer, fileLen-pLen+1, infoHash);			// Calculate info hash
 
 	fclose(file);
 	return infoHash;
@@ -50,19 +45,14 @@ int addTorrent(char *torrentPath){
 	pid_t pid = fork();
 
 	if(pid==0){
-		// copy torrent to static path
-		execl("/bin/cp", "/bin/cp", torrentPath, destination, (char *)0);
+		execl("/bin/cp", "/bin/cp", torrentPath, destination, (char *)0);	// copy torrent to static path
 	}else{
 		wait(0);
-		// get infohash from torrent file
-		strcpy(infoHash, getInfoHash(destination));
-		// get trackers from torrent file
-		decode_bencode(destination, m);
-		// add trackers to array with length MAX_TRACKERS
-		for(i=0; i<MAX_TRACKERS, i++)
-			strcpy(trackers[i], m._announce_list[i]);
-		// announce to tracker, init transfer
-		track(infoHash, trackers);
+		strcpy(infoHash, getInfoHash(destination));							// get infohash from torrent file
+		decode_bencode(destination, m);										// get trackers from torrent file
+		for(i=0; i<MAX_TRACKERS, i++)										// add trackers to array with length MAX_TRACKERS
+			strcpy(trackers[i], m._announce_list[i]);						// announce to tracker, init transfer
+		track(infoHash, trackers);											// magic
 	}
 	return 0;
 }
