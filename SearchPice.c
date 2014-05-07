@@ -1,10 +1,10 @@
 #include "SearchPice.h"
 
-void main (){
+/*void main (){
 
 	search_single_file("Arbete och teknik på människans villkor_student.pdf", "00000000000000000000", 56000);
 
-}
+}*/
 
 int search_multi_file (torrent_info *torrent, char *original_hash){
 	FILE *sfp[250];
@@ -50,10 +50,12 @@ int search_multi_file (torrent_info *torrent, char *original_hash){
 
 		if (strncmp(hash, original_hash, 20) == 0){
 			found = 1;
+			return 1;
 			break;
 		}
 
     }while (found != 1 && total_loaded_files < torrent->_number_of_files);
+    return 0;
 }
 
 int search_single_file (char *file_name, char *original_hash, long long int piece_length){
