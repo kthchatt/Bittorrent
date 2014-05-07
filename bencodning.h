@@ -12,6 +12,7 @@ Feel fre to use this code as you want.
 #ifndef BENCODNING_H
 #define BENCODNING_H
 
+#include <openssl/sha.h>
 #include <stdio.h> 
 #include <string.h>
 #include <stdlib.h>
@@ -24,6 +25,10 @@ typedef struct metainfodecode
 	char _comment [250];
 	char _created_by[250];
 	int _multi_file;
+
+	char _info_hash[21];
+	long int _location;
+
 
 	long long int _piece_length;
 	int _private;
@@ -53,6 +58,7 @@ void dictonarry_handler (FILE *, torrent_info *, char *);
 void announce_list_handler(FILE *, torrent_info *);
 void int_handler(FILE *, char *, torrent_info *);
 void path_handler(char *, int, torrent_info *);
+void info_hash (FILE *, torrent_info *);
 
 int decode_bencode(char *, torrent_info *);
 

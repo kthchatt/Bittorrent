@@ -65,7 +65,7 @@ void untrack(char* info_hash)
 }
 
 
-int main(int argc, char ** argv)
+/*int main(int argc, char ** argv)
 {
 	char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", //http://mgtracker.org:2710/announce.php 
 									"http://127.0.0.1:80/tracker/announce.php", //http://127.0.0.1:80/tracker/announce.php 
@@ -109,4 +109,4 @@ int main(int argc, char ** argv)
 		printf("!");
 		fflush(stdout);
 	}
-}
+}*/
