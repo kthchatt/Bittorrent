@@ -48,12 +48,12 @@ int addTorrent(char *torrentPath){
 		// get infohash from torrent file
 		strcpy(infoHash, getInfoHash(destination));
 		// get trackers from torrent file
-		decode_bencode(torrentPath, m);
+		decode_bencode(destination, m);
 		// add trackers to array with length MAX_TRACKERS
 		for(i=0; i<MAX_TRACKERS, i++)
 			strcpy(trackers[i], m._announce_list[i]);
 		// announce to tracker, init transfer
 		track(infoHash, trackers);
 	}
-	return 1;
+	return 0;
 }
