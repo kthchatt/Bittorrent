@@ -55,5 +55,5 @@ int addTorrent(char *torrentPath){
 		// announce to tracker, init transfer
 		track(infoHash, trackers);
 	}
-	return 1;
+	return 0;
 }
