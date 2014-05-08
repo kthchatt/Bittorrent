@@ -2,11 +2,13 @@
  * 2014-04-17
  * Robin Duda
  *   Read data from URL.
+ *      All methods are thread safe. 
+ *      The caller must allocate memory.
  */
 
 #include "urlparse.h"
 
-//returns url path, fx: http://www.tracker.domain.com:port/sft/tracker/announce.php
+//returns file path, fx: http://www.tracker.domain.com:port/sft/tracker/announce.php
  //will return /sft/tracker/, used to replace filepointer for scrape etc.
  void url_path(char* url, char* path)
  {

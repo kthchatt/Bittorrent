@@ -110,13 +110,13 @@ void have(peer_t* peer, int piece_index)
 	unsigned char id = 4;
 	char* request = malloc(4 + 1 + 4);
 
-	//for every piece have in swarm
+	//for every piece downloaded, set updateflag in swarm to peercount, decrease for every/have.
 	//{
-	payload = 0;
-	memcpy(request, &len, 4); 							payload += 4;
-	memcpy(request + payload, &id, 1);					payload += 1;
-	memcpy(request + payload, &piece_index, 4); 		payload += 4;
-	send(peer->sockfd, request, payload, 0);	
+	//payload = 0;
+	//memcpy(request, &len, 4); 						payload += 4;
+	//memcpy(request + payload, &id, 1);				payload += 1;
+	//memcpy(request + payload, &piece_index, 4); 		payload += 4;
+	//send(peer->sockfd, request, payload, 0);	
 	//}
 
 	free(request);
@@ -130,6 +130,8 @@ void* listener_udp(peer_t* peer)
 //todo not yet implemented
 void* peerwire_thread_udp(peer_t* peer)
 {
+	//pthread_create(&thread, null, listener_udp, peer);
+
 	while (peer->sockfd != 0)
 	{
 		sleep(1);
@@ -170,7 +172,7 @@ void* listener_tcp(void* arg)
 			printf("\n------------------------------------");
 			//printf("read: %s", recvbuf);
 		}
-		printf("\n[data in buffer =  %d]", num);
+		//printf("\n[data in buffer =  %d]", num);
 		sleep(1); //poll
 	}
 }
@@ -211,7 +213,7 @@ void* peerwire_thread_tcp(void* arg)
 
 	handshake(peer, peer->info_hash, peer->peer_id);
 	sleep(1);
-	bitfield(peer);
+	//bitfield(peer);
 	sleep(7);
 	message(peer, UNCHOKE);
 	sleep(2);
@@ -219,7 +221,7 @@ void* peerwire_thread_tcp(void* arg)
 	sleep(4);
 	//have(peer, 1);
 	request(peer, htonl(0), htonl(0), htonl(16384));
-	printf("\n[sockfd = %d]Handshake sent.", peer->sockfd);
+	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd);
 	//tell pieces have! (must be threadsafe)
 
 	while (peer->sockfd != 0)

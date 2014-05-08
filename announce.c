@@ -27,7 +27,6 @@ static int build(char request[300], char info_hash[21], char peer_id[21], char t
     free(hash_escape);
     free(announce);
     free(hostname);
-
     return;
 }
 
