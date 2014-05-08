@@ -1,18 +1,5 @@
 #include "torrent.h"
 
-int createTorrent(Torrent t){
-	FILE *file = fopen("newTorrent.torrent", "wb");
-	int i;
-
-	fprintf(file, "d8:announce%d:%s13:announce-listll", strlen(t.announce), t.announce);
-	for(i=0; i<sizeof(t.announceList)/sizeof(t.announceList[0])-1; i++)
-		fprintf(file, "%d:%sel", strlen(t.announceList[i]), t.announceList[i]);
-	fprintf(file, "%d:%see:comment5:Hello", strlen(t.announceListi[i]), t.announceList[i]);
-	// osv.....
-
-	fclose(file);
-}
-
 char *getInfoHash(char *torrentPath){
 	FILE *file = fopen(torrentPath, "rb");
 	char *buffer, infoHash[20];
