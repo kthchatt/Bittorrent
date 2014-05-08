@@ -11,7 +11,7 @@ typedef struct tFile{
 }tFile;
 
 typedef struct Torrent{
-	char *announce, 		// tracker url
+	char *announce, 		// tracker url 
 		 *announceList,	
 		 *dirName; 			// file/dir name
 	int	pieceLength;		// bytes per piece
