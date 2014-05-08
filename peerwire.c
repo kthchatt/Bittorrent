@@ -152,7 +152,8 @@ void* listener_tcp(void* arg)
 	peer_t* peer = (peer_t*) arg;
 	char recvbuf[2048];
 	char* message = (char*) malloc(45);
-	int num, msglen = 0, i, a;
+	int num, i, a;
+	unsigned long msglen;
 
 	printf("\n[sockfd = %d]\tTCP Listener init.", peer->sockfd);
 
@@ -160,10 +161,14 @@ void* listener_tcp(void* arg)
 	{
 		memset(recvbuf, '\0', 2048);
 		memset(message, '\0', 42);
-		memcpy(&msglen, recvbuf, 4);
 
 		if ((num = recv(peer->sockfd, recvbuf, 2048, 0)) > 0)
 		{
+			memcpy(&msglen, recvbuf, 4);
+			msglen = htonl(msglen);
+
+			//do not include K-A, this will unchoke the client on ping ^^
+			if (msglen > 0)
 			switch ((unsigned char) recvbuf[4])
 			{
 				case UNCHOKE: 		peer->choked = false;    strcat(message, "UNCHOKE");			break;
@@ -171,13 +176,13 @@ void* listener_tcp(void* arg)
 				case INTERESTED: 	peer->interested = true; strcat(message, "INTERESTED");			break;
 				case NOT_INTERESTED:peer->interested = false;strcat(message, "NOT_INTERESTED");  	break;
 				case HAVE: 			strcat(message, "HAVE");			break;
-				case REQUEST: 		strcat(message, "REQUEST");			break;
+				case REQUEST: 		strcat(message, "REQUEST");			break;	
 				case PIECE: 		strcat(message, "PIECE");			break;
 				case 84: 			strcat(message, "HANDSHAKE");		break; //Bittorrent Protocol...
 				default: 			strcat(message, "UNDEFINED"); 		break;
 			}
 
-			printf("\n[sockfd = %d]\t-Hex Dump %d Byte(s)-\t Header: [Type = %s, Id = %x, Len = %x]\
+			printf("\n[sockfd = %d]\t-Hex Dump %d Byte(s)-\t Header: [Type = %s, Id = %x, Len = %ld]\
 				    \n------------------------------------------------------------------------\n", 
 				    	peer->sockfd, num, message, recvbuf[4], msglen);
 			for (i = 0; i < num; i++)
@@ -264,7 +269,7 @@ void* peerwire_thread_tcp(void* arg)
 		sleep(2);
 	}
 	printf("\n[sockfd = %d]\tPeer disconnected.", peer->sockfd);
-	//pthread_exit_listener
+	//shutdown the listener, free the peer, close the sockfd.
 }
                                                                          
 

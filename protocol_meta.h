@@ -6,6 +6,14 @@
 #define false 0
 #define boolean char
 
+//connection specifics
+#define DOWNLOAD_QUEUE 100
+#define UPLOAD_QUEUE 100
+#define UPLOAD_CONCURRENT 10
+#define DOWNLOAD_CONCURRENT 10
+//when the concurrent is full, peer will be choked.
+//when the concurrent is not full, peers will be unchoked.
+
 //swarm-tracker
 #define SIGNATURE "NSA-PirateBust-"
 #define BACKLOG 5
