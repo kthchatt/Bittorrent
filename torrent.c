@@ -12,7 +12,7 @@ char *getInfoHash(char *torrentPath){
 	fseek(file, 0, SEEK_SET);
 
 	buffer = malloc(fileLen+1);
-	fread(buffer, fileLen, 1, file);				// read file into buffer
+	fread(buffer, fileLen, 1, file);				
 	pLen = strlen(strstr(buffer, ":info"));			
 	buffer = strstr(buffer, "info");
 	buffer = strstr(buffer, "d");

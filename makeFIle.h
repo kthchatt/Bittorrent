@@ -6,7 +6,7 @@
 #include <ctype.h>
 
 typedef struct tFile{
-	char *path;
+	char *name;
 	int length;
 }tFile;
 
