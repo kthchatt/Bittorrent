@@ -69,22 +69,21 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
 }
 
 //get available pieces, get piece_count, bitfield id=5
+//<len=0001+X><id=5><bitfield>
 void bitfield(peer_t* peer)
 {
-	int piece_count = 154, i;						//piece_count from include.
-	int payload = 0, len = htons(1 + piece_count);
-    char* request = malloc(1 + 1);
-    unsigned char id = 5; 		
+	int piece_count, i;						//piece_count from include.
+	int payload = 0, len;
+    char* bitfield;
+    unsigned char id = 5; 	
 
+    //piece_count = get_bitfield(torrent_info_pointer, bitfield);	
+    len = htons(piece_count + 1);
+
+    char* request = malloc(1 + piece_count/8+1);
     memcpy(request, &len, 4);					payload += 4;
     memcpy(request + payload, &id, 1);			payload += 1;
-
-    //for bitwise append: multiply by i/8 to find byte, bit-shift with i%8 and OR 
-	for (i = 0; i < piece_count; i++)
-    {
-    	//if has piece, append 1, if not has piece append 0
-    	payload += 1;
-    }
+    memcpy(request + payload, bitfield, piece_count); 	payload += piece_count/8+1;
 
     send(peer->sockfd, request, payload, 0);		
     free(request);	
@@ -96,6 +95,14 @@ void message(peer_t* peer, unsigned char message)
 	int payload = 0, len = htonl(1);
     char* request = malloc(1 + 1);
 
+    switch (message)
+    {
+    	case CHOKE:   peer->choking = true; 			break;
+    	case UNCHOKE: peer->choking = false; 			break;
+    	case INTERESTED: peer->interested = true; 		break;
+    	case NOT_INTERESTED: peer->interested = false; 	break;
+    }
+
     memcpy(request, &len, 4);						payload += 4;
     memcpy(request + payload, &message, 1);			payload += 1;
 
@@ -106,13 +113,13 @@ void message(peer_t* peer, unsigned char message)
 //call when a piece has been successfully downloaded.
 void have(peer_t* peer, int piece_index)
 {
-	int payload, len = htonl(5);
+	int payload = 0, len = htonl(5);
 	unsigned char id = 4;
 	char* request = malloc(4 + 1 + 4);
 
-	//for every piece downloaded, set updateflag in swarm to peercount, decrease for every/have.
+	//for every piece downloaded, in peer store last have/bitfield message.
+	//if the stored bitfield differs from swarm bitfield, update peer and set new bitfield.
 	//{
-	//payload = 0;
 	//memcpy(request, &len, 4); 						payload += 4;
 	//memcpy(request + payload, &id, 1);				payload += 1;
 	//memcpy(request + payload, &piece_index, 4); 		payload += 4;
@@ -143,38 +150,60 @@ void* peerwire_thread_udp(peer_t* peer)
 void* listener_tcp(void* arg)
 {
 	peer_t* peer = (peer_t*) arg;
-	char recvbuf[2048] = {'\0'};
-	int num, i, inputlen;
+	char recvbuf[2048];
+	char* message = (char*) malloc(45);
+	int num, msglen = 0, i, a;
 
 	printf("\n[sockfd = %d]\tTCP Listener init.", peer->sockfd);
 
-	//uses ioctl for non-blocking read.
 	while (peer->sockfd != 0)
 	{
 		memset(recvbuf, '\0', 2048);
-		printf("\n[sockfd = %d]\tReading...", peer->sockfd);
+		memset(message, '\0', 42);
+		memcpy(&msglen, recvbuf, 4);
 
-		//if ((inputlen = ioctl(peer->sockfd, FIONREAD, &inputlen)) > 0)
-		//{	
 		if ((num = recv(peer->sockfd, recvbuf, 2048, 0)) > 0)
 		{
-			printf("\n[sockfd = %d]\tHex Dump %d Byte(s)\n------------------------------------\n", peer->sockfd, num);
+			switch ((unsigned char) recvbuf[4])
+			{
+				case UNCHOKE: 		peer->choked = false;    strcat(message, "UNCHOKE");			break;
+				case CHOKE:			peer->choked = true;     strcat(message, "CHOKE"); 				break;
+				case INTERESTED: 	peer->interested = true; strcat(message, "INTERESTED");			break;
+				case NOT_INTERESTED:peer->interested = false;strcat(message, "NOT_INTERESTED");  	break;
+				case HAVE: 			strcat(message, "HAVE");			break;
+				case REQUEST: 		strcat(message, "REQUEST");			break;
+				case PIECE: 		strcat(message, "PIECE");			break;
+				case 84: 			strcat(message, "HANDSHAKE");		break; //Bittorrent Protocol...
+				default: 			strcat(message, "UNDEFINED"); 		break;
+			}
+
+			printf("\n[sockfd = %d]\t-Hex Dump %d Byte(s)-\t Header: [Type = %s, Id = %x, Len = %x]\
+				    \n------------------------------------------------------------------------\n", 
+				    	peer->sockfd, num, message, recvbuf[4], msglen);
 			for (i = 0; i < num; i++)
 			{
+				if (i > 0)
+				{
+					if ((i%8 == 0))
+						printf("\t");
+
+					if ((i%16 == 0))
+					{
+						printf("\t");
+						for (a = 0; a < 15 && i+a < num; a++)
+						{
+							printf("%c", recvbuf[i+a]);
+						}
+						printf("\n");
+					}
+				}
 				printf("%02x  ", (unsigned char) recvbuf[i]);
-
-				if ((i%8 == 0))
-					printf("\t");
-
-				if ((i%16 == 0))
-					printf("\n");
 			}
-			printf("\n------------------------------------");
-			//printf("read: %s", recvbuf);
+			printf("\n------------------------------------------------------------------------");
 		}
-		//printf("\n[data in buffer =  %d]", num);
-		sleep(1); //poll
+		sleep(1); 
 	}
+	free(message);
 }
 
 //connect and get sockfd (if sockfd == 0)
@@ -184,6 +213,12 @@ void* peerwire_thread_tcp(void* arg)
     struct addrinfo hints, *res;
     pthread_t listen_thread;
     peer_t* peer = (peer_t*) arg;
+
+    //set up connection specific flags
+    peer->choking = 1;
+    peer->choked = 1;
+    peer->interested = 0;
+    peer->interesting = 0;
 
 	printf("\nConnecting to peer..");
 
@@ -208,17 +243,15 @@ void* peerwire_thread_tcp(void* arg)
 		printf("\n[sockfd = %d]\tStarting peer listener..", peer->sockfd);
 
 	sleep(1);
-
 	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
-
 	handshake(peer, peer->info_hash, peer->peer_id);
 	sleep(1);
 	//bitfield(peer);
-	sleep(7);
+	sleep(9);
 	message(peer, UNCHOKE);
-	sleep(2);
-	message(peer, INTERESTED);
 	sleep(4);
+	message(peer, INTERESTED);
+	sleep(6);
 	//have(peer, 1);
 	request(peer, htonl(0), htonl(0), htonl(16384));
 	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd);
@@ -227,7 +260,7 @@ void* peerwire_thread_tcp(void* arg)
 	while (peer->sockfd != 0)
 	{
 		//do peerstuff. //choke, unchoke, interested, not nterested, have, piece
-		printf("\n[sockfd = %d]\tdoing peerstuff. ^^", peer->sockfd);
+		printf("\n[sockfd = %d]\tdoing peerstuff. [choked = %d, choking = %d] ^^ ", peer->sockfd, peer->choking, peer->choked);
 		sleep(2);
 	}
 	printf("\n[sockfd = %d]\tPeer disconnected.", peer->sockfd);

@@ -20,6 +20,8 @@
 #define UNCHOKE 	1
 #define INTERESTED 	2
 #define NOT_INTERESTED 3
+#define BITFIELD	5
+#define REQUEST		6
 #define HAVE 		4
 #define PIECE       7
 #define CANCEL      8

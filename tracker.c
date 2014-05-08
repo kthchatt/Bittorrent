@@ -15,23 +15,19 @@ static void* tracking(void* arg)
 	int i;
 	swarm_t* swarm = (swarm_t*) arg;
 
-	//set the swarm to listen for peers.
-	swarm_listen(swarm);
+	swarm_listen(swarm);	//set the swarm to listen for peers.
 
 	while (swarm->taken == true)
 	{
 		usleep(8000000);							//wait for the swarm to bind.
 		tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
  		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
-
-		//download, upload, messaging. main torrent loop.
 		printf("\nPeercount: %d\n", swarm->peercount);
 		swarm_scour(swarm);							//find new peers and initiate connections.
 	}
 
 	printf("\nError: Undefined. Releasing swarm...");
 	swarm_release(swarm);
-	//notify gui that swarm failed.
 }
 
 void track(char* info_hash, char* trackers[MAX_TRACKERS])
@@ -56,9 +52,7 @@ void untrack(char* info_hash)
 	{
 		if (strcmp(swarm[i].info_hash, info_hash) == 0)
 		{
-			//notify tracker of event=stopped.
-			//call swarm_free/swarm_release
-			swarm[i].taken = false;
+			swarm[i].taken = false;	//call swarm_free. This is not thread-safe nor a reliable mean to stop swarm-threads. Peer threads are not stopped.
 		}
 	}
 }
