@@ -13,10 +13,12 @@ char *getInfoHash(char *torrentPath){
 
 	buffer = malloc(fileLen+1);
 	fread(buffer, fileLen, 1, file);				// read file into buffer
-	pLen = strlen(strstr(buffer, ":pieces"));		// get length of all pieces + ":pieces"
-	buffer = realloc(buffer, fileLen-pLen+1);		// allocate memmory for file without pieces
-	fread(buffer, fileLen-pLen, 1, file);			// read file without pieces into buffer
-	SHA1(buffer, fileLen-pLen+1, infoHash);			// Calculate info hash
+	pLen = strlen(strstr(buffer, ":info"));			
+	buffer = strstr(buffer, "info");
+	buffer = strstr(buffer, "d");
+	buffer = realloc(buffer, pLen-5);		
+
+	SHA1(buffer, pLen-5, infoHash);			// Calculate info hash
 
 	fclose(file);
 	return infoHash;
