@@ -56,7 +56,8 @@ void netstat_initialize()
 	if (netstat_initialized == false)
 	{
 		tracking_count = 0;
-		netstat = (netstat_t*) malloc(sizeof(netstat_t));	//get a pointer to any block of memory, for realloc. lol.
+		//netstat = (netstat_t*) malloc(sizeof(netstat_t));	//get a pointer to any block of memory, for realloc. lol.
+		//memset(netstat, 0, sizeof(netstat_t));
 
 		if (!(pthread_create(&timer, NULL, timer_thread, NULL)))
 			printf("\nTracking your network statistics.");
@@ -77,7 +78,7 @@ void netstat_track(char* info_hash)
 
 	if (tracked == false)
 	{
-		if (realloc(netstat, sizeof(netstat_t) * tracking_count + 1) != NULL)
+		if ((netstat = realloc(netstat, sizeof(netstat_t) * (tracking_count + 1))) != NULL)
 		{
 			memset(&netstat[tracking_count], 0, sizeof(netstat_t) * tracking_count + 1);
 			pthread_mutex_init(&netstat[tracking_count].statlock, NULL); 
@@ -99,7 +100,7 @@ void netstat_update(int direction, int amount, char* info_hash)
 			lock(&netstat[i].statlock);
 			switch (direction)
 			{
-				case INPUT:  netstat[i].in_delta += amount;  break;
+				case INPUT:  netstat[i].in_delta += amount; break;
 				case OUTPUT: netstat[i].out_delta += amount; break;
 			}
 			unlock(&netstat[i].statlock);

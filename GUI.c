@@ -1,4 +1,6 @@
 #include <gtk/gtk.h>
+#include <string.h>
+#include <stdlib.h>
 
 enum {
 	COL_ID = 0,
@@ -7,6 +9,62 @@ enum {
 	COL_DONE = 3,
 	COL_STATUS = 4
 };
+
+//torrent data to display, load from includes. ~RD
+typedef struct
+{
+	int id;
+	char* size;
+	char* done;
+	char* status;
+	char* name;
+} torrentlist_t;
+
+//todo: add more tabs? log, peers, trackers? ~RD
+
+//dynamic array of torrentlist.  ~RD
+torrentlist_t* torrentlist; 
+int torrentlist_count;
+
+
+//compile a list of info-items based on status, * = any.  ~RD
+void list_compile(GtkListStore **model, char* status)
+{
+	int i;
+	*model = gtk_list_store_new(5, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+
+	for(i = 0; i < torrentlist_count; i++) 
+	{
+		if (strcmp(torrentlist[i].status, status) == 0 || strcmp(status, "*") == 0)
+		{
+			printf("\nTorrent: #%d, %s\t%s\t\t%s", torrentlist[i].id, torrentlist[i].name, torrentlist[i].size, torrentlist[i].done);
+			gtk_list_store_insert_with_values(*model, NULL, -1, COL_ID, torrentlist[i].id, COL_NAME, torrentlist[i].name, COL_SIZE, torrentlist[i].size, 
+										 	  COL_DONE, torrentlist[i].done, COL_STATUS, torrentlist[i].status, -1);
+		}
+	}
+}
+
+//add an info-item to list. ~RD
+void list_add(char* name, char* status, char* size, char* done)
+{
+	printf("\nSize: %lu", sizeof(torrentlist_t) * (torrentlist_count + 1)); fflush(stdout);
+
+	if ((torrentlist = realloc(torrentlist, sizeof(torrentlist_t) * (torrentlist_count + 1))) != NULL )
+	{
+		torrentlist[torrentlist_count].size = malloc(8);
+		torrentlist[torrentlist_count].done = malloc(8);
+		torrentlist[torrentlist_count].status = malloc(16);
+		torrentlist[torrentlist_count].name = malloc(32);
+
+		strcpy(torrentlist[torrentlist_count].size, size);
+		strcpy(torrentlist[torrentlist_count].done, done);
+		strcpy(torrentlist[torrentlist_count].status, status);
+		strcpy(torrentlist[torrentlist_count].name, name);
+		torrentlist[torrentlist_count].id = torrentlist_count;
+
+		torrentlist_count++;
+	}
+}
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
 	*label = gtk_label_new ("MOTD goes here."); // Label content
@@ -111,7 +169,7 @@ void createCompleted (GtkWidget **label, GtkWidget **scrolled_window, GtkWidget 
 	*label = gtk_label_new ("Completed");
 	*scrolled_window = gtk_scrolled_window_new (NULL, NULL);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (*scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	//gtk_container_add(GTK_CONTAINER(*scrolled_window), *treeView);
+	gtk_container_add(GTK_CONTAINER(*scrolled_window), *treeView);
 	gtk_notebook_insert_page (GTK_NOTEBOOK (*notebook), *scrolled_window, *label, 3);
 }
 
@@ -209,13 +267,46 @@ int main (int argc, char *argv[])
 // Create Notebook
 	createNotebook (&table, &notebook);
 
-// Tabs
+
+// List some torrents in TreeViews. --------------------------------------
+	torrentlist_count = 0;
+
+	//add info-item to list.
+	list_add("Photoflop CS7", "Completed", "8.43 GB", "100.00%");
+	list_add("World of Catcraft", "Downloading", "12.47 GB", "68.13%");
+	list_add("The.Shrimpsons S08E03", "Downloading", "413.89 MB", "12.04%");
+	list_add("EBook_ASM_Cookbook", "Downloading", "55.10 MB", "97.89%");
+	list_add("The.Shrimpsons S08E04", "Completed", "374.95 MB", "100.00%");
+	list_add("The.Shrimpsons S08E05", "Completed", "415.10 MB", "100.00%");
+	list_add("Super-Advanced-IDE", "Downloading", "3.10 GB", "97.89%");
+
+	//create Tabs.
 	createList(&model);
+	showList(&treeView, &model, &column);
+	createHome (&label, &view, &home_table, &notebook);
+
+	list_compile(&model, "*");
+	showList(&treeView, &model, &column);
+	createAll(&label, &scrolled_window, &notebook, &treeView);
+
+	list_compile(&model, "Downloading");
+	showList(&treeView, &model, &column);
+	createActive(&label, &scrolled_window, &notebook, &treeView);	
+
+	list_compile(&model, "Completed");
+	showList(&treeView, &model, &column);
+	createCompleted(&label, &scrolled_window, &notebook, &treeView);
+//---------------------------------------------------------------------------
+
+
+
+// Tabs
+	/*createList(&model);
 	showList(&treeView, &model, &column);
 	createHome (&label, &view, &home_table, &notebook);
 	createAll (&label, &scrolled_window, &notebook, &treeView);
 	createActive (&label, &scrolled_window, &notebook, &treeView);
-	createCompleted (&label, &scrolled_window, &notebook, &treeView);
+	createCompleted (&label, &scrolled_window, &notebook, &treeView);*/
 
 // MOTD
 	MOTD (&label, &table);
