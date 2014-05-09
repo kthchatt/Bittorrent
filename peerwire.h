@@ -14,6 +14,7 @@
  #include <pthread.h>
  #include <sys/ioctl.h>
  #include "protocol_meta.h"
+ #include "netstat.h"
 
 //create a peerwire connection using tcp.
 void* peerwire_thread_tcp(void* arg);

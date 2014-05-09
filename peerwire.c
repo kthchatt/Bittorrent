@@ -105,7 +105,6 @@ void message(peer_t* peer, unsigned char message)
 
     memcpy(request, &len, 4);						payload += 4;
     memcpy(request + payload, &message, 1);			payload += 1;
-
     send(peer->sockfd, request, payload, 0);		
     free(request);
 }
@@ -117,32 +116,23 @@ void have(peer_t* peer, int piece_index)
 	unsigned char id = 4;
 	char* request = malloc(4 + 1 + 4);
 
-	//for every piece downloaded, in peer store last have/bitfield message.
-	//if the stored bitfield differs from swarm bitfield, update peer and set new bitfield.
-	//{
-	//memcpy(request, &len, 4); 						payload += 4;
-	//memcpy(request + payload, &id, 1);				payload += 1;
-	//memcpy(request + payload, &piece_index, 4); 		payload += 4;
-	//send(peer->sockfd, request, payload, 0);	
-	//}
-
+	memcpy(request, &len, 4); 						payload += 4;
+	memcpy(request + payload, &id, 1);				payload += 1;
+	memcpy(request + payload, &piece_index, 4); 	payload += 4;
+	send(peer->sockfd, request, payload, 0);	
 	free(request);
 }
 
+//while .. read.. dgram
 void* listener_udp(peer_t* peer)
-{
-	//while .. read.. dgram..
-}
+{}
 
 //todo not yet implemented
 void* peerwire_thread_udp(peer_t* peer)
 {
 	//pthread_create(&thread, null, listener_udp, peer);
-
 	while (peer->sockfd != 0)
-	{
 		sleep(1);
-	}
 }
 
 //every time data is received update lastrecv with system tick.
@@ -160,10 +150,13 @@ void* listener_tcp(void* arg)
 	while (peer->sockfd != 0)
 	{
 		memset(recvbuf, '\0', 2048);
-		memset(message, '\0', 42);
+		memset(message, '\0', 45);
 
 		if ((num = recv(peer->sockfd, recvbuf, 2048, 0)) > 0)
 		{
+			printf("\nUpdating stats."); fflush(stdout);
+			netstat_update(INPUT, num, peer->info_hash);
+			printf("\nUpdating stats done."); fflush(stdout);
 			memcpy(&msglen, recvbuf, 4);
 			msglen = htonl(msglen);
 
@@ -247,20 +240,24 @@ void* peerwire_thread_tcp(void* arg)
 	if (!(pthread_create(&listen_thread, NULL, listener_tcp, peer)))
 		printf("\n[sockfd = %d]\tStarting peer listener..", peer->sockfd);
 
-	sleep(1);
+	sleep(2);
 	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
 	handshake(peer, peer->info_hash, peer->peer_id);
 	sleep(1);
 	//bitfield(peer);
 	sleep(9);
+	printf("\ndbg1");
 	message(peer, UNCHOKE);
+	printf("\ndbg2");
 	sleep(4);
-	message(peer, INTERESTED);
+	//message(peer, INTERESTED);
+	printf("\ndbg3");
 	sleep(6);
 	//have(peer, 1);
-	request(peer, htonl(0), htonl(0), htonl(16384));
+	//request(peer, htonl(0), htonl(0), htonl(16384));
 	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd);
 	//tell pieces have! (must be threadsafe)
+	printf("\ndbg4");
 
 	while (peer->sockfd != 0)
 	{

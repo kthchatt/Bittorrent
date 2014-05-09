@@ -9,6 +9,7 @@
 #include "scrape.h" 
 #include "swarm.h"
 #include "peerwire.h"
+#include "netstat.h"
 #include "protocol_meta.h"
 
 //adds a info_hash to be tracked, specify trackers in char* name[MAX_TRACKERS] format.

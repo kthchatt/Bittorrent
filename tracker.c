@@ -19,10 +19,9 @@ static void* tracking(void* arg)
 
 	while (swarm->taken == true)
 	{
-		usleep(8000000);							//wait for the swarm to bind.
+		sleep(4);									//wait for the swarm to bind.
 		tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
  		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
-		printf("\nPeercount: %d\n", swarm->peercount);
 		swarm_scour(swarm);							//find new peers and initiate connections.
 	}
 
@@ -33,6 +32,9 @@ static void* tracking(void* arg)
 void track(char* info_hash, char* trackers[MAX_TRACKERS])
 {
 	int swarm_id;
+
+	netstat_initialize();
+	netstat_track(info_hash);
 
 	if ((swarm_id = swarm_select(info_hash, trackers)) > -1)
 	{
@@ -48,6 +50,7 @@ void untrack(char* info_hash)
 {
 	int i, j;
 
+	//todo: untrack from netstat.
 	for (i = 0; j < MAX_SWARMS; i++)
 	{
 		if (strcmp(swarm[i].info_hash, info_hash) == 0)

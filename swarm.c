@@ -131,7 +131,8 @@ void* peerlisten(void* arg)
     	printf("\n----- there was an incoming connection! --------\n"); fflush(stdout);
     	//todo
     	//check if peer in swarms peerlist, if so then set it's fd to new_fd.
-    	//else add peer to swarms peerlist.
+    	//else add peer to swarms peerlist.*/
+    	sleep(1);
 	}
 }
 
