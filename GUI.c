@@ -122,10 +122,26 @@ void list_compile(GtkListStore **model, char* status)
 	}
 }
 
+void list_doubleclick(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col, gpointer userdata)
+{
+	GtkTreeIter   iter;
+	GtkTreeModel *model;
+	int* id;
+
+	model = gtk_tree_view_get_model(view);
+
+	if (gtk_tree_model_get_iter(model, &iter, path))
+	{
+		gtk_tree_model_get(model, &iter, COL_ID, &id, -1);
+		
+		//fork and spawn nautilus with directory from top level file.
+		//the directory should be found in the file-manager. bencodning.c?
+	}
+}
+
 //add an info-item to list. ~RD
 void list_add(char* name, char* status, char* size, char* done, char* info_hash)
 {
-	GtkTreeModel *model;
 	GtkTreeIter iter;
 
 	if ((torrentlist = realloc(torrentlist, sizeof(torrentlist_t) * (torrentlist_count + 1))) != NULL )
@@ -345,6 +361,10 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	g_signal_connect(G_OBJECT(delete), "clicked", G_CALLBACK(torrent_delete), NULL);
 	g_signal_connect(G_OBJECT(up), "clicked", G_CALLBACK(torrent_prioritize), NULL);
 	g_signal_connect(G_OBJECT(down), "clicked", G_CALLBACK(torrent_deprioritize), NULL);
+
+	g_signal_connect(tv_all, "row-activated", G_CALLBACK(list_doubleclick), NULL);
+	g_signal_connect(tv_completed, "row-activated", G_CALLBACK(list_doubleclick), NULL);
+	g_signal_connect(tv_downloading, "row-activated", G_CALLBACK(list_doubleclick), NULL);
 }
 
 int main (int argc, char *argv[])
