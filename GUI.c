@@ -12,6 +12,7 @@
  *	Now able to use torrent data in tables.
  *  Sorts torrents based on state.
  *  Identifies selected torrents with tab id and list id.
+ *  Updates torrent statuses.
  */
 
 //add tab: seeding, peers, trackers, torrentinfo, logs?
@@ -59,7 +60,6 @@ GtkWidget *tlb_all, *tlb_downloading, *tlb_completed;
 GtkListStore *md_all, *md_downloading, *md_completed;
 GtkWidget *notebook;
 double pc = 0.00;
-
 
 //update torrent item in liststore tab. This functions is EXTREMELY expensive. ~RD
 void update_list(GtkListStore *liststore)
@@ -125,6 +125,9 @@ void list_compile(GtkListStore **model, char* status)
 //add an info-item to list. ~RD
 void list_add(char* name, char* status, char* size, char* done, char* info_hash)
 {
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
 	if ((torrentlist = realloc(torrentlist, sizeof(torrentlist_t) * (torrentlist_count + 1))) != NULL )
 	{
 		torrentlist[torrentlist_count].size = malloc(8);
@@ -142,6 +145,11 @@ void list_add(char* name, char* status, char* size, char* done, char* info_hash)
 
 		torrentlist_count++;
 	}
+
+	//todo: specify md_ target for insertion. md_all && (md_completed || md_seeding || md_downloading) ~RD
+   	gtk_list_store_append(md_all, &iter);
+   	gtk_list_store_set(md_all, &iter, COL_ID, torrentlist_count-1, COL_NAME, name, COL_SIZE, size, 
+   										COL_DONE, done, COL_STATUS, status, -1);
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
@@ -168,35 +176,30 @@ void create_table (GtkWidget **window, GtkWidget **table) {
 	gtk_table_set_row_spacing(GTK_TABLE(*table),0,5); // Sets row space on row 5
 }
 
-//removed, static generation no longer needed. ~RD
-/*
-void static createList (GtkListStore **model) {
-*/
-
-void static enum_list(GtkWidget **treeView, GtkListStore **model, GtkTreeViewColumn **column) {
+void static enum_list(GtkWidget **tree_view, GtkListStore **model, GtkTreeViewColumn **column) {
 	GtkCellRenderer   *renderer;
 
-	*treeView = gtk_tree_view_new_with_model(GTK_TREE_MODEL(*model));
+	*tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(*model));
 
 	renderer = gtk_cell_renderer_text_new();
 	*column = gtk_tree_view_column_new_with_attributes("#", renderer, "text", COL_ID, NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(*treeView), *column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(*tree_view), *column);
 
 	renderer = gtk_cell_renderer_text_new();
 	*column = gtk_tree_view_column_new_with_attributes("Name", renderer, "text", COL_NAME, NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(*treeView), *column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(*tree_view), *column);
 
 	renderer = gtk_cell_renderer_text_new();
 	*column = gtk_tree_view_column_new_with_attributes("Size", renderer, "text", COL_SIZE, NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(*treeView), *column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(*tree_view), *column);
 
 	renderer = gtk_cell_renderer_text_new();
 	*column = gtk_tree_view_column_new_with_attributes("Done", renderer, "text", COL_DONE, NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(*treeView), *column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(*tree_view), *column);
 
 	renderer = gtk_cell_renderer_text_new();
 	*column = gtk_tree_view_column_new_with_attributes("Status", renderer, "text", COL_STATUS, NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(*treeView), *column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(*tree_view), *column);
 
 	g_object_unref(*model);
 }
@@ -226,13 +229,6 @@ void create_torrent_tab(GtkWidget **label, GtkWidget **scrolled_window, GtkWidge
 	gtk_container_add(GTK_CONTAINER(*scrolled_window), *treeView);
 	gtk_notebook_insert_page (GTK_NOTEBOOK (*notebook), *scrolled_window, *label, pos); // Adds scrolled window to tab and positions it
 }
-
-//the functions below have been turned into create_torrent_tab which is reusable for all torrent tabs. ~RD
-/*
-void createAll (GtkWidget **label, GtkWidget **scrolled_window, GtkWidget **notebook, GtkWidget **treeView) {
-void createActive (GtkWidget **label, GtkWidget **scrolled_window, GtkWidget **notebook, GtkWidget **treeView) {
-void createCompleted (GtkWidget **label, GtkWidget **scrolled_window, GtkWidget **notebook, GtkWidget **treeView) {
-*/
 
 //returns the torrentlist-id of the selected torrent in the selected tab. ~RD
 int selected_id(void)
@@ -378,16 +374,16 @@ int main (int argc, char *argv[])
 
 	//add info-item to list, use fileman to populate at startup. ~RD
 	//name, status, size, completed and hash should be found in fileman-torrentloader.
-	list_add("Photoflop CS7", 			"Completed", 	"8.43 GB", 	 "100.00%", "----  INFOHASH  ----");
+	/*list_add("Photoflop CS7", 			"Completed", 	"8.43 GB", 	 "100.00%", "----  INFOHASH  ----");
 	list_add("World of Catcraft", 		"Downloading", 	"12.47 GB",  "68.13%",  "----  INFOHASH  ----");
 	list_add("The.Shrimpsons S08E03", 	"Downloading", 	"413.89 MB", "12.04%",  "----  INFOHASH  ----");
 	list_add("EBook_ASM_Cookbook", 		"Downloading", 	"55.10 MB",  "97.89%",  "----  INFOHASH  ----");
 	list_add("The.Shrimpsons S08E04", 	"Completed", 	"374.95 MB", "100.00%", "----  INFOHASH  ----");
-	list_add("The.Shrimpsons S08E05", 	"Completed", 	"415.10 MB", "100.00%", "----  INFOHASH  ----");
+	list_add("The.Shrimpsons S08E05", 	"Completed", 	"415.10 MB", "100.00%", "----  INFOHASH  ----");*/
 	
-	int k;
-	for (k = 0; k < 100; k++)
-		list_add("Super-Advanced-IDE", 		"Downloading", 	"3.10 GB",    "97.89%", "----  INFOHASH  ----");
+	//int k;
+	//for (k = 0; k < 100; k++)
+	//	list_add("Super-Advanced-IDE", 		"Downloading", 	"3.10 GB",    "97.89%", "----  INFOHASH  ----");
 
 	create_home(&label, &view, &home_table, &notebook);
 
@@ -403,13 +399,13 @@ int main (int argc, char *argv[])
 	enum_list(&tv_completed, &md_completed, &column);
 	create_torrent_tab(&tlb_completed, &scrolled_window, &notebook, &tv_completed, "Completed", 3);
 
-	//list_add("XXX Sudo Porn Linux XXX", 		"Completed", 	"3.10 GB",    "97.89%", "----  INFOHASH  ----");
-	update_list(md_completed);
-	update_list(md_all);
-	update_list(md_downloading);
+	list_add("Photoflop CS7", 			"Completed", 	"8.43 GB", 	 "100.00%", "----  INFOHASH  ----");
+	list_add("World of Catcraft", 		"Downloading", 	"12.47 GB",  "68.13%",  "----  INFOHASH  ----");
+	list_add("The.Shrimpsons S08E03", 	"Downloading", 	"413.89 MB", "12.04%",  "----  INFOHASH  ----");
+	list_add("EBook_ASM_Cookbook", 		"Downloading", 	"55.10 MB",  "97.89%",  "----  INFOHASH  ----");
+	list_add("The.Shrimpsons S08E04", 	"Completed", 	"374.95 MB", "100.00%", "----  INFOHASH  ----");
+	list_add("The.Shrimpsons S08E05", 	"Completed", 	"415.10 MB", "100.00%", "----  INFOHASH  ----");
 //---------------------------------------------------------------------------  ~RD
-
-// Tabs - Removed old create method. ~RD
 
 	MOTD(&label, &table);
 	netstat_label(&label, &table);
