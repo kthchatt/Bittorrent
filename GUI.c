@@ -106,15 +106,15 @@ GtkWidget *lb_netstat;
 GtkWidget *notebook;
 double pc = 0.00;
 
-
-void set_meter(int percent, GdkPixbuf *pbuf){
-	static int current_deg;
+// set rotation of a meter
+void set_meter(int meter, int percent, GdkPixbuf *pbuf){
+	static int current_deg[4]; 
 	int to_add;
 
 	GdkPixbuf *tmp;
 	GtkWidget *meter;
 
-	to_add = (percent - current_deg)*1.8;
+	to_add = (percent - current_deg[meter])*1.8;
 	tmp = pbuf;
 
 	while(to_add>0){
