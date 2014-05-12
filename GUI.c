@@ -107,14 +107,14 @@ GtkWidget *notebook;
 double pc = 0.00;
 
 // set rotation of a meter
-void set_meter(int meter, int percent, GdkPixbuf *pbuf){
+void set_meter(int m, int percent, GdkPixbuf *pbuf){
 	static int current_deg[4]; 
 	int to_add;
 
 	GdkPixbuf *tmp;
 	GtkWidget *meter;
 
-	to_add = (percent - current_deg[meter])*1.8;
+	to_add = (percent - current_deg[m])*1.8;
 	tmp = pbuf;
 
 	while(to_add>0){
@@ -122,10 +122,10 @@ void set_meter(int meter, int percent, GdkPixbuf *pbuf){
 		to_add -= 90;
 	}
 
-	g_object_unref(temp);
+	g_object_unref(tmp);
 	meter = gtk_image_new_from_pixbuf(pbuf);
 	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
-	g_object_unref(temp);
+	g_object_unref(tmp);
 	meter = gtk_image_new_from_pixbuf(pbuf);
 }
 
