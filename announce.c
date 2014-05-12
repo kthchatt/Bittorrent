@@ -20,14 +20,13 @@ static int build(char request[300], char info_hash[21], char peer_id[21], char t
     url_announce(tracker, announce);
     url_encode(info_hash, hash_escape);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=192.168.0.10&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=129.0.0.1&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, hash_escape, peer_id, swarm->listenport, 12008, 12379, "started", hostname);
 
 
     free(hash_escape);
     free(announce);
     free(hostname);
-
     return;
 }
 
@@ -51,7 +50,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
         swarm->tracker[index].announce_interval   = bdecode_value(recvbuf, ":interval");
         swarm->tracker[index].announce_minterval  = bdecode_value(recvbuf, ":min interval");
 
-        printf("\n%s \t[Interval = %d, Min Interval = %d]", 
+        printf("\n[Announce]\t%s \t[Interval = %d, Min Interval = %d]", 
                 swarm->tracker[index].url, 
                 swarm->tracker[index].announce_interval, 
                 swarm->tracker[index].announce_minterval);
@@ -148,7 +147,7 @@ int tracker_announce(swarm_t* swarm)
     //todo: swarm_reset? query should check if the peer already exists. (threads will die!)
     //in swarm_reset check maxpeers before adding a new peer, if full call clear_stale_peers. 
     //call clear_stale_peers before announcing.
-    
+
     swarm_reset(swarm);  //clear all current peers
     query(swarm);   //bound port
     return 0;

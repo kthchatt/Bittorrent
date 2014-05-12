@@ -1,18 +1,5 @@
 #include "torrent.h"
 
-int createTorrent(Torrent t){
-	FILE *file = fopen("newTorrent.torrent", "wb");
-	int i;
-
-	fprintf(file, "d8:announce%d:%s13:announce-listll", strlen(t.announce), t.announce);
-	for(i=0; i<sizeof(t.announceList)/sizeof(t.announceList[0])-1; i++)
-		fprintf(file, "%d:%sel", strlen(t.announceList[i]), t.announceList[i]);
-	fprintf(file, "%d:%see:comment5:Hello", strlen(t.announceListi[i]), t.announceList[i]);
-	// osv.....
-
-	fclose(file);
-}
-
 char *getInfoHash(char *torrentPath){
 	FILE *file = fopen(torrentPath, "rb");
 	char *buffer, infoHash[20];
@@ -25,11 +12,13 @@ char *getInfoHash(char *torrentPath){
 	fseek(file, 0, SEEK_SET);
 
 	buffer = malloc(fileLen+1);
-	fread(buffer, fileLen, 1, file);				// read file into buffer
-	pLen = strlen(strstr(buffer, ":pieces"));		// get length of all pieces + ":pieces"
-	buffer = realloc(buffer, fileLen-pLen+1);		// allocate memmory for file without pieces
-	fread(buffer, fileLen-pLen, 1, file);			// read file without pieces into buffer
-	SHA1(buffer, fileLen-pLen+1, infoHash);			// Calculate info hash
+	fread(buffer, fileLen, 1, file);				
+	pLen = strlen(strstr(buffer, ":info"));			
+	buffer = strstr(buffer, "info");
+	buffer = strstr(buffer, "d");
+	buffer = realloc(buffer, pLen-5);		
+
+	SHA1(buffer, pLen-5, infoHash);			// Calculate info hash
 
 	fclose(file);
 	return infoHash;

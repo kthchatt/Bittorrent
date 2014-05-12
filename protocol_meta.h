@@ -6,6 +6,14 @@
 #define false 0
 #define boolean char
 
+//connection specifics
+#define DOWNLOAD_QUEUE 100
+#define UPLOAD_QUEUE 100
+#define UPLOAD_CONCURRENT 10
+#define DOWNLOAD_CONCURRENT 10
+//when the concurrent is full, peer will be choked.
+//when the concurrent is not full, peers will be unchoked.
+
 //swarm-tracker
 #define SIGNATURE "NSA-PirateBust-"
 #define BACKLOG 5
@@ -20,6 +28,8 @@
 #define UNCHOKE 	1
 #define INTERESTED 	2
 #define NOT_INTERESTED 3
+#define BITFIELD	5
+#define REQUEST		6
 #define HAVE 		4
 #define PIECE       7
 #define CANCEL      8
@@ -31,7 +41,7 @@ typedef struct
 	int scrape_completed, scrape_incomplete, scrape_downloaded, announce_interval, announce_minterval;
 } tracker_t;
 
-//ing = local, ed = remote
+//ing = local, ed = remote, todo: add pointer to swarm, remove peer_id & info_hash. (taken is required?)
 typedef struct 
 {
 	int sockfd;
