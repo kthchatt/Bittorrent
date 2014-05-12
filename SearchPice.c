@@ -1,5 +1,5 @@
 #include "SearchPice.h"
-
+//gcc -lssl -lcrypto
 /*void main (){
 
 	search_single_file("Arbete och teknik på människans villkor_student.pdf", "00000000000000000000", 56000);
@@ -10,11 +10,13 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 	int total = (torrent->_hash_length / 20);
 	int found =0, j = 0, total_to_load = 0, loaded_files = 0, start_from = 0, stop_at = 0, bytes_read = 0, total_loaded_files = 0;
 	int fileindex = 0, nom_of_files_to_load = 0;
-	int i, toalloc = (total/8)+1
-	long int piece_length = torrent->_piece_length;
+	int i, toalloc = (total/8)+1;
+	int piece_length = torrent->_piece_length;
+	char *file_name;
 
 	bitstring = malloc(toalloc);
 	memset(bitstring, 0, toalloc);
+	char *bit_field = bitstring;
 
 	char hash[21];
 
@@ -35,13 +37,13 @@ int scan_all (torrent_info *torrent, char *bitstring) {
     	stop_at = fileindex;
     	for (j = start_from; j <= fileindex; j++)
     	{
-    		file_name = &torrent->_file_path[j];
+    		file_name = torrent->_file_path[j];
     		file_name++;
     		fprintf(stderr, "File name: %s\n", file_name);
     		sfp[j - start_from] = fopen(file_name, "r");
     		if (sfp[j] != NULL){
 			} else {
-				fprintf(stderr, "Error opening file\n");
+				fprintf(stderr, "Error opening file %s\n", file_name);
 				return(-1);
 			}
     	}
@@ -60,13 +62,16 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 
 		SHA1(data, bytes_read, hash);
 
-		if (strncmp(hash, original_hash, 20) == 0){
+		if (strncmp(hash, torrent->_pieces[i], 20) == 0){
 //TODO, fix so that bitstring is used 1 = have piece, 0 = missing piece. 
 
+			*bit_field |= (1<<(i%8));
 			found = 1;
 			return 1;
 			break;
 		}
+		bit_field++;
+
 
 
 	}
@@ -94,7 +99,7 @@ int search_multi_file (torrent_info *torrent, char *original_hash){
     	stop_at = i;
     	for (i = start_from; i <= stop_at; i++)
     	{
-    		file_name = &torrent->_file_path[i];
+    		file_name = torrent->_file_path[i];
     		file_name++;
     		fprintf(stderr, "File name: %s\n", file_name);
     		sfp[i - start_from] = fopen(file_name, "r");

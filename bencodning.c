@@ -25,6 +25,7 @@ int decode_bencode(char *file_name, torrent_info *data){
 	char string_name[250];
 	//char file_name[250] = "torrent.torrent";
 	char test_dictonary_list;
+	char *to_null;
 	int i = 0; int j = 0; int length_of_next_int = 0;
 
 
@@ -52,6 +53,11 @@ int decode_bencode(char *file_name, torrent_info *data){
 			fprintf(stderr, "Next\n");
 		break;
 	}
+	
+	to_null = strrchr(file_name, '.');
+	*to_null = '\0';
+	strcpy(data->_torrent_file_name, file_name);
+
 	fprintf(stderr, "Calculating hash.....\n:");
 	info_hash(fp, data);
 	fprintf(stderr, "The info hash is:");

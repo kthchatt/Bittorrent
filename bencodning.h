@@ -25,6 +25,7 @@ typedef struct metainfodecode
 	char _comment [250];
 	char _created_by[250];
 	int _multi_file;
+	char _torrent_file_name[250];
 
 	char _info_hash[21];
 	long int _location;
@@ -34,6 +35,9 @@ typedef struct metainfodecode
 	int _private;
 //Common for singel and multi, singel uses only first long long int. 
 	long long int _file_length [4000];
+
+	long long int _total_length;
+	long long int _total_created;
 
 //For singel file torrent
 	char _file_name [250];
