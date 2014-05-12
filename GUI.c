@@ -112,7 +112,7 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf){
 	int to_add;
 
 	GdkPixbuf *tmp;
-	GtkWidget *meter;
+	//GtkWidget *meter;
 
 	to_add = (percent - current_deg[m])*1.8;
 	tmp = pbuf;
@@ -123,10 +123,10 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf){
 	}
 
 	g_object_unref(tmp);
-	meter = gtk_image_new_from_pixbuf(pbuf);
+	//meter = gtk_image_new_from_pixbuf(pbuf);
 	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
 	g_object_unref(tmp);
-	meter = gtk_image_new_from_pixbuf(pbuf);
+	//meter = gtk_image_new_from_pixbuf(pbuf);
 	current_deg[m] = percent;
 }
 
@@ -414,6 +414,12 @@ void torrent_deprioritize()
 	fflush(stdout);
 }
 
+void torrent_create(){
+	g_print("Create button woop!\n");
+	fflush(stdout);	
+}
+
+
 void MOTD(GtkWidget **label, GtkWidget **table) {
 	*label = gtk_label_new("MOTD goes here."); // Label content
   	gtk_misc_set_alignment(GTK_MISC (*label), 0, 1); // Sets alignment of label
@@ -485,6 +491,7 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	GtkToolItem	*delete;
 	GtkToolItem	*up;
 	GtkToolItem	*down;
+	GtkToolItem *create;
 
 	*toolbar = gtk_toolbar_new(); // Creates new toolbar menu
   	gtk_toolbar_set_style(GTK_TOOLBAR(*toolbar), GTK_TOOLBAR_ICONS); 	// Sets style to display icons only
@@ -506,12 +513,16 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	down = gtk_tool_button_new_from_stock(GTK_STOCK_GO_DOWN);
   	gtk_toolbar_insert(GTK_TOOLBAR(*toolbar), down, 4);
 
+  	create = gtk_tool_button_new_from_stock(GTK_STOCK_NEW);
+	gtk_toolbar_insert(GTK_TOOLBAR(*toolbar), create, 5);
+
   	//add event handlers for the buttons.
 	g_signal_connect(G_OBJECT(play), "clicked", G_CALLBACK(torrent_start), NULL);
 	g_signal_connect(G_OBJECT(stop), "clicked", G_CALLBACK(torrent_stop), NULL);
 	g_signal_connect(G_OBJECT(delete), "clicked", G_CALLBACK(torrent_delete), NULL);
 	g_signal_connect(G_OBJECT(up), "clicked", G_CALLBACK(torrent_prioritize), NULL);
 	g_signal_connect(G_OBJECT(down), "clicked", G_CALLBACK(torrent_deprioritize), NULL);
+	g_signal_connect(G_OBJECT(create), "clicked", G_CALLBACK(torrent_create), NULL);
 
 	g_signal_connect(tv_inactive, "row-activated", G_CALLBACK(list_doubleclick), NULL);
 	g_signal_connect(tv_completed, "row-activated", G_CALLBACK(list_doubleclick), NULL);
