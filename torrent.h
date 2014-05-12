@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <openssl/sha.h>
 #include "tracker.h"
-#include "bencoding.h"
+#include "bencodning.h"
 
 typedef struct tFile{
 	char *path;
