@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "netstat.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -45,11 +46,15 @@
 #define TAB_INACTIVE 4
 #define true 1
 #define false 0
-#define FPS 8
+#define FPS 5
 
  //following values is a part of the prioritizer. ~RD
  #define MAX_DOWNLOADING 3
  #define MAX_SEEDING 20
+
+ #define true 1
+ #define false 0
+ #define bool char
 
  enum
  {
@@ -57,6 +62,7 @@
  	STATE_SEEDING,
  	STATE_COMPLETED,
  	STATE_INACTIVE,
+ 	STATE_CREATING,
  };
 
 enum {
@@ -77,6 +83,7 @@ enum {
 typedef struct
 {
 	int id;				//used to identify actions on a torrent.
+	int state; 			//used to identify the current operation, when starting torrents check how many torrents have the state already, if there are slots free.
 	char* size;
 	char* done;
 	char* status;
@@ -104,7 +111,6 @@ GtkWidget *tlb_inactive, *tlb_downloading, *tlb_completed, *tlb_seeding;
 GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding;
 GtkWidget *lb_netstat;
 GtkWidget *notebook;
-double pc = 0.00;
 
 
 //add a row when the torrent-info already exists. ~RD
@@ -141,10 +147,7 @@ void row_delete(int id, GtkListStore* ls)
      	gtk_tree_model_get(GTK_TREE_MODEL(ls), &iter, COL_ID, &item_id, -1);
 
      	if (id == item_id)
-     	{
-     		printf("\nMatch for deletion.");
      		gtk_list_store_remove(ls, &iter);
-     	}
 
         nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}   
@@ -181,21 +184,133 @@ void list_add(char* name, char* status, char* size, char* done, char* info_hash,
    	}
 }
 
+//return selected tab as id. ~RD
+int selected_tab(void)
+{
+	return (int) gtk_notebook_get_current_page((GtkNotebook*) notebook);
+}
+
+//returns the torrentlist-id of the selected torrent in the selected tab. ~RD
+int selected_id(void)
+{
+	GtkTreeSelection* tsel;
+	GtkTreeIter iter;
+    GtkTreeModel* tm;
+    GtkTreeModel* md;
+
+    long int id;  
+	int pgnum = selected_tab();
+
+	switch (pgnum)
+	{
+		case TAB_INACTIVE: 		tsel 	= gtk_tree_view_get_selection((GtkTreeView*) tv_inactive); 
+					 			md 		= (GtkTreeModel*) md_inactive; 
+					  			 break;
+		case TAB_DOWNLOADING: 	tsel 	= gtk_tree_view_get_selection((GtkTreeView*) tv_downloading); 
+					  			md 		= (GtkTreeModel*) md_downloading; 
+					  			 break;
+		case TAB_COMPLETED:   	tsel 	= gtk_tree_view_get_selection((GtkTreeView*) tv_completed); 
+					  			md 		= (GtkTreeModel*) md_completed; 
+					  			 break;
+		case TAB_SEEDING:     	tsel  	= gtk_tree_view_get_selection((GtkTreeView*) tv_seeding);
+							   	md      = (GtkTreeModel*) md_seeding;
+							     break;
+	}
+
+	if (0 < pgnum && pgnum <= TORRENT_TABS)
+    	if (gtk_tree_selection_get_selected(tsel, &tm, &iter))
+    	{
+      		gtk_tree_model_get(md, &iter, COL_ID, &id, -1);
+      		return (long int) id;
+    	}
+    return -1;
+}
+
+GtkListStore* tab_model(int tab_id)
+{
+	switch (tab_id)
+	{
+		case TAB_DOWNLOADING: return md_downloading; 
+		case TAB_SEEDING: return md_seeding;
+		case TAB_COMPLETED: return md_completed;
+		case TAB_INACTIVE: return md_inactive;
+	}
+
+	return NULL;
+}
+
+void list_update_tabs(GtkListStore* ls)
+{
+    GtkTreeIter  iter;
+    gboolean     nextitem_exist;
+    int id;
+
+	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
+
+	//todo: 
+    while (nextitem_exist)
+ 	{
+    	gtk_tree_model_get(GTK_TREE_MODEL(ls), &iter, COL_ID, &id, -1);	//get torrentlist id.
+ 		//check if state and tab matches, if not move to desired tab.
+
+    	//todo: update state, move to target tab.
+ 		/*if (torrentlist[id].state != selected_tab())
+ 			switch (torrentlist[id].state)
+ 			{
+ 				case STATE_DOWNLOADING: 
+ 						if (selected_tab() != TAB_DOWNLOADING); break;
+ 				case STATE_SEEDING: ; break;
+ 				case STATE_COMPLETED: ; break;
+ 				case STATE_CREATING: 
+ 						if (selected_tab() != TAB_DOWNLOADING)
+ 							strcpy(torrentlist[id].status, "Creating Files..");
+ 							row_delete(id, tab_model(selected_tab()));
+ 							row_add(id, tab_model(TAB_DOWNLOADING)); 
+ 						  break;			
+ 			}*/
+
+       nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
+	}
+}
+
 //update torrent item in liststore tab. This functions is EXTREMELY expensive. ~RD
 void list_update(GtkListStore *ls)
 {
     GtkTreeIter  iter;
     gboolean     nextitem_exist;
-    char percent[20];
+    int id;
+    char netstat_down[FORMATSTRING_LEN];
+	char netstat_up[FORMATSTRING_LEN];
 
-	sprintf(percent, "%.2f %%", pc);
 	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
 
+	//todo: 
     while (nextitem_exist)
  	{
     	//todo: fetch actual values, percent, peercount, swarm-size, leeches, seeders.
-    	//get id in column here, from use torrent-info to get data from modules.
-       gtk_list_store_set(ls, &iter, COL_DONE, percent, -1);
+    	//todo: if state_creating get percent from fileman function f1, else f2.
+		gtk_tree_model_get(GTK_TREE_MODEL(ls), &iter, COL_ID, &id, -1);	//get torrentlist id.
+
+    	switch (torrentlist[id].state)
+    	{
+    		case STATE_CREATING: ; break;		//get percent from function f1
+    		case STATE_DOWNLOADING: ; break;	//get percent from function f2
+    	}
+
+    	//todo: if percent = 100.0 set state to downloading, change status from creating -> downloading, or downloading -> seeding. (update torrent[id].status too)
+		netstat_formatbytes(INPUT, torrentlist[id].info_hash, netstat_down);
+		netstat_formatbytes(OUTPUT, torrentlist[id].info_hash, netstat_up);
+   		gtk_list_store_set(ls, &iter,
+   						COL_DONE, torrentlist[id].done, 
+   						COL_STATUS, torrentlist[id].status, 
+   						COL_DOWNRATE, netstat_down, 
+   						COL_UPRATE,   netstat_up, 		//get up/downrate from netstat.c ~RD
+   						COL_LEECHER, 0, 
+   						COL_SEEDER, 0, 
+   						COL_SWARM, 0, 			//get these values from swarm.c ~RD
+   						COL_RATIO, 0.0000, -1);
+
+
        nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}
 }
@@ -204,27 +319,47 @@ void list_update(GtkListStore *ls)
 //update the torrents with data from modules at defined FPS. ~RD
 void* gui_update_thread(void* arg)
 {
-	int pgnum;
+	int pgnum, delay = 0;
+	char* throughput_in = (char*) malloc(FORMATSTRING_LEN); 
+	char* throughput_out = (char*) malloc(FORMATSTRING_LEN);
+	char* throughput = (char*) malloc(75);
 
 	while (true)
 	{
 		usleep((1000 / FPS) * 1000);
-		pc += 0.01;
+
+		netstat_update(INPUT, 300, torrentlist[0].info_hash);
+
+		delay++;
+		if (delay > 10)
+		{
+			list_update_tabs(md_inactive);
+			list_update_tabs(md_completed);
+			list_update_tabs(md_downloading);
+			list_update_tabs(md_seeding);
+			delay = 0;
+		}
 
 		//todo: fetch actual values.
 		//optimization: only update the active tab.
 		pgnum = (int) gtk_notebook_get_current_page((GtkNotebook*) notebook);
 		switch (pgnum)
 		{
-			case TAB_INACTIVE: 		list_update(md_inactive);			break;
+			case TAB_INACTIVE: 		list_update(md_inactive);		break;
 			case TAB_DOWNLOADING:	list_update(md_downloading);	break;
 			case TAB_COMPLETED: 	list_update(md_completed); 		break;
 			case TAB_SEEDING:	 	list_update(md_seeding); 		break;
 		}
 
-		gtk_label_set_text((GtkLabel*) lb_netstat, "U: 279.8 kB/s D: 844.2 kB/s");		//todo: get speeds from netstat.c
-		//check if some items needs to be moved.
+		netstat_throughput(INPUT, throughput_in);
+		netstat_throughput(OUTPUT, throughput_out);
+		sprintf(throughput, "D: %s, U: %s", throughput_in, throughput_out);
+		gtk_label_set_text((GtkLabel*) lb_netstat, throughput);		//todo: get speeds from netstat.c
 	}
+
+	free(throughput_in);
+	free(throughput_out);
+	free(throughput);
 }
 
 //create a list model by reference. ~RD
@@ -254,48 +389,6 @@ void list_doubleclick(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *c
 	}
 }
 
-//return selected tab as id. ~RD
-int selected_tab(void)
-{
-	return (int) gtk_notebook_get_current_page((GtkNotebook*) notebook);
-}
-
-//returns the torrentlist-id of the selected torrent in the selected tab. ~RD
-int selected_id(void)
-{
-	//check call to gtk_tree_model_get and fix the pointer *id which is leaking memory.
-	GtkTreeSelection* tsel;
-	GtkTreeIter iter;
-    GtkTreeModel* tm;
-    GtkTreeModel* md;
-    //long int* id = malloc(8);
-    long int id;  
-	int pgnum = selected_tab();
-
-	switch (pgnum)
-	{
-		case TAB_INACTIVE: 		tsel 	= gtk_tree_view_get_selection((GtkTreeView*) tv_inactive); 
-					 			md 		= (GtkTreeModel*) md_inactive; 
-					  			 break;
-		case TAB_DOWNLOADING: 	tsel 	= gtk_tree_view_get_selection((GtkTreeView*) tv_downloading); 
-					  			md 		= (GtkTreeModel*) md_downloading; 
-					  			 break;
-		case TAB_COMPLETED:   	tsel 	= gtk_tree_view_get_selection((GtkTreeView*) tv_completed); 
-					  			md 		= (GtkTreeModel*) md_completed; 
-					  			 break;
-		case TAB_SEEDING:     	tsel  	= gtk_tree_view_get_selection((GtkTreeView*) tv_seeding);
-							   	md      = (GtkTreeModel*) md_seeding;
-							     break;
-	}
-
-	if (0 < pgnum && pgnum <= TORRENT_TABS)
-    	if (gtk_tree_selection_get_selected(tsel, &tm, &iter))
-    	{
-      		gtk_tree_model_get(md, &iter, COL_ID, &id, -1);
-      		return (long int) id;
-    	}
-    return -1;
-}
 
 //if valid id is selected and valid tab (torrent tab) selected. ~RD
 void torrent_start()
@@ -306,9 +399,6 @@ void torrent_start()
 
 	switch(tab)
 	{
-		case TAB_SEEDING: 	row_delete(id, md_seeding);
-							row_add(id, md_completed);
-							 break;
 		case TAB_COMPLETED: row_delete(id, md_completed);
 							row_add(id, md_seeding); 
 							 break;
@@ -318,6 +408,8 @@ void torrent_start()
 							//track(torrentlist[id].info_hash); //get the trackerlist from file man.
 							break;
 	}
+
+	netstat_track(torrentlist[id].info_hash);
 
 	printf("\nStarted torrent %s.", torrentlist[id].info_hash);
 	fflush(stdout);
@@ -335,11 +427,13 @@ void torrent_stop()
 		case TAB_SEEDING: 		row_delete(id, md_seeding); 
 						  		row_add(id, md_completed); 
 						  		//untrack(torrentlist[id].info_hash); 
+						  		netstat_untrack(torrentlist[id].info_hash);
 						  		break;
 
 		case TAB_DOWNLOADING: 	row_delete(id, md_downloading);
 								row_add(id, md_inactive);
 							  	//untrack(torrentlist[id].info_hash); 
+							  	netstat_untrack(torrentlist[id].info_hash);
 							  	break;
 	}
 	
@@ -355,9 +449,10 @@ void torrent_delete()
 	if ((id = selected_id()) < 0)
 		return;
 
+	//todo add swarm_untrack and netstat_untrack.
 	switch (tab)
 	{
-		case TAB_SEEDING: 		row_delete(id, md_seeding); break;
+		case TAB_SEEDING: 		row_delete(id, md_seeding);     break;
 		case TAB_DOWNLOADING: 	row_delete(id, md_downloading); break;
 		case TAB_COMPLETED: 	row_delete(id, md_completed); break;
 		case TAB_INACTIVE:	 	row_delete(id, md_inactive); break;
@@ -543,12 +638,16 @@ int main (int argc, char *argv[])
 	//dynamic adding at runtime. State is defined by the torrent-loader, unfinished torrents should always be placed in downloading
 	//keep track of which torrents are in seeding/completed-mode in config file. Also keep track of priorities in settings file.
 	//the setting file should be compiled whenever there are changes to a state in torrents. (moved by user) ~RD
-	list_add("Photoflop CS7", 			"Completed", 	"8.43 GB", 	 "100.00%", "----  INFOHASH  ----", STATE_COMPLETED);
-	list_add("World of Catcraft", 		"Downloading", 	"12.47 GB",  "68.13%",  "----  INFOHASH  ----", STATE_DOWNLOADING);
-	list_add("The.Shrimpsons S08E03", 	"Downloading", 	"413.89 MB", "12.04%",  "----  INFOHASH  ----", STATE_DOWNLOADING);
-	list_add("EBook_ASM_Cookbook", 		"Downloading", 	"55.10 MB",  "97.89%",  "----  INFOHASH  ----", STATE_DOWNLOADING);
-	list_add("The.Shrimpsons S08E04", 	"Seeding", 	"374.95 MB", "100.00%", "----  INFOHASH  ----", STATE_SEEDING);
-	list_add("The.Shrimpsons S08E05", 	"Completed", 	"415.10 MB", "100.00%", "----  INFOHASH  ----", STATE_COMPLETED);
+	list_add("Photoflop CS7", 			"Completed", 	"8.43 GB", 	 "0.00%",     "----  INFOHASA  ----", STATE_INACTIVE);
+	list_add("World of Catcraft", 		"Downloading", 	"12.47 GB",  "0.00%",     "----  INFOHASB  ----", STATE_INACTIVE);
+	list_add("The.Shrimpsons S08E03", 	"Downloading", 	"413.89 MB", "0.00%",     "----  INFOHASC  ----", STATE_INACTIVE);
+	list_add("EBook_ASM_Cookbook", 		"Downloading", 	"55.10 MB",  "0.00%",     "----  INFOHASD  ----", STATE_INACTIVE);
+	list_add("The.Shrimpsons S08E04", 	"Seeding", 	    "374.95 MB", "0.00%",     "----  INFOHASH  ----", STATE_INACTIVE);
+	list_add("The.Shrimpsons S08E05", 	"Completed", 	"415.10 MB", "0.00%",     "----  INFOHASE  ----", STATE_INACTIVE);
+
+	//initializers.
+	netstat_initialize();
+
 //---------------------------------------------------------------------------  ~RD
 
 	MOTD(&label, &table);
