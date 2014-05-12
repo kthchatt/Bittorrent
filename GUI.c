@@ -127,6 +127,7 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf){
 	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
 	g_object_unref(tmp);
 	meter = gtk_image_new_from_pixbuf(pbuf);
+	current_deg[m] = percent;
 }
 
 //add a row when the torrent-info already exists. ~RD
