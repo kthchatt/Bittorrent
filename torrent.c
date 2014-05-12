@@ -28,7 +28,7 @@ int addTorrent(char *torrentPath){
 	char infoHash[20],
 		 destination[] = "/my/path/t.torrent",
 		 trackers[MAX_TRACKERS];
-	metainfodecode m;
+	torrent_info *m;
 	int i;
 
 	pid_t pid = fork();
@@ -39,7 +39,7 @@ int addTorrent(char *torrentPath){
 		wait(0);
 		strcpy(infoHash, getInfoHash(destination));							// get infohash from torrent file
 		decode_bencode(destination, m);										// get trackers from torrent file
-		for(i=0; i<MAX_TRACKERS, i++)										// add trackers to array with length MAX_TRACKERS
+		for(i=0; i<MAX_TRACKERS; i++)										// add trackers to array with length MAX_TRACKERS
 			strcpy(trackers[i], m._announce_list[i]);						// announce to tracker, init transfer
 		track(infoHash, trackers);											// magic
 	}
