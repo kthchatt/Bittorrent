@@ -67,8 +67,9 @@ void netstat_initialize()
 		totalstat.in = 0;
 		totalstat.out = 0;
 		pthread_mutex_init(&totalstat.lock, NULL);
-		//netstat = (netstat_t*) malloc(sizeof(netstat_t));	//get a pointer to any block of memory, for realloc. lol.
-		//memset(netstat, 0, sizeof(netstat_t));
+		
+		netstat = (netstat_t*) malloc(sizeof(netstat_t));	//get a pointer to any block of memory, for realloc. lol.
+		memset(netstat, 0, sizeof(netstat_t));
 
 		if (!(pthread_create(&timer, NULL, timer_thread, NULL)))
 			printf("\nTracking your network statistics.");
@@ -82,24 +83,19 @@ void netstat_track(char* info_hash)
 {
 	int i;
 	bool tracked = false;
-	printf("a0"); fflush(stdout);
 
 	for (i = 0; i < tracking_count; i++)
 		if (netstat[i].info_hash == info_hash)
 			tracked = true;
-
-		printf("a1"); fflush(stdout);
 
 	if (tracked == false)
 	{
 		for (i = 0; i < tracking_count; i++)
 			lock(&netstat[i].lock);
 
-		printf("a2"); fflush(stdout);
-
-		if ((netstat = realloc(netstat, sizeof(netstat_t) * (tracking_count + 1))) != NULL)
+		if ((netstat = (netstat_t*) realloc(netstat, sizeof(netstat_t) * (tracking_count + 1))) != NULL)
 		{
-			memset(&netstat[tracking_count], 0, sizeof(netstat_t) * tracking_count + 1);
+			memset(&netstat[tracking_count], 0, sizeof(netstat_t));
 			pthread_mutex_init(&netstat[tracking_count].lock, NULL); 
 			netstat[tracking_count].info_hash = info_hash;
 			tracking_count++;
@@ -107,12 +103,8 @@ void netstat_track(char* info_hash)
 		else
 			tracking_count--;
 
-		printf("a3"); fflush(stdout);
-
 		for (i = 0; i < tracking_count; i++)
 			unlock(&netstat[i].lock);
-
-		printf("a4"); fflush(stdout);
 	}
 }
 
@@ -120,26 +112,21 @@ void netstat_track(char* info_hash)
 void netstat_untrack(char* info_hash)
 {
 	int i;
-	netstat_t* temp = malloc((tracking_count -1) * sizeof(netstat_t*));
 
 	for (i = 0; i < tracking_count; i++)
 		lock(&netstat[i].lock);
-
 
 	//todo: make it work.
 	for (i = 0; i < tracking_count; i++)
 	{
 		if (netstat[i].info_hash == info_hash)
 		{
-			memcpy(temp, netstat, i - 1);
-			memcpy(temp + (i * sizeof(netstat_t*)), temp + (i + 1) * sizeof(netstat_t*), tracking_count - i);
-			free(netstat);
-			netstat = temp;
 			tracking_count--;
+			memmove(netstat+i, netstat+i+1, (tracking_count - i) * sizeof(netstat_t));
+			netstat = realloc(netstat, sizeof(netstat_t) * tracking_count);
 			break;
 		}
 	}
-
 	for (i = 0; i < tracking_count; i++)
 		unlock(&netstat[i].lock);
 
