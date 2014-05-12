@@ -107,6 +107,28 @@ GtkWidget *notebook;
 double pc = 0.00;
 
 
+void set_meter(int percent, GdkPixbuf *pbuf){
+	static int current_deg;
+	int to_add;
+
+	GdkPixbuf *tmp;
+	GtkWidget *meter;
+
+	to_add = (percent - current_deg)*1.8;
+	tmp = pbuf;
+
+	while(to_add>0){
+		pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
+		to_add -= 90;
+	}
+
+	g_object_unref(temp);
+	meter = gtk_image_new_from_pixbuf(pbuf);
+	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
+	g_object_unref(temp);
+	meter = gtk_image_new_from_pixbuf(pbuf);
+}
+
 //add a row when the torrent-info already exists. ~RD
 void row_add(int id, GtkListStore* ls)
 {
