@@ -10,7 +10,7 @@
  //todo: save a peerlist with ip:port and info_hash.
 
 //construct a http query
-static void build(char request[300], char info_hash[21], char peer_id[21], char tracker[MAX_URL_LEN]) 
+static void build(char request[300], char info_hash[21], char peer_id[21], char tracker[MAX_URL_LEN], int listenport) 
 {
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
@@ -20,8 +20,10 @@ static void build(char request[300], char info_hash[21], char peer_id[21], char 
     url_announce(tracker, announce);
     url_encode(info_hash, hash_escape);
 
+    printf("\nAnnouncing %s with port %d", info_hash, swarm->listenport);
+
     sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=127.0.0.1&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
-                                    announce, hash_escape, peer_id, swarm->listenport, 12008, 12379, "started", hostname);
+                                    announce, hash_escape, peer_id, listenport, 12008, 12379, "started", hostname);
 
 
     free(hash_escape);
@@ -114,7 +116,7 @@ static void query(swarm_t* swarm)
     {
         if (strlen(swarm->tracker[i].url) > 0)
         {
-            build(request, swarm->info_hash, swarm->peer_id, swarm->tracker[i].url);
+            build(request, swarm->info_hash, swarm->peer_id, swarm->tracker[i].url, swarm->listenport);
             url_hostname(swarm->tracker[i].url, hostname);
             url_protocol(swarm->tracker[i].url, protocol);
             url_port(swarm->tracker[i].url, &port);

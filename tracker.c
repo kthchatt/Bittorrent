@@ -13,11 +13,13 @@ static void* tracking(void* arg)
 {
 	swarm_t* swarm = (swarm_t*) arg;
 
-	//swarm_listen(swarm);	//set the swarm to listen for peers.
+	swarm_listen(swarm);	//set the swarm to listen for peers.
 	sleep(2);				//2 seconds to bind.
 
 	while (swarm->taken == true)
 	{
+		printf("swarm->listenport = %d", swarm->listenport);
+
 		if (swarm->taken == true)
 			tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
  		if (swarm->taken == true)
@@ -28,7 +30,7 @@ static void* tracking(void* arg)
 		sleep(4);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
 
-	printf("\nError: Undefined. Releasing swarm...");
+	printf("\nReleasing swarm...[%s]", swarm->info_hash);
 	swarm_release(swarm);
 
 	return arg;

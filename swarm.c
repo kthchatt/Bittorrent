@@ -85,60 +85,40 @@ void swarm_release(swarm_t* swarm)
 	swarm->taken = 0;	
 }
 
-
 //find a port and listen to it. 
 //for every connection create a new thread. with &peer
 void* peerlisten(void* arg)
 {
 	swarm_t* swarm = (swarm_t*) arg;
-	struct sockaddr_storage remote_addr;
-	socklen_t addr_size;
-	struct addrinfo hints, *res;
-	int remote_sockfd;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
-	getaddrinfo("0.0.0.0", 0, &hints, &res);
-	addr_size = sizeof(hints);
+	int    sock, new_sock;    
+    struct sockaddr_in addr;        
+    struct sockaddr_in their_addr;     
+    unsigned int    sin_size;
+ 
+    addr.sin_family      = AF_INET;        
+    addr.sin_port        = htons(0);   
+    addr.sin_addr.s_addr = INADDR_ANY;      
+    memset(&(addr.sin_zero), 0, 8);        
+    sin_size = sizeof(addr); 
+ 
+ 	sock = socket(AF_INET, SOCK_STREAM, 0); 
+    bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr));
+    listen(sock, BACKLOG);
 
-	printf("\nmaking the sockeht"); fflush(stdout);
-	if ((swarm->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
-	{
-		printf("\nCould not create listen port for swarm.");
-		swarm->taken = 0;
-		return arg;
-	}
-		printf("\nmaking the sockeht"); fflush(stdout);
-	if ((bind(swarm->sockfd, res->ai_addr, res->ai_addrlen)) < 0);
-	{
-		printf("\nCould not bind to listen port in swarm.");
-		swarm->taken = 0;
-		return arg;
-	}
-
-	printf("\nmaking the sockeht"); fflush(stdout);
-   //int getsockname(SOCKET sock, struct sockaddr *addr, int *addrlen);
-	if (getsockname(swarm->sockfd, hints.ai_addr, &addr_size) < 0)
-    {
-    	swarm->taken = 0;
-    	return arg;
-    }
-	else
-	  swarm->listenport = ntohs(hints.ai_protocol);
-
-	printf("Listening to peer on port: %d", swarm->listenport);
-
-	listen(swarm->sockfd, BACKLOG);
-	printf("\n[info_hash = %s]\tSwarm listening on.. %d\n", swarm->info_hash, swarm->listenport); fflush(stdout);
+    getsockname(sock, (struct sockaddr *)&addr, &sin_size);
+    swarm->listenport = addr.sin_port;
+	printf("Listening [%s] for peers, port = %d, %d", swarm->info_hash, swarm->listenport, addr.sin_port);
 
 	while (swarm->taken == true)
 	{
-		addr_size = sizeof(remote_addr);
-		remote_sockfd = accept(swarm->sockfd, (struct sockaddr*)&remote_addr, &addr_size);
-    	sleep(1);
-	}
+		sin_size = sizeof(struct sockaddr_in);
+        new_sock = accept(sock, (struct sockaddr *)&their_addr, &sin_size);
+        printf("\n------------ INCOMING CONNECTION ON: %d --------------------", new_sock);
+        //on accept send sockfd to peer.
+		//swarm->peercount++;
+		sleep(1);
+	}		
 
 	return arg;
 }
