@@ -22,7 +22,7 @@
 #define KILO "KB/s"
 #define MEGA "MB/s"
 #define FORMATSTRING_LEN 25
-#define DELTA_SAMPLE 1250
+#define DELTA_SAMPLE 1000
 #define lock pthread_mutex_lock
 #define unlock pthread_mutex_unlock
 

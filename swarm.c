@@ -6,6 +6,8 @@
 
 #include "swarm.h"
 
+ static bool initialized = false;
+
 //generates 20bytes long swarm-unique peer identifier. (one id per swarm)
 void generate_id(char peer_id[21])
 {
@@ -23,8 +25,24 @@ void generate_id(char peer_id[21])
 	peer_id[20] = '\0';
 }
 
+void swarm_initialize()
+{
+	printf("\nInitializing swarm."); fflush(stdout);
+
+	if (initialized == true)
+		return;
+
+	memset(&swarm, 0, sizeof(swarm_t) * MAX_SWARMS);
+	printf("\nInitialized swarms."); fflush(stdout);
+
+	initialized = true;
+}
+
 int swarm_peercount(int swarm_id)
 {
+	if (swarm_id > MAX_SWARM_SIZE - 1 || swarm_id < 0)
+		return 0;
+	
 	return swarm[swarm_id].peercount;
 }
 
@@ -64,8 +82,10 @@ void swarm_reset(swarm_t* swarm)
 	for (i = 0; i < MAX_SWARM_SIZE; i++)
 	{
 		//set sockfd to 0 !!
-		//close(&swarm->peer[i].sockfd);
-		//swarm->peer[i].sockfd = 0;
+		/*if (swarm->peer[i].sockfd != 0)
+			close(&swarm->peer[i].sockfd);
+		swarm->peer[i].sockfd = 0;*/
+
 		memset(swarm->peer[i].ip, '\0', 21);
 		memset(swarm->peer[i].port, '\0', 6); 
 	}

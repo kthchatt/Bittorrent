@@ -14,7 +14,7 @@ static void* tracking(void* arg)
 	swarm_t* swarm = (swarm_t*) arg;
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
-	sleep(2);				//2 seconds to bind.
+	sleep(5);				//2 seconds to bind.
 
 	while (swarm->taken == true)
 	{
@@ -27,7 +27,7 @@ static void* tracking(void* arg)
 		if (swarm->taken == true)
 			swarm_scour(swarm);							//find new peers and initiate connections.
 
-		sleep(4);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
+		sleep(30);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
 
 	printf("\nReleasing swarm...[%s]", swarm->info_hash);
@@ -40,7 +40,6 @@ int tracker_track(char* info_hash, char* trackers[MAX_TRACKERS])
 {
 	int swarm_id;
 
-	netstat_initialize();
 	netstat_track(info_hash);
 
 	if ((swarm_id = swarm_select(info_hash, trackers)) > -1)

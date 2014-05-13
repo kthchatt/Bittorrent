@@ -22,7 +22,7 @@ static void build(char request[300], char info_hash[21], char peer_id[21], char 
 
     printf("\nAnnouncing %s with port %d", info_hash, swarm->listenport);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=127.0.0.1&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=192.168.0.10&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, hash_escape, peer_id, listenport, 12008, 12379, "started", hostname);
 
 

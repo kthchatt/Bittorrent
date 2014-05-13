@@ -25,5 +25,7 @@ void swarm_release(swarm_t* swarm);
 void swarm_scour(swarm_t* swarm);
 //get amount of peers in swarm.
 int swarm_peercount(int swarm_id);
+//initialize swarms.
+void swarm_initialize(); 
 
 #endif
