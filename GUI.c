@@ -578,7 +578,7 @@ void torrent_create()
 	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
 	fileBtn = gtk_button_new_with_label("...");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
-	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), filePath);
+	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), &filePath);
 
 	trackerLbl = gtk_label_new("Trackers:");
 	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
