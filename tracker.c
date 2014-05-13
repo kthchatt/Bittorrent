@@ -18,9 +18,12 @@ static void* tracking(void* arg)
 	while (swarm->taken == true)
 	{
 		sleep(4);									//wait for the swarm to bind.
-		tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
- 		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
-		swarm_scour(swarm);							//find new peers and initiate connections.
+		if (swarm->taken == true)
+			tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
+ 		if (swarm->taken == true)
+ 			tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
+		if (swarm->taken == true)
+			swarm_scour(swarm);							//find new peers and initiate connections.
 	}
 
 	printf("\nError: Undefined. Releasing swarm...");
