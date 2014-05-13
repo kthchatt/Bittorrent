@@ -33,6 +33,8 @@
 
  //developer note, gtk get requests for integers takes a integer reference, not a pointer.
 
+// gcc `pkg-config gtk+-2.0 --cflags` GUI.c -o base `pkg-config gtk+-2.0 --libs`
+
 //todo: decrease redundancy, turn all tab into inactive tab.
 //todo: add more tabs? log, peers, trackers? ~RD
 //todo: 
@@ -415,8 +417,14 @@ void torrent_deprioritize()
 }
 
 void torrent_create(){
+	int rows    = 3,
+		columns = 3;
 	GtkWidget *window,
-			  *table;
+			  *table,
+			  *fileLbl, *fileTxt, *fileBtn,
+			  *trackerLbl, *trackerTxt,
+			  *accept,
+			  *cancel;
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); 
 	gtk_window_set_title(GTK_WINDOW(window), "New torrent"); 
@@ -424,8 +432,28 @@ void torrent_create(){
 	gtk_container_border_width (GTK_CONTAINER (window), 200);
 	gtk_widget_set_app_paintable(window, TRUE);
 
-	create_table(&window, &table);
-	
+	table = gtk_table_new(rows, columns, TRUE); 
+	gtk_container_add(GTK_CONTAINER(window), table); 
+
+	gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
+
+	fileLbl = gtk_label_new("Directory path:");
+	gtk_table_attach_defaults(GTK_TABLE(table), fileLbl, 0, 1, 0, 1);
+	fileTxt = gtk_text_view_new();
+	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
+	fileBtn = gtk_button_new_with_label("...");
+	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
+
+	trackerLbl = gtk_label_new("Trackers:");
+	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
+	trackerTxt = gtk_text_view_new();
+	gtk_table_attach_defaults(GTK_TABLE(table), trackerTxt, 1, 2, 1, 2);
+
+	cancel = gtk_button_new_with_label("Cancel");
+	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
+	accept = gtk_button_new_with_label("Create");
+	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
 
 	gtk_widget_show_all(window);
 
