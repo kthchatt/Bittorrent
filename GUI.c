@@ -415,6 +415,20 @@ void torrent_deprioritize()
 }
 
 void torrent_create(){
+	GtkWidget *window,
+			  *table;
+
+	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); 
+	gtk_window_set_title(GTK_WINDOW(window), "New torrent"); 
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); 
+	gtk_container_border_width (GTK_CONTAINER (window), 200);
+	gtk_widget_set_app_paintable(window, TRUE);
+
+	create_table(&window, &table);
+	
+
+	gtk_widget_show_all(window);
+
 	g_print("Create button woop!\n");
 	fflush(stdout);	
 }

@@ -22,8 +22,8 @@ typedef struct Torrent{
 // make new torrent file
 int createTorrent(Torrent t);
 // save recieved data to file 
-int saveToFile(char *filePath, char *torrentPath, char *data,  unsigned char *hash, int pieceLength);
+//int saveToFile(char *filePath, char *torrentPath, char *data,  unsigned char *hash, int pieceLength);
 // get data from file matching the hash
-char *readFromFile(char *filePath, char *torrentPath, unsigned char *hash, int pieceLength);
+//char *readFromFile(char *filePath, char *torrentPath, unsigned char *hash, int pieceLength);
 
 #endif

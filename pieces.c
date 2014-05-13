@@ -1,13 +1,5 @@
 #include "pieces.h"
 
-int main()
-{
-	// example
-    unsigned char *test = getHash("t.torrent", 0, 20); // get first hash, second hash = 1 etc
-  	printf("%c", test[0]);
-    //printf("%d", findHash(test, "t.torrent", 20));
-	return 0;
-}
 
 int findHash(unsigned char hash[], char filePath[], int totalPieces){
     FILE *file;
