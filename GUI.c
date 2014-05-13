@@ -86,6 +86,7 @@ typedef struct
 {
 	int id;				//used to identify actions on a torrent.
 	int state; 			//used to identify the current operation, when starting torrents check how many torrents have the state already, if there are slots free.
+	int swarm_id;		//used to identify the swarm serving the torrent. used for getting peer/seed/swarm size from swarm.c.
 	char* size;
 	char* done;
 	char* status;
@@ -308,7 +309,7 @@ void list_update(GtkListStore *ls)
    						COL_UPRATE,   netstat_up, 		//get up/downrate from netstat.c ~RD
    						COL_LEECHER, 0, 
    						COL_SEEDER, 0, 
-   						COL_SWARM, 0, 			//get these values from swarm.c ~RD
+   						COL_SWARM, swarm_peercount(torrentlist[id].swarm_id), 			//get these values from swarm.c ~RD
    						COL_RATIO, 0.0000, -1);
 
 
@@ -419,13 +420,13 @@ void torrent_start()
 		case TAB_COMPLETED: row_delete(id, md_completed);
 							row_add(id, md_seeding); 
 							netstat_track(torrentlist[id].info_hash);
-							tracker_track(torrentlist[id].info_hash, trackers);
+							torrentlist[id].swarm_id = tracker_track(torrentlist[id].info_hash, trackers);
 							 break;
 		case TAB_INACTIVE:  row_delete(id, md_inactive);
 							//todo add check if torrent is done or not, if done then seed, if not done then download.
 							row_add(id, md_downloading);
 							netstat_track(torrentlist[id].info_hash);
-							tracker_track(torrentlist[id].info_hash, trackers);
+							torrentlist[id].swarm_id = tracker_track(torrentlist[id].info_hash, trackers);
 							 break;
 	}
 

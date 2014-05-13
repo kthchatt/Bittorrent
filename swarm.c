@@ -23,6 +23,11 @@ void generate_id(char peer_id[21])
 	peer_id[20] = '\0';
 }
 
+int swarm_peercount(int swarm_id)
+{
+	return swarm[swarm_id].peercount;
+}
+
 //return a free swarm
 int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS])
 {
@@ -102,9 +107,17 @@ void* peerlisten(void* arg)
     memset(&(addr.sin_zero), 0, 8);        
     sin_size = sizeof(addr); 
  
- 	sock = socket(AF_INET, SOCK_STREAM, 0); 
-    bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr));
-    listen(sock, BACKLOG);
+ 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) > -1)
+ 	{
+ 		//swarm failed to bind
+ 		if ((bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr))) < 0)
+    		return arg;
+    	else
+    		if ((listen(sock, BACKLOG)) < 0)
+				return arg;
+ 	} 
+ 	else
+ 		 return arg;
 
     getsockname(sock, (struct sockaddr *)&addr, &sin_size);
     swarm->listenport = addr.sin_port;

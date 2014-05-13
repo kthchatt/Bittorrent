@@ -23,5 +23,7 @@ void swarm_listen(swarm_t* swarm);
 void swarm_release(swarm_t* swarm);
 //connect to peers in the swarm
 void swarm_scour(swarm_t* swarm);
+//get amount of peers in swarm.
+int swarm_peercount(int swarm_id);
 
 #endif
