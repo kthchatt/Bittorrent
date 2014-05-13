@@ -72,7 +72,7 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
 //<len=0001+X><id=5><bitfield>
 void bitfield(peer_t* peer)
 {
-	int piece_count, i;						//piece_count from include.
+	/*int piece_count, i;						//piece_count from include.
 	int payload = 0, len;
     char* bitfield;
     unsigned char id = 5; 	
@@ -86,7 +86,7 @@ void bitfield(peer_t* peer)
     memcpy(request + payload, bitfield, piece_count); 	payload += piece_count/8+1;
 
     send(peer->sockfd, request, payload, 0);		
-    free(request);	
+    free(request);	*/
 }
 
 //message [choke, unchoke, interested, not interested]
@@ -125,7 +125,9 @@ void have(peer_t* peer, int piece_index)
 
 //while .. read.. dgram
 void* listener_udp(peer_t* peer)
-{}
+{
+	return peer;
+}
 
 //todo not yet implemented
 void* peerwire_thread_udp(peer_t* peer)
@@ -133,6 +135,8 @@ void* peerwire_thread_udp(peer_t* peer)
 	//pthread_create(&thread, null, listener_udp, peer);
 	while (peer->sockfd != 0)
 		sleep(1);
+
+	return peer;
 }
 
 //every time data is received update lastrecv with system tick.
@@ -202,6 +206,7 @@ void* listener_tcp(void* arg)
 		sleep(1); 
 	}
 	free(message);
+	return arg;
 }
 
 //connect and get sockfd (if sockfd == 0)
@@ -233,7 +238,7 @@ void* peerwire_thread_tcp(void* arg)
             if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
             {
 				printf("\nCould not connect.");
-				return; //thread_exit, peer_free/peer_stale
+				return arg; //thread_exit, peer_free/peer_stale
 			}
 	}
 
@@ -267,6 +272,8 @@ void* peerwire_thread_tcp(void* arg)
 	}
 	printf("\n[sockfd = %d]\tPeer disconnected.", peer->sockfd);
 	//shutdown the listener, free the peer, close the sockfd.
+
+	return arg;
 }
                                                                          
 

@@ -9,13 +9,11 @@
 
 pthread_t torrents[MAX_SWARMS];
 
-
 static void* tracking(void* arg)
 {
-	int i;
 	swarm_t* swarm = (swarm_t*) arg;
 
-	swarm_listen(swarm);	//set the swarm to listen for peers.
+	//swarm_listen(swarm);	//set the swarm to listen for peers.
 
 	while (swarm->taken == true)
 	{
@@ -27,9 +25,11 @@ static void* tracking(void* arg)
 
 	printf("\nError: Undefined. Releasing swarm...");
 	swarm_release(swarm);
+
+	return arg;
 }
 
-void track(char* info_hash, char* trackers[MAX_TRACKERS])
+int tracker_track(char* info_hash, char* trackers[MAX_TRACKERS])
 {
 	int swarm_id;
 
@@ -43,15 +43,15 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 	}
 	else printf("\nSwarms are busy! Increase MAX_SWARMS or fix a memory leak!\n");
 
-	return;
+	return swarm_id;
 }
 
-void untrack(char* info_hash)
+void tracker_untrack(char* info_hash)
 {
-	int i, j;
+	int i;
 
 	//todo: untrack from netstat.
-	for (i = 0; j < MAX_SWARMS; i++)
+	for (i = 0; i < MAX_SWARMS; i++)
 	{
 		if (strcmp(swarm[i].info_hash, info_hash) == 0)
 		{
@@ -61,7 +61,7 @@ void untrack(char* info_hash)
 }
 
 
-int main(int argc, char ** argv)
+/*int main(int argc, char ** argv)
 {
 	char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", //http://mgtracker.org:2710/announce.php 
 									"", //http://127.0.0.1:80/tracker/announce.php 
@@ -101,4 +101,4 @@ int main(int argc, char ** argv)
 		printf("!");
 		fflush(stdout);
 	}
-}
+}*/
