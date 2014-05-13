@@ -94,7 +94,6 @@ typedef struct
 	char* path;			//hidden attribute used for double-click.
 } torrentlist_t;		//sort the list to implement priority.
 
-
 //to add a column: increase the COUNT and add a NAME. ~RD
 //in list_create add your data-type.
 //in update_list to refresh the value.
@@ -535,19 +534,20 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf)
 
 void file_dialog(char *filePath)
 {
-	 /*GtkWidget *dialog;
-      make new window...
+	 GtkWidget *dialog, *win;
+	 win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
      dialog = gtk_file_chooser_dialog_new ("Open File",
-     				      window,
+     				      GTK_WINDOW(win),
      				      GTK_FILE_CHOOSER_ACTION_OPEN,
      				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
      				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
      				      NULL);
-     
-     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
-         filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-     gtk_widget_destroy (dialog);*/
+     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+         filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+
+     gtk_widget_destroy (dialog);
+     gtk_widget_destroy(win);
 }
 
 void torrent_create()
@@ -560,7 +560,7 @@ void torrent_create()
 			  *accept,
 			  *cancel;
 
-	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); 
+	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "New torrent"); 
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); 
 	gtk_container_border_width (GTK_CONTAINER (window), 25);
@@ -578,7 +578,7 @@ void torrent_create()
 	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
 	fileBtn = gtk_button_new_with_label("...");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
-	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), filePath);
+	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), &filePath);
 
 	trackerLbl = gtk_label_new("Trackers:");
 	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
@@ -589,7 +589,6 @@ void torrent_create()
 	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
 	accept = gtk_button_new_with_label("Create");
 	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
-	//gtk_widget_set_size_request(accept, 40, 24);
 
 	gtk_widget_set_size_request(fileTxt, 300, 1); // ????? same size as 28 ???
 	gtk_widget_set_size_request(trackerTxt, 300, 70); // 
