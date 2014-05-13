@@ -98,7 +98,7 @@ static void* get_feed(void* arg)
 		free(tmp);
 
 		strcpy(buffer, strstr(buffer, "</item>"));	//~RD
-		buffer[0] = 128;							//safer character (unset ascii), 0 leading tags would crash the RSS. ~RD
+		buffer[0] = 128;							//safer character (ascii), 0 leading tags would crash the RSS. ~RD
 		content->item[counter] = item; 
 		counter++;									//readded: update item counter. ~RD
 	}

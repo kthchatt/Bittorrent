@@ -7,57 +7,54 @@
 
 #include "MOTD.h"
 
- 
-
-#define MAX_RESPONSE 800
-#define REPLY_TIMEOUT 2
-#define HEADER '#'
-
-
 pthread_t thread;
 
 void* fetch(void* arg)
 {
     char* response = (char*) arg;
-    char* request = malloc(200);
-    char recvbuf[MAX_RESPONSE];
-    sprintf(request, "GET / HTTP/1.1\r\nhost: www.google.se\r\n\r\n");
+    char* request = malloc(125);
+    char recvbuf[MOTD_MAXLEN];
+    sprintf(request, "GET /MOTD.php HTTP/1.1\r\nhost: 127.0.0.1\r\n\r\n");
     struct addrinfo hints, *res;
-    int sockfd, num, header;
+    int sockfd, num, header = 0;
 
-    //memset(&response, '\0', MAX_RESPONSE);
+    strcpy(response, "MOTD Not Available.");
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    getaddrinfo("www.google.se", "80", &hints, &res);
+    getaddrinfo("localhost", "80", &hints, &res);
 
      if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1)
-    {
+    { 
         if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
         {
             send(sockfd, request, strlen(request), 0); 
-            sleep(REPLY_TIMEOUT);
-            
-            if ((num = read(sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
-            {
-                while (recvbuf[header] != HEADER && header < num)
-                    header++;
+            sleep(MOTD_TIMEOUT);
 
-                memset(response, '\0', MAX_RESPONSE);
-                memcpy(response, recvbuf + header, num - header);
+            if ((num = recv(sockfd, recvbuf, MOTD_MAXLEN-1, 0)) > 0)
+            { 
+                while (recvbuf[header] != '#' && header < num)
+                {
+                    header++;
+                }
+                header++;
+
+                recvbuf[num-6] = '\0';
+                strcpy(response, recvbuf+header); //skip final rnrn.
             }
         } 
     }
+
     close(sockfd);
     free(request);
-    return;
+    return NULL;
 }
 
 //construct a http query
 void MOTD_fetch(char* response)
 {
     //create thread
-    if (!(pthread_create(&thread, NULL, fetch, response)))
+    if (!(pthread_create(&thread, NULL, fetch, (void*) response)))
         printf("\nFetching the MOTD!..");
 }

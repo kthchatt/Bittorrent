@@ -13,6 +13,8 @@
  #include <arpa/inet.h> 
  #include "urlparse.h" 
  #include "protocol_meta.h"
+ #include "swarm.h"
+ #include "netstat.h"
 
 //announce all trackers in trackerlist, algorithm for announcing only on trackers with
 //enough peers not added yet.

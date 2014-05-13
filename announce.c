@@ -10,7 +10,7 @@
  //todo: save a peerlist with ip:port and info_hash.
 
 //construct a http query
-static int build(char request[300], char info_hash[21], char peer_id[21], char tracker[MAX_URL_LEN]) 
+static void build(char request[300], char info_hash[21], char peer_id[21], char tracker[MAX_URL_LEN]) 
 {
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
@@ -39,7 +39,6 @@ static void response(int* sockfd, swarm_t* swarm, int index)
     unsigned char data;
     unsigned short int port;
     char recvbuf[2048], seek[6], ip[4];
-    char* seekpos;
 
     memset(recvbuf, '\0', sizeof(recvbuf));
 
@@ -47,6 +46,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
     {
         recvbuf[num] = '\0';
 
+        netstat_update(INPUT, num, swarm->info_hash);
         swarm->tracker[index].announce_interval   = bdecode_value(recvbuf, ":interval");
         swarm->tracker[index].announce_minterval  = bdecode_value(recvbuf, ":min interval");
 
@@ -59,7 +59,6 @@ static void response(int* sockfd, swarm_t* swarm, int index)
         {
             if (recvbuf[i] == ':') //match keyword
             {
-                seekpos = &recvbuf[i];
                 strncpy(seek, recvbuf+i, 6);
                 seek[6] = '\0';
 
@@ -104,7 +103,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
 //send a http query
 static void query(swarm_t* swarm)
 {
-    int n = 0, port = 80, sockfd, url_len = 200, i;
+    int   port = 80, sockfd, url_len = 200, i;
     char* hostname = (char*) malloc(url_len);
     char* protocol = (char*) malloc(url_len);
     char request[300];
@@ -132,6 +131,7 @@ static void query(swarm_t* swarm)
                 if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
                 {
                     send(sockfd, request, strlen(request), 0);
+                    netstat_update(OUTPUT, strlen(request), swarm->info_hash);
                     response(&sockfd, swarm, i);
                 } 
             }

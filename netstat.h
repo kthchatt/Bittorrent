@@ -1,8 +1,11 @@
+ #ifndef _netstat_h
+ #define _netstat_h
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <unistd.h>
+#include <unistd.h> 
 
 #define bool char
 #define true 1
@@ -19,7 +22,7 @@
 #define KILO "KB/s"
 #define MEGA "MB/s"
 #define FORMATSTRING_LEN 25
-#define DELTA_SAMPLE 325
+#define DELTA_SAMPLE 1250
 #define lock pthread_mutex_lock
 #define unlock pthread_mutex_unlock
 
@@ -57,3 +60,5 @@ char* netstat_formatbytes(int direction, char* info_hash, char* format_string);
 	netstat_update(INPUT, num, swarm->info_hash);
 
 */
+
+#endif

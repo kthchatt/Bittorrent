@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include "netstat.h"
+#include "MOTD.h"
+#include "tracker.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -103,38 +105,15 @@ static char* COLUMN_NAME[] = {"#", "Name", "Size", "Done", "Status", "Download",
 //dynamic array of torrentlist.  ~RD
 torrentlist_t* torrentlist; 
 int torrentlist_count;
-pthread_t update_thread;
+pthread_t update_thread, motd_thread;
 
 //global required, multiple pointers to retain references. ~RD
 GtkWidget *tv_inactive, *tv_downloading, *tv_completed, *tv_seeding;
 GtkWidget *tlb_inactive, *tlb_downloading, *tlb_completed, *tlb_seeding;
 GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding;
-GtkWidget *lb_netstat;
+GtkWidget *lb_netstat, *lb_motd;
 GtkWidget *notebook;
 
-// set rotation of a meter
-void set_meter(int m, int percent, GdkPixbuf *pbuf){
-	static int current_deg[4]; 
-	int to_add;
-
-	GdkPixbuf *tmp;
-	//GtkWidget *meter;
-
-	to_add = (percent - current_deg[m])*1.8;
-	tmp = pbuf;
-
-	while(to_add>0){
-		pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
-		to_add -= 90;
-	}
-
-	g_object_unref(tmp);
-	//meter = gtk_image_new_from_pixbuf(pbuf);
-	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
-	g_object_unref(tmp);
-	//meter = gtk_image_new_from_pixbuf(pbuf);
-	current_deg[m] = percent;
-}
 
 //add a row when the torrent-info already exists. ~RD
 void row_add(int id, GtkListStore* ls)
@@ -339,6 +318,16 @@ void list_update(GtkListStore *ls)
 }
 
 
+void* motd_timer_thread(void* arg)
+{
+	char* response = (char*) malloc(MOTD_MAXLEN+1);
+
+	MOTD_fetch(response);
+	sleep(MOTD_TIMEOUT + 1);			//wait timeout.
+	gtk_label_set_text((GtkLabel*) lb_motd, response);		//todo: get speeds from netstat.c
+	return NULL;
+}
+
 //update the torrents with data from modules at defined FPS. ~RD
 void* gui_update_thread(void* arg)
 {
@@ -351,7 +340,7 @@ void* gui_update_thread(void* arg)
 	{
 		usleep((1000 / FPS) * 1000);
 
-		netstat_update(INPUT, 300, torrentlist[0].info_hash);
+		//netstat_update(INPUT, 300, torrentlist[0].info_hash);
 
 		delay++;
 		if (delay > 10)
@@ -420,19 +409,26 @@ void torrent_start()
 	if ((id = selected_id()) < 0)
 		return;
 
+
+		char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", //http://mgtracker.org:2710/announce.php 
+									"", //http://127.0.0.1:80/tracker/announce.php 
+									"", 
+									""};
+
 	switch(tab)
 	{
 		case TAB_COMPLETED: row_delete(id, md_completed);
 							row_add(id, md_seeding); 
+							netstat_track(torrentlist[id].info_hash);
+							tracker_track(torrentlist[id].info_hash, trackers);
 							 break;
 		case TAB_INACTIVE:  row_delete(id, md_inactive);
 							//todo add check if torrent is done or not, if done then seed, if not done then download.
 							row_add(id, md_downloading);
-							//track(torrentlist[id].info_hash); //get the trackerlist from file man.
-							break;
+							netstat_track(torrentlist[id].info_hash);
+							tracker_track(torrentlist[id].info_hash, trackers);
+							 break;
 	}
-
-	netstat_track(torrentlist[id].info_hash);
 
 	printf("\nStarted torrent %s.", torrentlist[id].info_hash);
 	fflush(stdout);
@@ -449,14 +445,14 @@ void torrent_stop()
 	{
 		case TAB_SEEDING: 		row_delete(id, md_seeding); 
 						  		row_add(id, md_completed); 
-						  		//untrack(torrentlist[id].info_hash); 
 						  		netstat_untrack(torrentlist[id].info_hash);
+						  		tracker_untrack(torrentlist[id].info_hash); 
 						  		break;
 
 		case TAB_DOWNLOADING: 	row_delete(id, md_downloading);
 								row_add(id, md_inactive);
-							  	//untrack(torrentlist[id].info_hash); 
 							  	netstat_untrack(torrentlist[id].info_hash);
+							  	tracker_untrack(torrentlist[id].info_hash); 
 							  	break;
 	}
 	
@@ -482,6 +478,7 @@ void torrent_delete()
 	}
 
 	//todo: delete torrent files && delete torrentinfo record?
+	netstat_untrack(torrentlist[id].info_hash);
 
 	printf("\nDeleted torrent %s.", torrentlist[id].info_hash);
 	fflush(stdout);
@@ -509,16 +506,105 @@ void torrent_deprioritize()
 	fflush(stdout);
 }
 
-void torrent_create(){
+
+// set rotation of a meter
+void set_meter(int m, int percent, GdkPixbuf *pbuf)
+{
+	static int current_deg[4]; 
+	int to_add;
+
+	GdkPixbuf *tmp;
+	//GtkWidget *meter;
+
+	to_add = (percent - current_deg[m])*1.8;
+	tmp = pbuf;
+
+	while(to_add>0)
+	{
+		pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
+		to_add -= 90;
+	}
+
+	g_object_unref(tmp);
+	//meter = gtk_image_new_from_pixbuf(pbuf);
+	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
+	g_object_unref(tmp);
+	//meter = gtk_image_new_from_pixbuf(pbuf);
+	current_deg[m] = percent;
+}
+
+void file_dialog(char *filePath)
+{
+	 /*GtkWidget *dialog;
+      make new window...
+     dialog = gtk_file_chooser_dialog_new ("Open File",
+     				      window,
+     				      GTK_FILE_CHOOSER_ACTION_OPEN,
+     				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+     				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+     				      NULL);
+     
+     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+         filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+     gtk_widget_destroy (dialog);*/
+}
+
+void torrent_create()
+{
+	char *filePath = "";
+	GtkWidget *window,
+			  *table,
+			  *fileLbl, *fileTxt, *fileBtn,
+			  *trackerLbl, *trackerTxt,
+			  *accept,
+			  *cancel;
+
+	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); 
+	gtk_window_set_title(GTK_WINDOW(window), "New torrent"); 
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); 
+	gtk_container_border_width (GTK_CONTAINER (window), 25);
+	gtk_widget_set_app_paintable(window, TRUE);
+
+	table = gtk_table_new(3, 3, FALSE); 
+	gtk_container_add(GTK_CONTAINER(window), table); 
+
+	gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
+
+	fileLbl = gtk_label_new("Directory path:");
+	gtk_table_attach_defaults(GTK_TABLE(table), fileLbl, 0, 1, 0, 1);
+	fileTxt = gtk_text_view_new();
+	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
+	fileBtn = gtk_button_new_with_label("...");
+	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
+	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), filePath);
+
+	trackerLbl = gtk_label_new("Trackers:");
+	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
+	trackerTxt = gtk_text_view_new();
+	gtk_table_attach_defaults(GTK_TABLE(table), trackerTxt, 1, 2, 1, 2);
+
+	cancel = gtk_button_new_with_label("Cancel");
+	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
+	accept = gtk_button_new_with_label("Create");
+	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
+	//gtk_widget_set_size_request(accept, 40, 24);
+
+	gtk_widget_set_size_request(fileTxt, 300, 1); // ????? same size as 28 ???
+	gtk_widget_set_size_request(trackerTxt, 300, 70); // 
+
+	gtk_widget_show_all(window);
+
 	g_print("Create button woop!\n");
 	fflush(stdout);	
 }
 
-
 void MOTD(GtkWidget **label, GtkWidget **table) {
-	*label = gtk_label_new("MOTD goes here."); // Label content
-  	gtk_misc_set_alignment(GTK_MISC (*label), 0, 1); // Sets alignment of label
-  	gtk_table_attach_defaults (GTK_TABLE (*table), *label, 0, 1, 10, 11); // Sets beginning position of label in table
+	//gtk_label_set_width_chars((GtkLabel*) label);
+	*label = gtk_label_new("Loading MOTD ..."); // Label content
+  	gtk_misc_set_alignment(GTK_MISC(*label), 0, 1); // Sets alignment of label
+  	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 1, 10, 11); // Sets beginning position of label in table
 }
 
 void netstat_label(GtkWidget **label, GtkWidget **table) {
@@ -529,7 +615,7 @@ void netstat_label(GtkWidget **label, GtkWidget **table) {
 
 void create_notebook (GtkWidget **table, GtkWidget **notebook) {
 	*notebook = gtk_notebook_new(); // Creates new notebook
-	gtk_notebook_set_tab_pos (GTK_NOTEBOOK(*notebook), GTK_POS_TOP); // Sets tab position
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(*notebook), GTK_POS_TOP); // Sets tab position
 	gtk_table_attach_defaults(GTK_TABLE(*table), *notebook, 0,6,1,10); // Sets row and columns for notebook
 }
 
@@ -587,6 +673,7 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	GtkToolItem	*up;
 	GtkToolItem	*down;
 	GtkToolItem *create;
+	GtkToolItem *add;
 
 	*toolbar = gtk_toolbar_new(); // Creates new toolbar menu
   	gtk_toolbar_set_style(GTK_TOOLBAR(*toolbar), GTK_TOOLBAR_ICONS); 	// Sets style to display icons only
@@ -611,6 +698,9 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
   	create = gtk_tool_button_new_from_stock(GTK_STOCK_NEW);
 	gtk_toolbar_insert(GTK_TOOLBAR(*toolbar), create, 5);
 
+	add = gtk_tool_button_new_from_stock(GTK_STOCK_ADD);
+	gtk_toolbar_insert(GTK_TOOLBAR(*toolbar), add, 6);
+
   	//add event handlers for the buttons.
 	g_signal_connect(G_OBJECT(play), "clicked", G_CALLBACK(torrent_start), NULL);
 	g_signal_connect(G_OBJECT(stop), "clicked", G_CALLBACK(torrent_stop), NULL);
@@ -618,6 +708,7 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	g_signal_connect(G_OBJECT(up), "clicked", G_CALLBACK(torrent_prioritize), NULL);
 	g_signal_connect(G_OBJECT(down), "clicked", G_CALLBACK(torrent_deprioritize), NULL);
 	g_signal_connect(G_OBJECT(create), "clicked", G_CALLBACK(torrent_create), NULL);
+	//g_signal_connect(G_OBJECT(add), "clicked", G_CALLBACK(file_dialog), NULL);
 
 	g_signal_connect(tv_inactive, "row-activated", G_CALLBACK(list_doubleclick), NULL);
 	g_signal_connect(tv_completed, "row-activated", G_CALLBACK(list_doubleclick), NULL);
@@ -684,7 +775,7 @@ int main (int argc, char *argv[])
 
 //---------------------------------------------------------------------------  ~RD
 
-	MOTD(&label, &table);
+	MOTD(&lb_motd, &table);
 	netstat_label(&lb_netstat, &table);
 	create_menu(&toolbar, &table);
 
@@ -694,6 +785,10 @@ int main (int argc, char *argv[])
 
 	if (!(pthread_create(&update_thread, NULL, gui_update_thread, NULL)))
 			printf("\nUpdating your values in Thread.");
+
+	if (!(pthread_create(&motd_thread, NULL, motd_timer_thread, NULL)))
+			printf("\nWaiting for MOTD in Thread.");
+
 
 	gtk_main();
 	return 0;
