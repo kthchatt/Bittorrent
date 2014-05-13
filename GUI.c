@@ -469,11 +469,15 @@ void torrent_create(){
 	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
 	accept = gtk_button_new_with_label("Create");
 	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
+	//gtk_widget_set_size_request(accept, 40, 24);
 
 	gtk_widget_set_size_request(fileTxt, 300, 1); // ????? same size as 28 ???
 	gtk_widget_set_size_request(trackerTxt, 300, 70); // 
 
 	gtk_widget_show_all(window);
+
+	g_print("Create button woop!\n");
+	fflush(stdout);	
 }
 
 
