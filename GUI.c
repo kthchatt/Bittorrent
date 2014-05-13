@@ -87,7 +87,6 @@ typedef struct
 	char* path;			//hidden attribute used for double-click.
 } torrentlist_t;		//sort the list to implement priority.
 
-
 //to add a column: increase the COUNT and add a NAME. ~RD
 //in list_create add your data-type.
 //in update_list to refresh the value.
@@ -416,9 +415,24 @@ void torrent_deprioritize()
 	fflush(stdout);
 }
 
+void file_dialog(char *filePath){
+	 GtkWidget *dialog;
+     /* make new window...
+     dialog = gtk_file_chooser_dialog_new ("Open File",
+     				      window,
+     				      GTK_FILE_CHOOSER_ACTION_OPEN,
+     				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+     				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+     				      NULL);
+     
+     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+         filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+     gtk_widget_destroy (dialog);*/
+}
+
 void torrent_create(){
-	int rows    = 3,
-		columns = 3;
+	char *filePath;
 	GtkWidget *window,
 			  *table,
 			  *fileLbl, *fileTxt, *fileBtn,
@@ -432,7 +446,7 @@ void torrent_create(){
 	gtk_container_border_width (GTK_CONTAINER (window), 200);
 	gtk_widget_set_app_paintable(window, TRUE);
 
-	table = gtk_table_new(rows, columns, TRUE); 
+	table = gtk_table_new(3, 3, TRUE); 
 	gtk_container_add(GTK_CONTAINER(window), table); 
 
 	gtk_table_set_row_spacings(GTK_TABLE(table), 10);
@@ -444,6 +458,8 @@ void torrent_create(){
 	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
 	fileBtn = gtk_button_new_with_label("...");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
+	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), filePath);
+
 
 	trackerLbl = gtk_label_new("Trackers:");
 	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
@@ -460,6 +476,8 @@ void torrent_create(){
 	g_print("Create button woop!\n");
 	fflush(stdout);	
 }
+
+
 
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
