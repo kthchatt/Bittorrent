@@ -100,15 +100,17 @@ void* peerlisten(void* arg)
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	getaddrinfo(NULL, 0, &hints, &res);
+	getaddrinfo("0.0.0.0", 0, &hints, &res);
 	addr_size = sizeof(hints);
 
+	printf("\nmaking the sockeht"); fflush(stdout);
 	if ((swarm->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
 	{
 		printf("\nCould not create listen port for swarm.");
 		swarm->taken = 0;
 		return arg;
 	}
+		printf("\nmaking the sockeht"); fflush(stdout);
 	if ((bind(swarm->sockfd, res->ai_addr, res->ai_addrlen)) < 0);
 	{
 		printf("\nCould not bind to listen port in swarm.");
@@ -116,7 +118,7 @@ void* peerlisten(void* arg)
 		return arg;
 	}
 
-
+	printf("\nmaking the sockeht"); fflush(stdout);
    //int getsockname(SOCKET sock, struct sockaddr *addr, int *addrlen);
 	if (getsockname(swarm->sockfd, hints.ai_addr, &addr_size) < 0)
     {

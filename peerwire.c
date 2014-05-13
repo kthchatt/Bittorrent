@@ -249,7 +249,7 @@ void* peerwire_thread_tcp(void* arg)
 	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
 	handshake(peer, peer->info_hash, peer->peer_id);
 	sleep(1);
-	bitfield(peer);
+	//bitfield(peer);
 	sleep(9);
 	printf("\ndbg1");
 	message(peer, UNCHOKE);
