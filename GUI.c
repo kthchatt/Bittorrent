@@ -443,7 +443,7 @@ void torrent_create(){
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); 
 	gtk_window_set_title(GTK_WINDOW(window), "New torrent"); 
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); 
-	gtk_container_border_width (GTK_CONTAINER (window), 70);
+	gtk_container_border_width (GTK_CONTAINER (window), 25);
 	gtk_widget_set_app_paintable(window, TRUE);
 
 	table = gtk_table_new(3, 3, FALSE); 
