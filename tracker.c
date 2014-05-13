@@ -50,10 +50,9 @@ void tracker_untrack(char* info_hash)
 {
 	int i;
 
-	//todo: untrack from netstat.
 	for (i = 0; i < MAX_SWARMS; i++)
 	{
-		if (strcmp(swarm[i].info_hash, info_hash) == 0)
+		if (swarm[i].info_hash == info_hash)
 		{
 			swarm[i].taken = false;	//call swarm_free. This is not thread-safe nor a reliable mean to stop swarm-threads. Peer threads are not stopped.
 		}
