@@ -6,6 +6,7 @@
 #include "swarm.h"
 #include "MOTD.h"
 #include "tracker.h"
+#include "bencodning.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -533,33 +534,46 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf)
 	current_deg[m] = percent;
 }
 
-void file_dialog(char *filePath)
+void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 {
-	 GtkWidget *dialog, *win;
-	 win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-     dialog = gtk_file_chooser_dialog_new ("Open File",
-     				      GTK_WINDOW(win),
-     				      GTK_FILE_CHOOSER_ACTION_OPEN,
-     				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-     				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-     				      NULL);
+	char *filePath;
+	GtkWidget *dialog, *win;
+	GtkTextIter start, end;
 
-     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
-         filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+	gtk_text_buffer_get_start_iter(txtBuffer, &start); 
+	gtk_text_buffer_get_end_iter(txtBuffer, &end); 
+	dialog = gtk_file_chooser_dialog_new ("Select folder",
+					      GTK_WINDOW(win),
+					      GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
 
-     gtk_widget_destroy (dialog);
-     gtk_widget_destroy(win);
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
+		// clear old text from textbox
+		gtk_text_buffer_delete(txtBuffer, &start, &end);
+		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+		// set text in textbox to selected folder path
+		gtk_text_buffer_insert(txtBuffer, &start, filePath, strlen(filePath));
+	}
+		
+	gtk_widget_destroy (dialog);
+	gtk_widget_destroy(win);
+}
+
+void close_window(GtkWidget *junk, GtkWidget *window){
+	gtk_widget_destroy(window);
 }
 
 void torrent_create()
 {
-	char *filePath = "";
 	GtkWidget *window,
 			  *table,
 			  *fileLbl, *fileTxt, *fileBtn,
 			  *trackerLbl, *trackerTxt,
 			  *accept,
 			  *cancel;
+	GtkTextBuffer *txtBuffer;
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "New torrent"); 
@@ -576,10 +590,11 @@ void torrent_create()
 	fileLbl = gtk_label_new("Directory path:");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileLbl, 0, 1, 0, 1);
 	fileTxt = gtk_text_view_new();
+	txtBuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(fileTxt));
 	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
 	fileBtn = gtk_button_new_with_label("...");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
-	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), &filePath);
+	g_signal_connect_object(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), G_OBJECT(txtBuffer), G_CONNECT_AFTER); 
 
 	trackerLbl = gtk_label_new("Trackers:");
 	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
@@ -588,16 +603,63 @@ void torrent_create()
 
 	cancel = gtk_button_new_with_label("Cancel");
 	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
+
 	accept = gtk_button_new_with_label("Create");
 	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
+	g_signal_connect_object(G_OBJECT(cancel), "clicked", G_CALLBACK(close_window), G_OBJECT(window), G_CONNECT_AFTER); 
 
 	gtk_widget_set_size_request(fileTxt, 300, 1); // ????? same size as 28 ???
 	gtk_widget_set_size_request(trackerTxt, 300, 70); // 
 
 	gtk_widget_show_all(window);
+}
 
-	g_print("Create button woop!\n");
-	fflush(stdout);	
+void add_torrent(){
+	GtkWidget *dialog, *win;
+	torrent_info *torrent;
+	char *filePath, *fileName, *fileSize, *tmp;
+
+	torrent = malloc(sizeof(torrent_info));
+
+	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	dialog = gtk_file_chooser_dialog_new ("Open File",
+					      GTK_WINDOW(win),
+					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
+
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
+		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+		if(strrchr(filePath, '.')=="torent"){ // need better check?
+			tmp = malloc(strlen(filePath));
+			strcpy(tmp, filePath);
+			tmp = strtok(tmp, "/");
+			fileName = malloc(strlen(tmp));
+			memset(fileName, '\0', strlen(tmp));
+			while(tmp!=NULL){
+				// extract filename from filepath
+				fileName = realloc(fileName, strlen(tmp));
+				strcpy(fileName, tmp);
+				tmp = strtok(NULL, "/");
+			}
+			tmp = realloc(tmp, strlen(filePath)+strlen(fileName)+6);
+			// build copy string
+			sprintf(tmp, "copy %s %s", filePath, fileName);
+			fprintf(stderr, "%s\n", tmp);
+			// copy torrent file to working dir
+			system(tmp);
+			// get torrent info
+			decode_bencode(fileName, torrent);
+			// convert filesize from long long int to char
+			fileSize = malloc(sizeof(torrent->_total_length));
+			memset(fileSize, '\0', sizeof(torrent->_total_length));
+			sprintf(fileSize, "%lld", torrent->_total_length);
+			// add torrent to list and initiate download
+			list_add(torrent->_torrent_file_name, "Downloading", fileSize, "0.00%", torrent->_info_hash, STATE_DOWNLOADING);
+		}
+	}
+	gtk_widget_destroy(dialog);
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
@@ -708,7 +770,7 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	g_signal_connect(G_OBJECT(up), "clicked", G_CALLBACK(torrent_prioritize), NULL);
 	g_signal_connect(G_OBJECT(down), "clicked", G_CALLBACK(torrent_deprioritize), NULL);
 	g_signal_connect(G_OBJECT(create), "clicked", G_CALLBACK(torrent_create), NULL);
-	//g_signal_connect(G_OBJECT(add), "clicked", G_CALLBACK(file_dialog), NULL);
+	g_signal_connect(G_OBJECT(add), "clicked", G_CALLBACK(add_torrent), NULL);
 
 	g_signal_connect(tv_inactive, "row-activated", G_CALLBACK(list_doubleclick), NULL);
 	g_signal_connect(tv_completed, "row-activated", G_CALLBACK(list_doubleclick), NULL);

@@ -48,31 +48,16 @@ int create_file(torrent_info *torrent){
 		}
 		//Path
 		strncat(tmp_path, torrent->_file_path[i], length);
-		
-		//fprintf(stderr, "Tmp path: %s\n", tmp_path);
-
 		strcpy(tmp_string, "mkdir -p ");
-		
-		//fprintf(stderr, "1:%s\n", tmp_string);
-		
 		char *ptr = tmp_path;
-
 		strcat(tmp_string, "\"");
 		strcat(tmp_string, tmp_path);
 		strcat(tmp_string, "\"");
-		
-		//fprintf(stderr, "2:%s\n", tmp_string);
-		
 		system(tmp_string);
-		
-		//fprintf(stderr, "3:%s\n", tmp_string);
-		
-		//fprintf(stderr, "3: filename: %s\n", filename);
 		//Filename
 		strcat(tmp_path, "/");
-		
 		strcat(tmp_path, filename);
-		
+		//TODO Comment out foloowing line:
 		fprintf(stderr, "%s\n", tmp_path);
 
 		fp = fopen(tmp_path, "w+");
@@ -90,7 +75,7 @@ int create_file(torrent_info *torrent){
 		create = torrent->_file_length[i] -total_created;
 		fseek(fp, create, SEEK_CUR);
 		torrent->_total_created += create;
-		fputc('\n', fp);
+		fputc('A', fp);
 		fclose(fp);
 
 		//fprintf(stderr, "File is set to size\n");

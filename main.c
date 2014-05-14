@@ -3,7 +3,7 @@
 #define MAX_TORRENTS 100
 #include "tracker.h"
 #include "bencodning.h"
-#include "torrent.h"
+//#include "torrent.h"
 #include "createfile.h"
 #include "writepiece.h"
 
@@ -21,24 +21,18 @@ int main (int argc, char *argv[]){
 	}
 
 
-	fprintf(stderr, "This is main\n");
+	//fprintf(stderr, "This is main\n");
 	decode_bencode(argv[1], torrents[0]);
-	fprintf(stderr, "Tracker no:0 = %s\n", trackers[0]);
+	//fprintf(stderr, "Tracker no:0 = %s\n", trackers[0]);
+	//fprintf(stderr, "Piece length is %lld\n", torrents[0]->_piece_length);
 
 	create_file(torrents[0]);
+	//fprintf(stderr, "File path: %s\n", torrents[0]->_file_path[0]);
 
 	void *ptr = malloc(torrents[0]->_piece_length);
 	memset(ptr, 'A', torrents[0]->_piece_length);
 	write_piece(torrents[0], ptr);
-
-	/*
-	track(torrents[0]->_info_hash,trackers);
-	//track("00000000000000000000",trackers);
-	fprintf(stderr, "Tracker is running \n");
-	sleep(30);
-	//untrack("00000000000000000000");
-	fprintf(stderr, "Stopping\n");
-
-	addTorrent(argv[1]);*/
+	sleep(20);
+	fprintf(stderr, "Quiting\n");
 	return 1;
 } 
