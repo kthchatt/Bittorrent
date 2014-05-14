@@ -615,7 +615,7 @@ void torrent_create()
 void add_torrent(){
 	GtkWidget *dialog, *win;
 	torrent_info *torrent;
-	char *filePath, *fileSize;
+	char *filePath, *fileName, *fileSize, *tmp;
 
 	char *test = malloc(30);
 	memset(test, '\0', 30);
@@ -633,8 +633,22 @@ void add_torrent(){
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
-		if(filePath!=NULL){ // check if file is valid
-			decode_bencode(test, torrent);
+		if(filePath!=NULL){ // need better check?
+			tmp = malloc(strlen(filePath));
+			strcpy(tmp, filePath);
+			tmp = strtok(tmp, "/");
+			fileName = malloc(strlen(tmp));
+			memset(fileName, '\0', strlen(tmp));
+			while(tmp!=NULL){
+				fileName = realloc(fileName, strlen(tmp));
+				strcpy(fileName, tmp);
+				tmp = strtok(NULL, "/");
+			}
+			tmp = realloc(tmp, strlen(filePath)+strlen(fileName)+6);
+			sprintf(tmp, "copy %s %s", filePath, fileName);
+			fprintf(stderr, "%s\n", tmp);
+			system(tmp);
+			decode_bencode(fileName, torrent);
 			fileSize = malloc(sizeof(torrent->_total_length));
 			memset(fileSize, '\0', sizeof(torrent->_total_length));
 			sprintf(fileSize, "%lld", torrent->_total_length);
