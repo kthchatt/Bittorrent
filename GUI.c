@@ -587,7 +587,7 @@ void torrent_create()
 	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
 	fileBtn = gtk_button_new_with_label("...");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
-	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), txtBuffer);
+	g_signal_connect_object(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), G_OBJECT(txtBuffer), G_CONNECT_AFTER);
 
 	trackerLbl = gtk_label_new("Trackers:");
 	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
@@ -598,6 +598,7 @@ void torrent_create()
 	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
 	accept = gtk_button_new_with_label("Create");
 	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
+	g_signal_connect_object(G_OBJECT(cancel), "clicked", G_CALLBACK(gtk_widget_destroy), G_OBJECT(window), G_CONNECT_AFTER);
 
 	gtk_widget_set_size_request(fileTxt, 300, 1); // ????? same size as 28 ???
 	gtk_widget_set_size_request(trackerTxt, 300, 70); // 
