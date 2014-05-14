@@ -533,33 +533,40 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf)
 	current_deg[m] = percent;
 }
 
-void file_dialog(char *filePath)
+void file_dialog(GtkTextBuffer *txtBuffer)
 {
-	 GtkWidget *dialog, *win;
-	 win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-     dialog = gtk_file_chooser_dialog_new ("Open File",
-     				      GTK_WINDOW(win),
-     				      GTK_FILE_CHOOSER_ACTION_OPEN,
-     				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-     				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-     				      NULL);
+	char *filePath;
+	GtkWidget *dialog, *win;
+	GtkTextIter iter;
 
-     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
-         filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+	gtk_text_buffer_get_end_iter(txtBuffer, &iter); // Error: assertion 'GTK_IS_TEXT_BUFFER (buffer)' failed
+	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	dialog = gtk_file_chooser_dialog_new ("Open File",
+					      GTK_WINDOW(win),
+					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
 
-     gtk_widget_destroy (dialog);
-     gtk_widget_destroy(win);
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
+		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+		gtk_text_buffer_insert(txtBuffer, &iter, filePath, strlen(filePath)); // Error: assertion 'GTK_IS_TEXT_BUFFER (buffer)' failed
+	}
+		
+
+	gtk_widget_destroy (dialog);
+	gtk_widget_destroy(win);
 }
 
 void torrent_create()
 {
-	char *filePath = "";
 	GtkWidget *window,
 			  *table,
 			  *fileLbl, *fileTxt, *fileBtn,
 			  *trackerLbl, *trackerTxt,
 			  *accept,
 			  *cancel;
+	GtkTextBuffer *txtBuffer;
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "New torrent"); 
@@ -576,10 +583,11 @@ void torrent_create()
 	fileLbl = gtk_label_new("Directory path:");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileLbl, 0, 1, 0, 1);
 	fileTxt = gtk_text_view_new();
+	txtBuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(fileTxt));
 	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
 	fileBtn = gtk_button_new_with_label("...");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
-	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), &filePath);
+	g_signal_connect(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), txtBuffer);
 
 	trackerLbl = gtk_label_new("Trackers:");
 	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
