@@ -601,6 +601,7 @@ void torrent_create()
 
 	cancel = gtk_button_new_with_label("Cancel");
 	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
+
 	accept = gtk_button_new_with_label("Create");
 	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
 	g_signal_connect_object(G_OBJECT(cancel), "clicked", G_CALLBACK(close_window), G_OBJECT(window), G_CONNECT_AFTER); 
@@ -609,6 +610,10 @@ void torrent_create()
 	gtk_widget_set_size_request(trackerTxt, 300, 70); // 
 
 	gtk_widget_show_all(window);
+}
+
+void add_torrent(){
+
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
@@ -719,7 +724,7 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	g_signal_connect(G_OBJECT(up), "clicked", G_CALLBACK(torrent_prioritize), NULL);
 	g_signal_connect(G_OBJECT(down), "clicked", G_CALLBACK(torrent_deprioritize), NULL);
 	g_signal_connect(G_OBJECT(create), "clicked", G_CALLBACK(torrent_create), NULL);
-	//g_signal_connect(G_OBJECT(add), "clicked", G_CALLBACK(file_dialog), NULL);
+	g_signal_connect(G_OBJECT(add), "clicked", G_CALLBACK(add_torrent), NULL);
 
 	g_signal_connect(tv_inactive, "row-activated", G_CALLBACK(list_doubleclick), NULL);
 	g_signal_connect(tv_completed, "row-activated", G_CALLBACK(list_doubleclick), NULL);
