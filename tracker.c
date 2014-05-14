@@ -14,7 +14,7 @@ static void* tracking(void* arg)
 	swarm_t* swarm = (swarm_t*) arg;
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
-	sleep(5);				//2 seconds to bind.
+	sleep(1);				//2 seconds to bind.
 
 	while (swarm->taken == true)
 	{

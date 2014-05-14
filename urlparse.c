@@ -190,7 +190,7 @@ void url_encode(char* hash, char* output)
     int i, k = 1;
     for (i = 0; i < 20; i++)
     { 
-        strcat(output, "%");
+        output[k-1] = '%';
         snprintf(output+k, 61, "%x", (unsigned char) hash[i]);
         k += 3;
     }

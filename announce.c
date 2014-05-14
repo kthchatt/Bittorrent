@@ -20,9 +20,7 @@ static void build(char request[300], char info_hash[21], char peer_id[21], char 
     url_announce(tracker, announce);
     url_encode(info_hash, hash_escape);
 
-    printf("\nAnnouncing %s with port %d", info_hash, swarm->listenport);
-
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=192.168.0.10&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=127.0.0.1&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, hash_escape, peer_id, listenport, 12008, 12379, "started", hostname);
 
 
@@ -81,7 +79,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
                         sprintf(swarm->peer[swarm->peercount].ip, "%hd.%hd.%hd.%hd", 
                               (unsigned char) ip[0], (unsigned char) ip[1], (unsigned char) ip[2], (unsigned char) ip[3]);
                         
-                        printf("\nip = [%s]\n", swarm->peer[swarm->peercount].ip);
+                        //printf("\nip = [%s]\n", swarm->peer[swarm->peercount].ip);
 
                         i += 4;
                         data = recvbuf[i];
@@ -91,7 +89,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
                         i += 2;
 
                         sprintf(swarm->peer[swarm->peercount].port, "%d", (unsigned) port);
-                        printf("port [%s]", swarm->peer[swarm->peercount].port);
+                        //printf("port [%s]", swarm->peer[swarm->peercount].port);
                         swarm->peercount++;
                     }
                     printf("\n");

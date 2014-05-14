@@ -36,7 +36,7 @@
 #define PIECE       7
 #define CANCEL      8
 #define PORT        9
-#define DOWNLOAD_BUFFER 524288
+#define DOWNLOAD_BUFFER 65535
 
 typedef struct
 {
