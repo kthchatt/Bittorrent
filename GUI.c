@@ -537,9 +537,10 @@ void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 {
 	char *filePath;
 	GtkWidget *dialog, *win;
-	GtkTextIter iter;
+	GtkTextIter start, end;
 
-	gtk_text_buffer_get_end_iter(txtBuffer, &iter); // Error: assertion 'GTK_IS_TEXT_BUFFER (buffer)' failed
+	gtk_text_buffer_get_start_iter(txtBuffer, &start); 
+	gtk_text_buffer_get_end_iter(txtBuffer, &end); 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	dialog = gtk_file_chooser_dialog_new ("Select folder",
 					      GTK_WINDOW(win),
@@ -549,8 +550,9 @@ void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 					      NULL);
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
+		gtk_text_buffer_delete(txtBuffer, &start, &end);
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
-		gtk_text_buffer_insert(txtBuffer, &iter, filePath, strlen(filePath)); // Error: assertion 'GTK_IS_TEXT_BUFFER (buffer)' failed
+		gtk_text_buffer_insert(txtBuffer, &start, filePath, strlen(filePath)); // Error: assertion 'GTK_IS_TEXT_BUFFER (buffer)' failed
 	}
 		
 	gtk_widget_destroy (dialog);
