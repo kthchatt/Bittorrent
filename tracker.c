@@ -9,31 +9,37 @@
 
 pthread_t torrents[MAX_SWARMS];
 
-
 static void* tracking(void* arg)
 {
-	int i;
 	swarm_t* swarm = (swarm_t*) arg;
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
+	sleep(5);				//2 seconds to bind.
 
 	while (swarm->taken == true)
 	{
-		sleep(4);									//wait for the swarm to bind.
-		tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
- 		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
-		swarm_scour(swarm);							//find new peers and initiate connections.
+		printf("swarm->listenport = %d", swarm->listenport);
+
+		if (swarm->taken == true)
+			tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
+ 		if (swarm->taken == true)
+ 			tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
+		if (swarm->taken == true)
+			swarm_scour(swarm);							//find new peers and initiate connections.
+
+		sleep(30);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
 
-	printf("\nError: Undefined. Releasing swarm...");
+	printf("\nReleasing swarm...[%s]", swarm->info_hash);
 	swarm_release(swarm);
+
+	return arg;
 }
 
-void track(char* info_hash, char* trackers[MAX_TRACKERS])
+int tracker_track(char* info_hash, char* trackers[MAX_TRACKERS])
 {
 	int swarm_id;
 
-	netstat_initialize();
 	netstat_track(info_hash);
 
 	if ((swarm_id = swarm_select(info_hash, trackers)) > -1)
@@ -43,17 +49,16 @@ void track(char* info_hash, char* trackers[MAX_TRACKERS])
 	}
 	else printf("\nSwarms are busy! Increase MAX_SWARMS or fix a memory leak!\n");
 
-	return;
+	return swarm_id;
 }
 
-void untrack(char* info_hash)
+void tracker_untrack(char* info_hash)
 {
-	int i, j;
+	int i;
 
-	//todo: untrack from netstat.
-	for (i = 0; j < MAX_SWARMS; i++)
+	for (i = 0; i < MAX_SWARMS; i++)
 	{
-		if (strcmp(swarm[i].info_hash, info_hash) == 0)
+		if (swarm[i].info_hash == info_hash)
 		{
 			swarm[i].taken = false;	//call swarm_free. This is not thread-safe nor a reliable mean to stop swarm-threads. Peer threads are not stopped.
 		}
@@ -61,7 +66,7 @@ void untrack(char* info_hash)
 }
 
 
-int main(int argc, char ** argv)
+/*int main(int argc, char ** argv)
 {
 	char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", //http://mgtracker.org:2710/announce.php 
 									"", //http://127.0.0.1:80/tracker/announce.php 
@@ -101,4 +106,4 @@ int main(int argc, char ** argv)
 		printf("!");
 		fflush(stdout);
 	}
-}
+}*/

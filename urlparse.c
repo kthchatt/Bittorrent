@@ -94,7 +94,7 @@ void url_protocol(char* url, char* protocol)
 //finds the port number, searches from end of string to first colon.
 void url_port(char* url, int *port)
 {
-    int i, len, port_end, port_start, occur = 0, amp = 0;
+    int i, len, port_end, port_start, amp = 0;
     *port = 0;
 
     len = strlen(url);

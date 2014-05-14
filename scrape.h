@@ -13,6 +13,7 @@
  #include <arpa/inet.h> 
  #include "urlparse.h" 
  #include "protocol_meta.h"
+ #include "netstat.h"
 
 //scrapes the trackerlist and stores the scrape data per tracker.
 void tracker_scrape(swarm_t* swarm);

@@ -6,7 +6,8 @@
 
 #include "swarm.h"
 
-//todo add threading for peer listener, bound to port etc.
+ static bool initialized = false;
+
 //generates 20bytes long swarm-unique peer identifier. (one id per swarm)
 void generate_id(char peer_id[21])
 {
@@ -24,6 +25,27 @@ void generate_id(char peer_id[21])
 	peer_id[20] = '\0';
 }
 
+void swarm_initialize()
+{
+	printf("\nInitializing swarm."); fflush(stdout);
+
+	if (initialized == true)
+		return;
+
+	memset(&swarm, 0, sizeof(swarm_t) * MAX_SWARMS);
+	printf("\nInitialized swarms."); fflush(stdout);
+
+	initialized = true;
+}
+
+int swarm_peercount(int swarm_id)
+{
+	if (swarm_id > MAX_SWARM_SIZE - 1 || swarm_id < 0)
+		return 0;
+	
+	return swarm[swarm_id].peercount;
+}
+
 //return a free swarm
 int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS])
 {
@@ -38,7 +60,8 @@ int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS])
 			swarm[i].peercount = 0;
 
 			generate_id(swarm[i].peer_id);
-			strcpy(swarm[i].info_hash, info_hash);
+			//strcpy(swarm[i].info_hash, info_hash);
+			swarm[i].info_hash = info_hash;
 
 			for (j = 0; j < MAX_TRACKERS; j++)
 			{
@@ -59,8 +82,10 @@ void swarm_reset(swarm_t* swarm)
 	for (i = 0; i < MAX_SWARM_SIZE; i++)
 	{
 		//set sockfd to 0 !!
-		//close(&swarm->peer[i].sockfd);
-		//swarm->peer[i].sockfd = 0;
+		/*if (swarm->peer[i].sockfd != 0)
+			close(&swarm->peer[i].sockfd);
+		swarm->peer[i].sockfd = 0;*/
+
 		memset(swarm->peer[i].ip, '\0', 21);
 		memset(swarm->peer[i].port, '\0', 6); 
 	}
@@ -79,61 +104,56 @@ void swarm_release(swarm_t* swarm)
 		memset(swarm->peer[i].port, '\0', 6); 
 	}
 
-	swarm->peercount = 0;
-	close(swarm->sockfd);
-	swarm->taken = 0;
+	swarm->peercount = 0;	
+	if (swarm->sockfd != 0)
+		close(swarm->sockfd);	
+	swarm->taken = 0;	
 }
-
 
 //find a port and listen to it. 
 //for every connection create a new thread. with &peer
 void* peerlisten(void* arg)
 {
 	swarm_t* swarm = (swarm_t*) arg;
-	struct sockaddr_in myaddr;
-	struct sockaddr_storage their_addr;
-	int len, remote_sockfd, addr_size;
 
-	myaddr.sin_family = AF_INET;
-	myaddr.sin_port = htons(0);			//bind to any free port.
-	myaddr.sin_addr.s_addr = INADDR_ANY;
-	len = sizeof(myaddr);
+	int    sock, new_sock;    
+    struct sockaddr_in addr;        
+    struct sockaddr_in their_addr;     
+    unsigned int    sin_size;
+ 
+    addr.sin_family      = AF_INET;        
+    addr.sin_port        = htons(0);   
+    addr.sin_addr.s_addr = INADDR_ANY;      
+    memset(&(addr.sin_zero), 0, 8);        
+    sin_size = sizeof(addr); 
+ 
+ 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) > -1)
+ 	{
+ 		//swarm failed to bind
+ 		if ((bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr))) < 0)
+    		return arg;
+    	else
+    		if ((listen(sock, BACKLOG)) < 0)
+				return arg;
+ 	} 
+ 	else
+ 		 return arg;
 
-	if ((swarm->sockfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-	{
-		printf("\nCould not create listen port for swarm.");
-		swarm->taken = 0;
-		return;
-	}
-	if (bind(swarm->sockfd, (struct sockaddr*)&myaddr, sizeof myaddr) < 0)
-	{
-		printf("\nCould not bind to listen port in swarm.");
-		swarm->taken = 0;
-		return;
-	}
-
-	if (getsockname(swarm->sockfd, (struct sockaddr *)&myaddr, &len) < 0)
-    {
-    	swarm->taken = 0;
-    	return;
-    }
-	else
-	  swarm->listenport = ntohs(myaddr.sin_port);
-
-	listen(swarm->sockfd, BACKLOG);
-	printf("\n[info_hash = %s]\tSwarm listening on.. %d\n", swarm->info_hash, swarm->listenport); fflush(stdout);
+    getsockname(sock, (struct sockaddr *)&addr, &sin_size);
+    swarm->listenport = addr.sin_port;
+	printf("Listening [%s] for peers, port = %d, %d", swarm->info_hash, swarm->listenport, addr.sin_port);
 
 	while (swarm->taken == true)
 	{
-		//while accept.. create new thread to run peerwire-thread..
-    	addr_size = sizeof their_addr;
-    	remote_sockfd = accept(swarm->sockfd, (struct sockaddr *)&their_addr, &addr_size);
-    	printf("\n----- there was an incoming connection! --------\n"); fflush(stdout);
-    	//todo
-    	//check if peer in swarms peerlist, if so then set it's fd to new_fd.
-    	//else add peer to swarms peerlist.*/
-    	sleep(1);
-	}
+		sin_size = sizeof(struct sockaddr_in);
+        new_sock = accept(sock, (struct sockaddr *)&their_addr, &sin_size);
+        printf("\n------------ INCOMING CONNECTION ON: %d --------------------", new_sock);
+        //on accept send sockfd to peer.
+		//swarm->peercount++;
+		sleep(1);
+	}		
+
+	return arg;
 }
 
 //find new peers and create pwp-thread.

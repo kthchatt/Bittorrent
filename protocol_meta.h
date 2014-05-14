@@ -1,6 +1,8 @@
  #ifndef _protocol_meta_h
  #define _protocol_meta_h
 
+#include <pthread.h>
+
 //sys-global
 #define true 1
 #define false 0
@@ -34,6 +36,7 @@
 #define PIECE       7
 #define CANCEL      8
 #define PORT        9
+#define DOWNLOAD_BUFFER 524288
 
 typedef struct
 {
@@ -62,7 +65,7 @@ typedef struct
  	tracker_t tracker 	[MAX_TRACKERS];
  	peer_t peer 		[MAX_SWARM_SIZE];
  	char  peer_id   	[21];
- 	char  info_hash 	[21];
+ 	char* info_hash;
  	int listenport, peercount, sockfd;
  	pthread_t thread;
  	pthread_mutex_t lock;

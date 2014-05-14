@@ -24,7 +24,7 @@ char *getInfoHash(char *torrentPath){
 	return infoHash;
 }
 
-int addTorrent(char *torrentPath){
+/*int addTorrent(char *torrentPath){
 	char infoHash[20],
 		 destination[] = "/my/path/t.torrent",
 		 trackers[MAX_TRACKERS];
@@ -44,4 +44,12 @@ int addTorrent(char *torrentPath){
 		track(infoHash, trackers);											// magic
 	}
 	return 0;
+}*/
+
+
+
+void main(void)
+{
+	printf("IH: %s", getInfoHash("t.torrent"));
+	fflush(stdout);
 }

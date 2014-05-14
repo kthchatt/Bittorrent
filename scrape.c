@@ -27,7 +27,7 @@ static int build(char request[200], char info_hash[21], char tracker[MAX_URL_LEN
 
 static void response(int* sockfd, swarm_t* swarm, int index)
 {
-    int num = 0, tnum = 0;
+    int num = 0;
     char recvbuf[2048];
 
     memset(recvbuf, '\0', sizeof(recvbuf));
@@ -35,6 +35,7 @@ static void response(int* sockfd, swarm_t* swarm, int index)
     if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
     {
         recvbuf[num] = '\0';
+        netstat_update(INPUT, strlen(recvbuf), swarm->info_hash);
 
         swarm->tracker[index].scrape_completed  = bdecode_value(recvbuf, "complete");
         swarm->tracker[index].scrape_downloaded = bdecode_value(recvbuf, "downloaded");
@@ -75,6 +76,7 @@ static void query(swarm_t* swarm)
                 if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
                 {
                     send(sockfd, request, strlen(request), 0);
+                    netstat_update(OUTPUT, strlen(request), swarm->info_hash);
                     response(&sockfd, swarm, i);
                 } 
             }

@@ -1,0 +1,2 @@
+gcc -Wall -g netstat.c MOTD.c swarm.c peerwire.c urlparse.c announce.c scrape.c tracker.c protocol_meta.h GUI.c -pthread -o base `pkg-config --cflags gtk+-2.0` `pkg-config --libs gtk+-2.0`
+./base
