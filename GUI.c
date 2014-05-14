@@ -6,6 +6,7 @@
 #include "swarm.h"
 #include "MOTD.h"
 #include "tracker.h"
+#include "bencodning.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -541,7 +542,6 @@ void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 
 	gtk_text_buffer_get_start_iter(txtBuffer, &start); 
 	gtk_text_buffer_get_end_iter(txtBuffer, &end); 
-	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	dialog = gtk_file_chooser_dialog_new ("Select folder",
 					      GTK_WINDOW(win),
 					      GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
@@ -613,7 +613,28 @@ void torrent_create()
 }
 
 void add_torrent(){
+	GtkWidget *dialog, *win;
+	torrent_info torrent;
+	char *filePath, *fileSize;
 
+	dialog = gtk_file_chooser_dialog_new ("Select folder",
+					      GTK_WINDOW(win),
+					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
+
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+		
+	if(filePath!=NULL){ // better check needed?
+		decode_bencode(filePath, &torrent);
+		sprintf(fileSize, "%lld", torrent._total_length);
+		list_add(torrent._torrent_file_name, "Downloading", fileSize, "0.00%", torrent._info_hash, STATE_CREATING);
+	}
+
+	gtk_widget_destroy (dialog);
+	gtk_widget_destroy(win);
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
