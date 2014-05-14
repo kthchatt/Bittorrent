@@ -633,7 +633,7 @@ void add_torrent(){
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
-		if(filePath!=NULL){ // need better check?
+		if(strrchr(filePath, '.')=="torent"){ // need better check?
 			tmp = malloc(strlen(filePath));
 			strcpy(tmp, filePath);
 			tmp = strtok(tmp, "/");
