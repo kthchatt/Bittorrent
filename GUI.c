@@ -614,8 +614,10 @@ void torrent_create()
 
 void add_torrent(){
 	GtkWidget *dialog, *win;
-	torrent_info torrent;
+	torrent_info *torrent;
 	char *filePath, *fileSize;
+
+	torrent = malloc(sizeof(torrent_info));
 
 	dialog = gtk_file_chooser_dialog_new ("Select folder",
 					      GTK_WINDOW(win),
@@ -624,17 +626,19 @@ void add_torrent(){
 					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
 					      NULL);
 
-	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
-		
-	if(filePath!=NULL){ // better check needed?
-		decode_bencode(filePath, &torrent);
-		sprintf(fileSize, "%lld", torrent._total_length);
-		list_add(torrent._torrent_file_name, "Downloading", fileSize, "0.00%", torrent._info_hash, STATE_CREATING);
-	}
+		if(1==1){ // check if file is valid
+			decode_bencode("photoshop.torrent", torrent);
+			sprintf(fileSize, "%lld", torrent->_total_length);
+			list_add(torrent._torrent_file_name, "Downloading", fileSize, "0.00%", torrent._info_hash, STATE_CREATING);
+		}
 
-	gtk_widget_destroy (dialog);
-	gtk_widget_destroy(win);
+	}
+		
+	
+	gtk_widget_destroy(dialog);
+	//gtk_widget_destroy(win);
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
