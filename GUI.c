@@ -550,8 +550,10 @@ void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 					      NULL);
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
+		// clear old text from textbox
 		gtk_text_buffer_delete(txtBuffer, &start, &end);
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+		// set text in textbox to selected folder path
 		gtk_text_buffer_insert(txtBuffer, &start, filePath, strlen(filePath));
 	}
 		
