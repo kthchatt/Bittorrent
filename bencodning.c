@@ -8,11 +8,8 @@ The sole purpuse of this lib is to decode bencodning.
 */
 
 #include "bencodning.h"
-#include <stdio.h> 
-#include <string.h>
-#include <stdlib.h>
 
-//Flobal var
+//Global var
 int place_announce_list = 0;
 int place_files = 0;
 

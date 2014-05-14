@@ -3,7 +3,7 @@
 #define MAX_TORRENTS 100
 #include "tracker.h"
 #include "bencodning.h"
-#include "torrent.h"
+//#include "torrent.h"
 #include "createfile.h"
 #include "writepiece.h"
 

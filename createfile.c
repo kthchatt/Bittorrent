@@ -58,7 +58,7 @@ int create_file(torrent_info *torrent){
 		strcat(tmp_path, "/");
 		strcat(tmp_path, filename);
 		//TODO Comment out foloowing line:
-		//fprintf(stderr, "%s\n", tmp_path);
+		fprintf(stderr, "%s\n", tmp_path);
 
 		fp = fopen(tmp_path, "w+");
 		if (fp == NULL){
