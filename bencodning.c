@@ -1,8 +1,5 @@
 /*
 
-TODO
-In multi file torrent it only reads the first file. This must be addressed.
-
 
 This is Bencodning lib.
 Wotking status:		Under construction
@@ -58,37 +55,15 @@ int decode_bencode(char *file_name, torrent_info *data){
 	*to_null = '\0';
 	strcpy(data->_torrent_file_name, file_name);
 
-	fprintf(stderr, "Calculating hash.....\n:");
+	//fprintf(stderr, "Calculating hash.....\n:");
 	info_hash(fp, data);
-	fprintf(stderr, "The info hash is:");
+	//fprintf(stderr, "The info hash is:");
 	for (j = 0; j < 20; ++j)
 		{
 			fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
 			//dataptr++;
 		}
 	fprintf(stderr, "\n");
-
-/*	for (i = 0; i < 50; ++i)
-	{
-		for (j = 0; j < 20; ++j)
-		{
-			fprintf(stderr, "%02x", (unsigned char) data->_pieces[i][j]);
-			//dataptr++;
-		}
-		fprintf(stderr, "\n");
-	}
-	for (i = 0; i < data->_number_of_files; ++i)
-	{
-		fprintf(stderr, "File %d: %55s \t Length: %lli \n", i, data->_file_path[i], data->_file_length[i]);
-	}
-
-	//Skriver ut allt som inte har lästs in än. 
-	fprintf(stderr, "\n\n\n\n");
-	fgets(bencode, 3000, fp);
-	for (i = 0; i < 3000; ++i)
-	{
-		printf("%c", bencode[i]);
-	}*/
 	return 1;
 
 }
@@ -207,7 +182,7 @@ void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 		} 
 		if (strcmp("info", string_name) == 0){
 			data->_location = ftell(sfp);
-			fprintf(stderr, "We got: %s at possition %ld \n", string_name, data->_location);
+			//fprintf(stderr, "We got: %s at possition %ld \n", string_name, data->_location);
 		}
 		length_of_next_int = read_length_of_next(sfp);
 		if (length_of_next_int == 0){
@@ -289,7 +264,10 @@ void complete_dictonarry (char *string_name, char *string_value, torrent_info *d
 	} else if (strcmp(string_name, "name") == 0)
 	{	
 		strcpy(data->_file_name, string_value);
-	} else if (strcmp(string_name, "pice length") == 0)
+		if (data->_number_of_files < 1){
+			data->_number_of_files = 1;
+		}
+	} else if (strcmp(string_name, "piece length") == 0)
 	{	
 		data->_piece_length = atoll(string_value);
 	} else if (strcmp(string_name, "announce-list") == 0)
