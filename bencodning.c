@@ -14,6 +14,7 @@ int place_announce_list = 0;
 int place_files = 0;
 
 int decode_bencode(char *file_name, torrent_info *data){
+	fprintf(stderr, "This is print from decode_bencode\n");
 	//torrent_info data;
 	char bencode[25000];
 	char string_name[250];
@@ -21,7 +22,7 @@ int decode_bencode(char *file_name, torrent_info *data){
 	char test_dictonary_list;
 	char *to_null;
 	int i = 0; int j = 0; int length_of_next_int = 0;
-
+	fprintf(stderr, "decode_bencode got file: %s \n", file_name);
 
 	FILE *fp;
 	fp = fopen(file_name, "r");
