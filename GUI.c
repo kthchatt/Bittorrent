@@ -617,10 +617,6 @@ void add_torrent(){
 	torrent_info *torrent;
 	char *filePath, *fileName, *fileSize, *tmp;
 
-	char *test = malloc(30);
-	memset(test, '\0', 30);
-	strcat(test, "photoshop.torrent");
-
 	torrent = malloc(sizeof(torrent_info));
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -640,22 +636,27 @@ void add_torrent(){
 			fileName = malloc(strlen(tmp));
 			memset(fileName, '\0', strlen(tmp));
 			while(tmp!=NULL){
+				// extract filename from filepath
 				fileName = realloc(fileName, strlen(tmp));
 				strcpy(fileName, tmp);
 				tmp = strtok(NULL, "/");
 			}
 			tmp = realloc(tmp, strlen(filePath)+strlen(fileName)+6);
+			// build copy string
 			sprintf(tmp, "copy %s %s", filePath, fileName);
 			fprintf(stderr, "%s\n", tmp);
+			// copy torrent file to working dir
 			system(tmp);
+			// get torrent info
 			decode_bencode(fileName, torrent);
+			// convert filesize from long long int to char
 			fileSize = malloc(sizeof(torrent->_total_length));
 			memset(fileSize, '\0', sizeof(torrent->_total_length));
 			sprintf(fileSize, "%lld", torrent->_total_length);
+			// add torrent to list and initiate download
 			list_add(torrent->_torrent_file_name, "Downloading", fileSize, "0.00%", torrent->_info_hash, STATE_DOWNLOADING);
 		}
 	}
-	
 	gtk_widget_destroy(dialog);
 }
 
