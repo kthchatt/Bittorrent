@@ -533,7 +533,7 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf)
 	current_deg[m] = percent;
 }
 
-void file_dialog(GtkTextBuffer *txtBuffer)
+void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 {
 	char *filePath;
 	GtkWidget *dialog, *win;
@@ -541,9 +541,9 @@ void file_dialog(GtkTextBuffer *txtBuffer)
 
 	gtk_text_buffer_get_end_iter(txtBuffer, &iter); // Error: assertion 'GTK_IS_TEXT_BUFFER (buffer)' failed
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	dialog = gtk_file_chooser_dialog_new ("Open File",
+	dialog = gtk_file_chooser_dialog_new ("Select folder",
 					      GTK_WINDOW(win),
-					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
 					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
 					      NULL);
@@ -553,9 +553,12 @@ void file_dialog(GtkTextBuffer *txtBuffer)
 		gtk_text_buffer_insert(txtBuffer, &iter, filePath, strlen(filePath)); // Error: assertion 'GTK_IS_TEXT_BUFFER (buffer)' failed
 	}
 		
-
 	gtk_widget_destroy (dialog);
 	gtk_widget_destroy(win);
+}
+
+void close_window(GtkWidget *junk, GtkWidget *window){
+	gtk_widget_destroy(window);
 }
 
 void torrent_create()
@@ -587,7 +590,7 @@ void torrent_create()
 	gtk_table_attach_defaults(GTK_TABLE(table), fileTxt, 1, 2, 0, 1);
 	fileBtn = gtk_button_new_with_label("...");
 	gtk_table_attach_defaults(GTK_TABLE(table), fileBtn, 2, 3, 0, 1);
-	g_signal_connect_object(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), G_OBJECT(txtBuffer), G_CONNECT_AFTER);
+	g_signal_connect_object(G_OBJECT(fileBtn), "clicked", G_CALLBACK(file_dialog), G_OBJECT(txtBuffer), G_CONNECT_AFTER); // txtBuffer not sent correctly???
 
 	trackerLbl = gtk_label_new("Trackers:");
 	gtk_table_attach_defaults(GTK_TABLE(table), trackerLbl, 0, 1, 1, 2);
@@ -598,15 +601,12 @@ void torrent_create()
 	gtk_table_attach_defaults(GTK_TABLE(table), cancel, 0, 1, 2, 3);
 	accept = gtk_button_new_with_label("Create");
 	gtk_table_attach_defaults(GTK_TABLE(table), accept, 1, 2, 2, 3);
-	g_signal_connect_object(G_OBJECT(cancel), "clicked", G_CALLBACK(gtk_widget_destroy), G_OBJECT(window), G_CONNECT_AFTER);
+	g_signal_connect_object(G_OBJECT(cancel), "clicked", G_CALLBACK(close_window), G_OBJECT(window), G_CONNECT_AFTER); // cancel as first argument???
 
 	gtk_widget_set_size_request(fileTxt, 300, 1); // ????? same size as 28 ???
 	gtk_widget_set_size_request(trackerTxt, 300, 70); // 
 
 	gtk_widget_show_all(window);
-
-	g_print("Create button woop!\n");
-	fflush(stdout);	
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
