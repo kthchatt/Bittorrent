@@ -2,6 +2,13 @@
  #define _protocol_meta_h
 
 #include <pthread.h>
+#include "bencodning.h"
+
+/*  protocol_meta.h
+ *	Author: Robin Duda
+ *
+ *	
+ */
 
 //sys-global
 #define true 1
@@ -17,12 +24,14 @@
 //when the concurrent is not full, peers will be unchoked.
 
 //swarm-tracker
-#define SIGNATURE "NSA-PirateBust-"
+#define SIGNATURE "BT-CookieCrumb-"
 #define BACKLOG 5
 #define MAX_SWARMS 4
 #define MAX_SWARM_SIZE 200
-#define MAX_URL_LEN 100
-#define MAX_TRACKERS 4
+#define MAX_URL_LEN 250
+#define MAX_TRACKERS 15
+#define SCRAPE_TIME 2
+#define ANNOUNCE_TIME 2
 
 //peerwire
 #define PROTOCOL    "BitTorrent protocol"
@@ -36,11 +45,12 @@
 #define PIECE       7
 #define CANCEL      8
 #define PORT        9
-#define DOWNLOAD_BUFFER 65535
+#define DOWNLOAD_BUFFER 6553500
 
 typedef struct
 {
-	char url [MAX_URL_LEN];
+	char* url;
+	boolean alive;
 	int scrape_completed, scrape_incomplete, scrape_downloaded, announce_interval, announce_minterval;
 } tracker_t;
 
@@ -54,6 +64,7 @@ typedef struct
 	char port[6];
 	char* peer_id;		//pointers to swarm_t data. (required for threading.)
 	char* info_hash;
+	torrent_info* tinfo;
 	pthread_t thread;
 } peer_t;
 
@@ -67,6 +78,7 @@ typedef struct
  	char  peer_id   	[21];
  	char* info_hash;
  	int listenport, peercount, sockfd;
+ 	torrent_info* tinfo;
  	pthread_t thread;
  	pthread_mutex_t lock;
  } swarm_t;

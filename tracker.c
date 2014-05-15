@@ -14,18 +14,19 @@ static void* tracking(void* arg)
 	swarm_t* swarm = (swarm_t*) arg;
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
-	sleep(1);				//2 seconds to bind.
+	sleep(2);				//2 seconds to bind.
 
 	while (swarm->taken == true)
 	{
-		printf("swarm->listenport = %d", swarm->listenport);
-
+		printf("\nScraping...."); fflush(stdout);
 		if (swarm->taken == true)
 			tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
- 		if (swarm->taken == true)
- 			tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
-		if (swarm->taken == true)
-			swarm_scour(swarm);							//find new peers and initiate connections.
+		//printf("\nAnnouncing.... "); fflush(stdout);
+ 		//if (swarm->taken == true)
+ 	//		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
+ //		printf("\nScouring.... "); fflush(stdout);
+//		if (swarm->taken == true)
+//			swarm_scour(swarm);							//find new peers and initiate connections.
 
 		sleep(30);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
@@ -36,13 +37,13 @@ static void* tracking(void* arg)
 	return arg;
 }
 
-int tracker_track(char* info_hash, char* trackers[MAX_TRACKERS])
+int tracker_track(torrent_info* tinfo)
 {
 	int swarm_id;
 
-	netstat_track(info_hash);
+	netstat_track(tinfo->_info_hash);
 
-	if ((swarm_id = swarm_select(info_hash, trackers)) > -1)
+	if ((swarm_id = swarm_select(tinfo)) > -1)
 	{
 		if(!(pthread_create(&torrents[swarm_id], NULL, tracking, &swarm[swarm_id])))
 			printf("\nTracking: %s as [%s]\n", swarm[swarm_id].info_hash, swarm[swarm_id].peer_id);
@@ -52,13 +53,13 @@ int tracker_track(char* info_hash, char* trackers[MAX_TRACKERS])
 	return swarm_id;
 }
 
-void tracker_untrack(char* info_hash)
+void tracker_untrack(torrent_info* tinfo)
 {
 	int i;
 
 	for (i = 0; i < MAX_SWARMS; i++)
 	{
-		if (swarm[i].info_hash == info_hash)
+		if (swarm[i].info_hash == tinfo->_info_hash)
 		{
 			swarm[i].taken = false;	//call swarm_free. This is not thread-safe nor a reliable mean to stop swarm-threads. Peer threads are not stopped.
 		}

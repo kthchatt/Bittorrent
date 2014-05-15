@@ -47,7 +47,7 @@ int swarm_peercount(int swarm_id)
 }
 
 //return a free swarm
-int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS])
+int swarm_select(torrent_info* tinfo)
 {
 	int  swarm_id = -1, i, j;
 
@@ -60,14 +60,14 @@ int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS])
 			swarm[i].peercount = 0;
 
 			generate_id(swarm[i].peer_id);
-			//strcpy(swarm[i].info_hash, info_hash);
-			swarm[i].info_hash = info_hash;
+			swarm[i].info_hash = tinfo->_info_hash;
 
 			for (j = 0; j < MAX_TRACKERS; j++)
 			{
-				memset(swarm[i].tracker[j].url, '\0', sizeof(MAX_URL_LEN));
-				strcpy(swarm[i].tracker[j].url, trackers[j]);
+				swarm[i].tracker[j].url = tinfo->_announce_list[j];
+				swarm[i].tracker[j].alive = true;
 			}
+
 			break;
 		}
 	}

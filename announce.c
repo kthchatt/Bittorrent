@@ -20,7 +20,7 @@ static void build(char request[300], char info_hash[21], char peer_id[21], char 
     url_announce(tracker, announce);
     url_encode(info_hash, hash_escape);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=127.0.0.1&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=192.168.0.10&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, hash_escape, peer_id, listenport, 12008, 12379, "started", hostname);
 
 
@@ -41,8 +41,9 @@ static void response(int* sockfd, swarm_t* swarm, int index)
     char recvbuf[2048], seek[6], ip[4];
 
     memset(recvbuf, '\0', sizeof(recvbuf));
+    sleep(ANNOUNCE_TIME);
 
-    if ((num = read(*sockfd, recvbuf, sizeof(recvbuf)-1)) > 0)
+    if ((num = recv(*sockfd, recvbuf, sizeof(recvbuf)-1, MSG_DONTWAIT)) > 0)
     {
         recvbuf[num] = '\0';
 
@@ -109,10 +110,9 @@ static void query(swarm_t* swarm)
     char request[300];
     struct addrinfo hints, *res;
 
-
     for (i = 0; i < MAX_TRACKERS; i++)
     {
-        if (strlen(swarm->tracker[i].url) > 0)
+        if (strlen(swarm->tracker[i].url) > 1)
         {
             build(request, swarm->info_hash, swarm->peer_id, swarm->tracker[i].url, swarm->listenport);
             url_hostname(swarm->tracker[i].url, hostname);
