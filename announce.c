@@ -16,7 +16,7 @@
 
 
 //construct a http query
-void a_build(char request[300], char* info_hash, char* peer_id, char* tracker, int listenport) 
+static void build(char request[300], char* info_hash, char* peer_id, char* tracker, int listenport) 
 {
     char* announce = (char*) malloc(strlen(tracker));
     char* hostname = (char*) malloc(strlen(tracker));
@@ -39,7 +39,7 @@ void a_build(char request[300], char* info_hash, char* peer_id, char* tracker, i
 
 //todo: read peer data into swarm, save intervals.
 //read uncompressed 
-void a_response(int* sockfd, announce_t* announce)
+static void response(int* sockfd, announce_t* announce)
 {
     int num, i, j;
     unsigned char data;
@@ -110,7 +110,7 @@ void a_response(int* sockfd, announce_t* announce)
 }
 
 //send a http query
-void* a_query(void* arg)
+static void* query(void* arg)
 {
     announce_t* announce = (announce_t*) arg;
     int   port = 80, sockfd, url_len = 200;
@@ -120,7 +120,7 @@ void* a_query(void* arg)
     struct addrinfo hints, *res;
     announce->tracker->alive = false;
 
-    a_build(request, announce->swarm->info_hash, announce->swarm->peer_id, announce->tracker->url, announce->swarm->listenport);
+    build(request, announce->swarm->info_hash, announce->swarm->peer_id, announce->tracker->url, announce->swarm->listenport);
     url_hostname(announce->tracker->url, hostname);
     url_protocol(announce->tracker->url, protocol);
     url_port(announce->tracker->url, &port);
@@ -139,7 +139,7 @@ void* a_query(void* arg)
             {
                 send(sockfd, request, strlen(request), 0);
                 netstat_update(OUTPUT, strlen(request), announce->swarm->info_hash);
-                a_response(&sockfd, announce);
+                response(&sockfd, announce);
             } 
             close(sockfd);
         }
@@ -170,7 +170,7 @@ void tracker_announce(swarm_t* swarm)
             announce->tracker = &swarm->tracker[i];
             announce->swarm = swarm;
 
-            if(!(pthread_create(&announce->thread, NULL, a_query, announce)))
+            if(!(pthread_create(&announce->thread, NULL, query, announce)))
                 printf("\nScraping: %s.", announce->tracker->url);
             else
                 swarm->tracker[i].alive = false;

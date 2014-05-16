@@ -15,7 +15,7 @@ typedef struct
 } scrape_t;
 
 //construct a http query
-int s_build(char request[200], char* info_hash, char* tracker) 
+static int build(char request[200], char* info_hash, char* tracker) 
 {
     char* path =     (char*) malloc(MAX_URL_LEN);
     char* hostname = (char*) malloc(MAX_URL_LEN);
@@ -33,7 +33,7 @@ int s_build(char request[200], char* info_hash, char* tracker)
     return strlen(request);
 }
 
-void s_response(int* sockfd, scrape_t* scrape)
+static void response(int* sockfd, scrape_t* scrape)
 {
     int num = 0;
     char recvbuf[2048];
@@ -55,7 +55,7 @@ void s_response(int* sockfd, scrape_t* scrape)
      }    
 }
 
-void* s_query(void* arg)
+static void* query(void* arg)
 {
     scrape_t* scrape = (scrape_t*) arg;
     int port = 80, url_len = 200, sockfd;
@@ -65,7 +65,7 @@ void* s_query(void* arg)
     struct addrinfo hints, *res;
     scrape->tracker->alive = false;
 
-    s_build(request, scrape->swarm->info_hash, scrape->tracker->url);
+    build(request, scrape->swarm->info_hash, scrape->tracker->url);
     url_hostname(scrape->tracker->url, hostname);
     url_protocol(scrape->tracker->url, protocol);
     url_port(scrape->tracker->url, &port);
@@ -84,7 +84,7 @@ void* s_query(void* arg)
             {
                 send(sockfd, request, strlen(request), 0);
                 netstat_update(OUTPUT, strlen(request), scrape->swarm->info_hash);
-                s_response(&sockfd, scrape);
+                response(&sockfd, scrape);
             } 
             close(sockfd);
         }
@@ -114,7 +114,7 @@ void* s_query(void* arg)
             scrape->tracker = &swarm->tracker[i];
             scrape->swarm = swarm;
 
-            if(!(pthread_create(&scrape->thread, NULL, s_query, scrape)))
+            if(!(pthread_create(&scrape->thread, NULL, query, scrape)))
                 printf("\nScraping: %s.", scrape->tracker->url);
             else
                 swarm->tracker[i].alive = false;

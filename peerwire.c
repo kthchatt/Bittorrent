@@ -176,7 +176,7 @@ void debug(int postal)
 }
 
 //todo: fill one piece from the buffer, return num with the offset.
-void receive_piece(char* buffer, int* num, int* msglen, peer_t* peer)
+static void inline receive_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 {
 	int downloaded = 0, left = *msglen - 9, length = *msglen - 9, index, offset, header = 13;
 	char* block = malloc(length);
@@ -219,7 +219,7 @@ void receive_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 				memmove(buffer, buffer + left + header, *num);
 				//if (*num > 0)
 				//	printf("\nNext. \\%02x\\%02x\\%02x\\%02x\\%02x", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]); fflush(stdout);
-				//send piece to fileman.---
+				//send piece to fileman.--- fileman must free the allocated piece
 				downloaded = length;
 				netstat_update(INPUT, downloaded, peer->info_hash);
 				printf("\n(Complete) Downloading Piece %d/%d \tIndex: %d\tOffset: %d\tPayload: %d\tOverflow: %d\tBF check: [%2x, %2x]", downloaded, length, index, offset, *num + left, *num, block[0], block[16383]); fflush(stdout);
