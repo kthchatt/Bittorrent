@@ -167,6 +167,7 @@ void swarm_scour(swarm_t* swarm)
     	{
     		swarm->peer[i].info_hash = swarm->info_hash;
     		swarm->peer[i].peer_id = swarm->peer_id;
+    		//swarm->peer[i].swarm = swarm;  //todo: remove -info_hash and -peer_id replace with peer->swarm->info_hash...
 
     		if (!(pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
     			printf("\nStarting peerwire_thread_tcp..");

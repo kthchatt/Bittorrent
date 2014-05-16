@@ -163,12 +163,12 @@ void list_add(char* status, torrent_info* tinfo, int state)
 		torrentlist[torrentlist_count].swarm_id = -1;
 		torrentlist[torrentlist_count].tinfo = tinfo;
 
-		int i;
-		printf("\nAnnounce-Master: %s", torrentlist[torrentlist_count].tinfo->_announce);
+		/*int i;
+		printf("\nAnnounce-Master: %s", torrentlist[torrentlist_count].tinfo->_announce);	//check torrnts.
 
 		for (i = 0; i < 15; i++)
 			if (strlen(torrentlist[torrentlist_count].tinfo->_announce_list[i]) > 0)
-			printf("\n#%d. %s", i, torrentlist[torrentlist_count].tinfo->_announce_list[i]);
+			printf("\n#%d. %s", i, torrentlist[torrentlist_count].tinfo->_announce_list[i]);*/
 		torrentlist_count++;
 	}
 

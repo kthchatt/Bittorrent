@@ -64,6 +64,7 @@ typedef struct
 	char port[6];
 	char* peer_id;		//pointers to swarm_t data. (required for threading.)
 	char* info_hash;
+	//swarm_t* swarm;
 	torrent_info* tinfo;
 	pthread_t thread;
 } peer_t;
@@ -80,7 +81,7 @@ typedef struct
  	int listenport, peercount, sockfd;
  	torrent_info* tinfo;
  	pthread_t thread;
- 	pthread_mutex_t lock;
+ 	pthread_mutex_t peerlock;
  } swarm_t;
 
  swarm_t swarm[MAX_SWARMS];

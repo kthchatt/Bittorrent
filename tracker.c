@@ -21,14 +21,14 @@ static void* tracking(void* arg)
 		printf("\nScraping...."); fflush(stdout);
 		if (swarm->taken == true)
 			tracker_scrape(swarm);						//create thread for every scrape/announce. add timeout as fksock-thread. 
-		//printf("\nAnnouncing.... "); fflush(stdout);
- 		//if (swarm->taken == true)
- 	//		tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
- //		printf("\nScouring.... "); fflush(stdout);
-//		if (swarm->taken == true)
-//			swarm_scour(swarm);							//find new peers and initiate connections.
+		printf("\nAnnouncing.... "); fflush(stdout);
+ 		if (swarm->taken == true)
+ 			tracker_announce(swarm);					//completed/stopped events are to be sent at a later stage.
+ 		printf("\nScouring.... "); fflush(stdout);
+		if (swarm->taken == true)
+			swarm_scour(swarm);							//find new peers and initiate connections.
 
-		sleep(30);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
+		sleep(5);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
 
 	printf("\nReleasing swarm...[%s]", swarm->info_hash);
