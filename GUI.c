@@ -311,7 +311,7 @@ void* motd_timer_thread(void* arg)
 
 	MOTD_fetch(response);
 	sleep(MOTD_TIMEOUT + 1);			//wait timeout.
-	//gtk_label_set_text((GtkLabel*) lb_motd, response);		//todo: fix the design, updating GtkLabel isn't pretty.
+	gtk_label_set_text((GtkLabel*) lb_motd, response);		//todo: fix the design, updating GtkLabel isn't pretty.
 	return NULL;
 }
 
@@ -784,10 +784,6 @@ int main (int argc, char *argv[])
 	create_table(&window, &table);
 	create_notebook(&table, &notebook);
 
-	MOTD(&lb_motd, &table);
-	netstat_label(&lb_netstat, &table);
-	create_menu(&toolbar, &table);
-
 // --------------List some torrents in TreeViews.----------------------------- ~RD
 	torrentlist_count = 0;
 
@@ -821,6 +817,10 @@ int main (int argc, char *argv[])
 			printf("\nWaiting for MOTD in Thread.");
 
 //---------------------------------------------------------------------------  ~RD
+
+	MOTD(&lb_motd, &table);
+	netstat_label(&lb_netstat, &table);
+	create_menu(&toolbar, &table);
 
 // Show window widget and it's child widgets
 	gtk_widget_show_all(window);

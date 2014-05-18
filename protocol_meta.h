@@ -16,18 +16,18 @@
 #define boolean char
 
 //connection specifics
-#define DOWNLOAD_QUEUE 100
-#define UPLOAD_QUEUE 100
-#define UPLOAD_CONCURRENT 10
-#define DOWNLOAD_CONCURRENT 10
+#define DOWNLOAD_QUEUE 128
+#define UPLOAD_QUEUE 128
+#define UPLOAD_CONCURRENT 8
+#define DOWNLOAD_CONCURRENT 8
 //when the concurrent is full, peer will be choked.
 //when the concurrent is not full, peers will be unchoked.
 
 //swarm-tracker
 #define SIGNATURE "BT-CookieCrumb-"
-#define BACKLOG 5
+#define BACKLOG 8
 #define MAX_SWARMS 4
-#define MAX_SWARM_SIZE 200
+#define MAX_SWARM_SIZE 256
 #define MAX_URL_LEN 250
 #define MAX_TRACKERS 15
 #define SCRAPE_TIME 2
@@ -44,8 +44,8 @@
 #define HAVE 		4
 #define PIECE       7
 #define CANCEL      8
-#define PORT        9
-#define DOWNLOAD_BUFFER 6553500
+#define PORT        9   
+#define DOWNLOAD_BUFFER 2388608
 
 typedef struct
 {
@@ -64,7 +64,6 @@ typedef struct
 	char port[6];
 	char* peer_id;		//pointers to swarm_t data. (required for threading.)
 	char* info_hash;
-	//swarm_t* swarm;
 	torrent_info* tinfo;
 	pthread_t thread;
 } peer_t;

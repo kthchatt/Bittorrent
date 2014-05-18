@@ -74,7 +74,7 @@ int swarm_select(torrent_info* tinfo)
   	return swarm_id;
 }
 
-//clear swarm peers.
+//clear stale peers.
 void swarm_reset(swarm_t* swarm)
 {
 	int i;
@@ -141,7 +141,7 @@ void* peerlisten(void* arg)
 
     getsockname(sock, (struct sockaddr *)&addr, &sin_size);
     swarm->listenport = addr.sin_port;
-	printf("Listening [%s] for peers, port = %d, %d", swarm->info_hash, swarm->listenport, addr.sin_port);
+	printf("Listening for peers, port = %d, %d", swarm->listenport, addr.sin_port);
 
 	while (swarm->taken == true)
 	{
@@ -149,6 +149,10 @@ void* peerlisten(void* arg)
         new_sock = accept(sock, (struct sockaddr *)&their_addr, &sin_size);
         printf("\n------------ INCOMING CONNECTION ON: %d --------------------", new_sock);
         //on accept send sockfd to peer.
+        //spawn peerwire thread.
+            /*swarm->peer[i].info_hash = swarm->info_hash;
+    		swarm->peer[i].peer_id = swarm->peer_id;
+    		swarm->peer[i].tinfo = swarm->tinfo;	//peers needs access to torrent_info for reading/writing to file.*/
 		//swarm->peercount++;
 		sleep(1);
 	}		
@@ -167,7 +171,7 @@ void swarm_scour(swarm_t* swarm)
     	{
     		swarm->peer[i].info_hash = swarm->info_hash;
     		swarm->peer[i].peer_id = swarm->peer_id;
-    		//swarm->peer[i].swarm = swarm;  //todo: remove -info_hash and -peer_id replace with peer->swarm->info_hash...
+    		swarm->peer[i].tinfo = swarm->tinfo;	//peers needs access to torrent_info for reading/writing to file.
 
     		if (!(pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
     			printf("\nStarting peerwire_thread_tcp..");

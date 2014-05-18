@@ -24,6 +24,7 @@ static int build(char request[200], char* info_hash, char* tracker)
     url_hostname(tracker, hostname);
     url_path(tracker, path);
     url_encode(info_hash, hash_escape);
+
                                 //todo: add string replace, /announce from url_announce needs to be replaced by /scrape, this won't work on other than PHP servers.
     sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, hash_escape, hostname);
     

@@ -185,16 +185,20 @@ void url_announce(char* url, char* announce)
  //output = 60+nullterm
 void url_encode(char* hash, char* output)
 {
+    char* tmp = malloc(3);
     memset(output, '\0', 61);
 
     int i, k = 1;
     for (i = 0; i < 20; i++)
     { 
         output[k-1] = '%';
-        snprintf(output+k, 61, "%x", (unsigned char) hash[i]);
+        tmp[0] = hash[i];
+        snprintf(tmp, 3, "%02x", (unsigned char) hash[i]);
+        output[k] = tmp[0];
+        output[k+1] = tmp[1];
         k += 3;
     }
-    output[60] = '\0';
+    free(tmp);
 }
 
 

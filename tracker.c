@@ -28,7 +28,7 @@ static void* tracking(void* arg)
 		if (swarm->taken == true)
 			swarm_scour(swarm);							//find new peers and initiate connections.
 
-		sleep(5);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
+		sleep(60);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
 
 	printf("\nReleasing swarm...[%s]", swarm->info_hash);
@@ -46,7 +46,7 @@ int tracker_track(torrent_info* tinfo)
 	if ((swarm_id = swarm_select(tinfo)) > -1)
 	{
 		if(!(pthread_create(&torrents[swarm_id], NULL, tracking, &swarm[swarm_id])))
-			printf("\nTracking: %s as [%s]\n", swarm[swarm_id].info_hash, swarm[swarm_id].peer_id);
+			printf("\nTracking as [%s]\n", swarm[swarm_id].peer_id);
 	}
 	else printf("\nSwarms are busy! Increase MAX_SWARMS or fix a memory leak!\n");
 
