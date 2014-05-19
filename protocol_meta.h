@@ -46,6 +46,7 @@
 #define CANCEL      8
 #define PORT        9   
 #define DOWNLOAD_BUFFER 2388608
+#define BLOCK_SIZE	16384
 
 typedef struct
 {

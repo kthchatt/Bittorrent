@@ -187,19 +187,19 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 		return;
 	}
 
-	memset(block, 0, 16384);
+	memset(block, 0, BLOCK_SIZE);
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
 
 	while (*num < *msglen + 4)
 		*num += recv(peer->sockfd, buffer + *num, DOWNLOAD_BUFFER - (*msglen + 4), 0);
 
-	memcpy(piebuffer + htonl(offset), buffer + header, 16384);
-	netstat_update(INPUT, 16384, peer->info_hash);
-	//check the buffer, if the check was ok then stop asking for the piece. get_not_downloaded
+	memcpy(piebuffer + htonl(offset), buffer + header, BLOCK_SIZE);
+	netstat_update(INPUT, BLOCK_SIZE, peer->info_hash);
+	write_piece(peer->tinfo, (void*) piebuffer);
 
-	printf("\n(Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", downloaded, length, htonl(index), 
-																					offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]); 
+	printf("\n(Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", htonl(index), 
+								offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]); 
 	fflush(stdout);
 }
 
@@ -209,7 +209,7 @@ void* listener_tcp(void* arg)
 	peer_t* peer = (peer_t*) arg;
 	char recvbuf[DOWNLOAD_BUFFER];
 	char* message =   malloc(45);
-	char* piebuffer = malloc(16384);	//get piece size here.
+	char* piebuffer = malloc(peer->tinfo->_piece_length);	//get piece size here.
 	int num = 0, msglen;
 
 	printf("\n[sockfd = %d]\tTCP Listener init.", peer->sockfd);
@@ -293,15 +293,23 @@ void* peerwire_thread_tcp(void* arg)
 	message(peer, UNCHOKE);
 	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd);
 
+	printf("\npeer->tinfo->_piece_length = %lld", peer->tinfo->_piece_length);
+
 	fflush(stdout);
 
-	int jk;
-	while (peer->sockfd != 0)
+	int block, index, piecelen = peer->tinfo->_piece_length, blockcount;
+	while (peer->sockfd != 0) //&& index > -1, stop this thread when the peer is no longer interesting, close the socket but do not change sockfd value.
 	{
-		for (jk = 0; jk < 17; jk++)
+
+		//get not downloaded piece, request for every block in piece.
+		//index = get_not_downloaded_piece_index;
+		blockcount = piecelen / BLOCK_SIZE; //how many full blocks.
+		while (index > -1 && block < blockcount)
 		{
-			request(peer, htonl(jk), htonl(0), htonl(16384));
-			usleep(2000); //issue /have on download complete. not implemented.
+
+			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(BLOCK_SIZE));	//request 16384 if not last piece
+			block++;
+			usleep(200000); //issue /have on download complete. not implemented.
 		}
 		break;
 	}
