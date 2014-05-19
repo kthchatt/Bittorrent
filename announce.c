@@ -26,7 +26,7 @@ static void build(char request[300], char* info_hash, char* peer_id, char* track
     url_announce(tracker, announce);
     url_encode(info_hash, hash_escape);
 
-    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=192.168.0.10&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
+    sprintf(request, "GET %s?info_hash=%s&peer_id=%s&port=%d&ip=127.0.0.1&downloaded=%d&left=%d&event=%s&numwant=200 HTTP/1.1\r\nhost: %s\r\n\r\n", 
                                     announce, hash_escape, peer_id, listenport, 12008, 12379, "started", hostname);
 
 
@@ -54,13 +54,13 @@ static void response(int* sockfd, announce_t* announce)
         recvbuf[num] = '\0';
 
         netstat_update(INPUT, num, announce->swarm->info_hash);
-        announce->tracker->announce_interval   = bdecode_value(recvbuf, ":interval");
-        announce->tracker->announce_minterval  = bdecode_value(recvbuf, ":min interval");
+        announce->tracker->interval   = bdecode_value(recvbuf, ":interval");
+        announce->tracker->minterval  = bdecode_value(recvbuf, ":min interval");
 
         printf("\n[Announce]\t%s \t[Interval = %d, Min Interval = %d]", 
                 announce->tracker->url, 
-                announce->tracker->announce_interval, 
-                announce->tracker->announce_minterval);
+                announce->tracker->interval, 
+                announce->tracker->minterval);
 
         for (i = 0; i < num; i++)   //seek
         {
@@ -84,10 +84,10 @@ static void response(int* sockfd, announce_t* announce)
                         for (j = 0; j < 4; j++)
                             ip[j] = recvbuf[i+j];
 
-                        sprintf(swarm->peer[swarm->peercount].ip, "%hd.%hd.%hd.%hd", 
+                        sprintf(announce->swarm->peer[announce->swarm->peercount].ip, "%hd.%hd.%hd.%hd", 
                               (unsigned char) ip[0], (unsigned char) ip[1], (unsigned char) ip[2], (unsigned char) ip[3]);
                         
-                        printf("\nip = [%s]\n", swarm->peer[swarm->peercount].ip);
+                        printf("\nip = [%s]\n", announce->swarm->peer[announce->swarm->peercount].ip);
 
                         i += 4;
                         data = recvbuf[i];
@@ -96,9 +96,9 @@ static void response(int* sockfd, announce_t* announce)
                         port += (unsigned char) recvbuf[i+1];
                         i += 2;
 
-                        sprintf(swarm->peer[swarm->peercount].port, "%d", (unsigned) port);
-                        printf("port [%s]", swarm->peer[swarm->peercount].port);
-                        swarm->peercount++;
+                        sprintf(announce->swarm->peer[announce->swarm->peercount].port, "%d", (unsigned) port);
+                        printf("port [%s]", announce->swarm->peer[announce->swarm->peercount].port);
+                        announce->swarm->peercount++;
                     }
                     unlock(&announce->swarm->peerlock);
                     printf("\n");

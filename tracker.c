@@ -28,6 +28,7 @@ static void* tracking(void* arg)
 		if (swarm->taken == true)
 			swarm_scour(swarm);							//find new peers and initiate connections.
 
+		printf("\nWaiting...." ); fflush(stdout);
 		sleep(60);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
 
@@ -39,7 +40,7 @@ static void* tracking(void* arg)
 
 int tracker_track(torrent_info* tinfo)
 {
-	int swarm_id;
+	int swarm_id = -1;
 
 	netstat_track(tinfo->_info_hash);
 

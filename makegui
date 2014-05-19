@@ -1,2 +1,2 @@
-gcc -g netstat.c MOTD.c swarm.c peerwire.c urlparse.c announce.c scrape.c tracker.c protocol_meta.h bencodning.c GUI.c -pthread -o base `pkg-config --cflags gtk+-2.0` `pkg-config --libs gtk+-2.0` -lcrypto -lssl
+gcc -g netstat.c MOTD.c swarm.c peerwire.c urlparse.c announce.c scrape.c tracker.c protocol_meta.h bencodning.c writepiece.c GUI.c -pthread -o base `pkg-config --cflags gtk+-2.0` `pkg-config --libs gtk+-2.0` -lcrypto -lssl
 ./base

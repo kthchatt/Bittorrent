@@ -28,5 +28,9 @@ void swarm_scour(swarm_t* swarm);
 int swarm_peercount(int swarm_id);
 //initialize swarms.
 void swarm_initialize(); 
+//returns the amount of leechers
+int swarm_incomplete(int swarm_id);
+//returns the amount of seeders
+int swarm_complete(int swarm_id);
 
 #endif

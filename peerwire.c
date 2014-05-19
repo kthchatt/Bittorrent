@@ -36,7 +36,7 @@
 void handshake(peer_t* peer, char* info_hash, char* peer_id)
 {
 	int payload = 0;
-    unsigned char protocol_len = strlen(PROTOCOL);
+    unsigned char protocol_len = htonl(strlen(PROTOCOL));
     unsigned char reserved[8];
     char* request = malloc(1 + protocol_len + 8 + 20 + 20);
 
@@ -177,30 +177,31 @@ static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 //todo: fill one piece from the buffer, return num with the offset.
 static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* msglen, peer_t* peer)
 {
-	int downloaded = 0, left = *msglen - 9, length = *msglen - 9, index, offset, header = 13;
-	char* block = malloc(length);	//skip this, use piebuffer directly.
+	int downloaded = 0, left = *msglen - 9, length = *msglen - 9, index, offset, header = 13, tmp;
 
-	if (block == NULL)
-	{
-		*num = 0;
-		printf("\nCritical! Buffer is choked on memory! [Out of RAM]");
-		return;
-	}
-
-	memset(block, 0, BLOCK_SIZE);
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
 
 	while (*num < *msglen + 4)
-		*num += recv(peer->sockfd, buffer + *num, DOWNLOAD_BUFFER - (*msglen + 4), 0);
+	{
+		tmp = recv(peer->sockfd, buffer + *num, DOWNLOAD_BUFFER - (*msglen + 4), 0);
+		if (tmp < 1)
+		{
+			*num = 0;
+			return;
+		}
+		*num += tmp;
 
+		printf("\nloopcontrol-receive-piece"); fflush(stdout);
+	}
 	memcpy(piebuffer + htonl(offset), buffer + header, BLOCK_SIZE);
 	netstat_update(INPUT, BLOCK_SIZE, peer->info_hash);
-	write_piece(peer->tinfo, (void*) piebuffer);
-
-	printf("\n(Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", htonl(index), 
-								offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]); 
-	fflush(stdout);
+	
+	if (write_piece(peer->tinfo, (void*) piebuffer) == 0)
+	{
+		printf("\n(Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", htonl(index), 
+									offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
+	}
 }
 
 //BT - Listener.
@@ -219,6 +220,11 @@ void* listener_tcp(void* arg)
 
 		if (num > 4 || (num = recv(peer->sockfd, recvbuf, DOWNLOAD_BUFFER, 0)) > 0) //if buffer less than header size, issue a read op.
 		{
+			if (num < 1) //check for peer disconnect.
+				break;
+
+			printf("\nloopcontrol-download-tcp"); fflush(stdout);
+
 			memcpy(&msglen, recvbuf, 4);
 			msglen = htonl(msglen);
 
@@ -242,9 +248,12 @@ void* listener_tcp(void* arg)
 				memmove(recvbuf, recvbuf + msglen + 4, DOWNLOAD_BUFFER - (msglen + 4));
 			}
 			else
-				num = 0;;
+				num = 0;
 		} 
 	}
+
+	printf("\nPeer disconnected from tcp_reader."); fflush(stdout);
+
 	free(message);
 	return arg;
 }
@@ -253,6 +262,7 @@ void* listener_tcp(void* arg)
 //this thread may be invoked from the listener, where the sockfd is already set.
 void* peerwire_thread_tcp(void* arg)
 {
+		printf("\npeerwire_thread_tcp"); fflush(stdout);
     struct addrinfo hints, *res;
     pthread_t listen_thread;
     peer_t* peer = (peer_t*) arg;
@@ -263,54 +273,57 @@ void* peerwire_thread_tcp(void* arg)
     peer->interested = 0;
     peer->interesting = 0;
 
-	printf("\nConnecting to peer..");
 	if (peer->sockfd == 0)
 	{
-            memset(&hints, 0, sizeof(hints));
-            hints.ai_family = AF_UNSPEC;
-            hints.ai_socktype = SOCK_STREAM;
-            hints.ai_flags = AI_PASSIVE;
-            getaddrinfo(peer->ip, peer->port, &hints, &res);
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+        getaddrinfo(peer->ip, peer->port, &hints, &res);
 
-            if (!((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
-				printf("\nCould not set up socket.");
-            if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
-            {
-				printf("\nCould not connect.");
-				return arg; //thread_exit, peer_free/peer_stale
-			}
+        if (!((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
+			printf("\nCould not set up socket.");
+        if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
+        {
+			printf("\nCould not connect.");
+			return arg; //thread_exit, peer_free/peer_stale
+		}
 	}
 
     if (!(pthread_create(&listen_thread, NULL, listener_tcp, peer)))
 		printf("\n[sockfd = %d]\tStarting peer listener..", peer->sockfd);
 
+
 	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
+	printf("\n[sockfd = %d], piece length = %lld", peer->sockfd, peer->tinfo->_piece_length);
+	sleep(2);
 	handshake(peer, peer->info_hash, peer->peer_id);
 	//bitfield(peer);
-	sleep(2);
+	sleep(4);
 	message(peer, INTERESTED);
-	sleep(2);
+	sleep(4);
 	message(peer, UNCHOKE);
-	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd);
+	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd); fflush(stdout);
 
-	printf("\npeer->tinfo->_piece_length = %lld", peer->tinfo->_piece_length);
-
-	fflush(stdout);
 
 	int block, index, piecelen = peer->tinfo->_piece_length, blockcount;
 	while (peer->sockfd != 0) //&& index > -1, stop this thread when the peer is no longer interesting, close the socket but do not change sockfd value.
 	{
 
 		//get not downloaded piece, request for every block in piece.
-		//index = get_not_downloaded_piece_index;
+		index = random()%8; //get piece index here.
 		blockcount = piecelen / BLOCK_SIZE; //how many full blocks.
+		block = 0;
 		while (index > -1 && block < blockcount)
 		{
-
+			printf("\nblock = %d, count = %d, pLen = %d, bLen = %d", block, blockcount, piecelen, BLOCK_SIZE);
 			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(BLOCK_SIZE));	//request 16384 if not last piece
 			block++;
-			usleep(200000); //issue /have on download complete. not implemented.
+			sleep(2); //issue /have on download complete. not implemented.
 		}
+
+		printf("\nloopcontrol-upload-tcp"); fflush(stdout);
+		sleep(1);
 		break;
 	}
 	printf("\n[sockfd = %d]\tPeer disconnected.", peer->sockfd);

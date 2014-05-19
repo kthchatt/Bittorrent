@@ -47,12 +47,15 @@ static void response(int* sockfd, scrape_t* scrape)
         recvbuf[num] = '\0';
         netstat_update(INPUT, strlen(recvbuf), swarm->info_hash);
 
-        scrape->tracker->scrape_completed  = bdecode_value(recvbuf, "complete");
-        scrape->tracker->scrape_downloaded = bdecode_value(recvbuf, "downloaded");
-        scrape->tracker->scrape_incomplete = bdecode_value(recvbuf, "incomplete");
+        scrape->tracker->completed  = bdecode_value(recvbuf, "complete");
+        scrape->tracker->downloaded = bdecode_value(recvbuf, "downloaded");
+        scrape->tracker->incomplete = bdecode_value(recvbuf, "incomplete");
         printf("\n[Scrape]\t%s\t[completed = %d, downloaded = %d, incomplete = %d]", 
-            scrape->tracker->url, scrape->tracker->scrape_completed, 
-            scrape->tracker->scrape_downloaded, scrape->tracker->scrape_incomplete);
+            scrape->tracker->url, scrape->tracker->completed, 
+            scrape->tracker->downloaded, scrape->tracker->incomplete);
+
+        scrape->swarm->completed += scrape->tracker->completed;
+        scrape->swarm->incomplete += scrape->tracker->incomplete;
      }    
 }
 
@@ -114,6 +117,9 @@ static void* query(void* arg)
             scrape = (scrape_t*) malloc(sizeof(scrape_t));
             scrape->tracker = &swarm->tracker[i];
             scrape->swarm = swarm;
+
+            scrape->swarm->completed = 0;
+            scrape->swarm->incomplete = 0;
 
             if(!(pthread_create(&scrape->thread, NULL, query, scrape)))
                 printf("\nScraping: %s.", scrape->tracker->url);

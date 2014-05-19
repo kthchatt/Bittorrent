@@ -163,15 +163,15 @@ void list_add(char* status, torrent_info* tinfo, int state)
 		torrentlist[torrentlist_count].swarm_id = -1;
 		torrentlist[torrentlist_count].tinfo = tinfo;
 		torrentlist_count++;
-	}
 
-   	switch (state)
-   	{
-   		case STATE_COMPLETED: 	row_add(torrentlist_count-1, md_completed); break;
-   		case STATE_SEEDING: 	row_add(torrentlist_count-1, md_seeding); break;
-   		case STATE_DOWNLOADING: row_add(torrentlist_count-1, md_downloading); break;
-   		case STATE_INACTIVE:	row_add(torrentlist_count-1, md_inactive); break;
-   	}
+   		switch (state)
+   		{
+   			case STATE_COMPLETED: 	row_add(torrentlist_count-1, md_completed); break;
+   			case STATE_SEEDING: 	row_add(torrentlist_count-1, md_seeding); break;
+   			case STATE_DOWNLOADING: row_add(torrentlist_count-1, md_downloading); break;
+   			case STATE_INACTIVE:	row_add(torrentlist_count-1, md_inactive); break;
+   		}
+    }
 }
 
 //return selected tab as id. ~RD
@@ -294,8 +294,8 @@ void list_update(GtkListStore *ls)
    						COL_STATUS, torrentlist[id].status, 
    						COL_DOWNRATE, netstat_down, 
    						COL_UPRATE,   netstat_up, 		//get up/downrate from netstat.c 
-   						COL_LEECHER, 0, 
-   						COL_SEEDER, 0, 
+   						COL_LEECHER, swarm_incomplete(torrentlist[id].swarm_id), 
+   						COL_SEEDER, swarm_completed(torrentlist[id].swarm_id), 
    						COL_SWARM, swarm_peercount(torrentlist[id].swarm_id), 			//get these values from swarm.c 
    						COL_RATIO, 0.0000, -1);
 
@@ -410,7 +410,7 @@ void torrent_start()
 							 break;
 	}
 
-	printf("\nStarted torrent %s.", torrentlist[id].tinfo->_info_hash);
+	printf("\nStarted torrent %s with swarm #%d.", torrentlist[id].tinfo->_info_hash, torrentlist[id].swarm_id);
 	fflush(stdout);
 }
 

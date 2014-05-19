@@ -26,7 +26,7 @@
 //swarm-tracker
 #define SIGNATURE "BT-CookieCrumb-"
 #define BACKLOG 8
-#define MAX_SWARMS 4
+#define MAX_SWARMS 8
 #define MAX_SWARM_SIZE 256
 #define MAX_URL_LEN 250
 #define MAX_TRACKERS 15
@@ -52,7 +52,7 @@ typedef struct
 {
 	char* url;
 	boolean alive;
-	int scrape_completed, scrape_incomplete, scrape_downloaded, announce_interval, announce_minterval;
+	int completed, incomplete, downloaded, interval, minterval;
 } tracker_t;
 
 //ing = local, ed = remote, todo: add pointer to swarm, remove peer_id & info_hash. (taken is required?)
@@ -78,7 +78,7 @@ typedef struct
  	peer_t peer 		[MAX_SWARM_SIZE];
  	char  peer_id   	[21];
  	char* info_hash;
- 	int listenport, peercount, sockfd;
+ 	int listenport, peercount, sockfd, completed, incomplete;
  	torrent_info* tinfo;
  	pthread_t thread;
  	pthread_mutex_t peerlock;

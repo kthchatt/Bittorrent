@@ -38,9 +38,25 @@ void swarm_initialize()
 	initialized = true;
 }
 
+int swarm_incomplete(int swarm_id)
+{
+	if (swarm_id >= MAX_SWARM_SIZE || swarm_id < 0)
+		return 0;
+	
+	return swarm[swarm_id].incomplete;
+}
+
+int swarm_completed(int swarm_id)
+{
+	if (swarm_id >= MAX_SWARM_SIZE || swarm_id < 0)
+		return 0;
+	
+	return swarm[swarm_id].completed;
+}
+
 int swarm_peercount(int swarm_id)
 {
-	if (swarm_id > MAX_SWARM_SIZE - 1 || swarm_id < 0)
+	if (swarm_id >= MAX_SWARM_SIZE || swarm_id < 0)
 		return 0;
 	
 	return swarm[swarm_id].peercount;
@@ -58,9 +74,12 @@ int swarm_select(torrent_info* tinfo)
 			swarm_id = i;
 			swarm[i].taken = true;
 			swarm[i].peercount = 0;
+			swarm[i].completed = 0;
+			swarm[i].incomplete = 0;
 
 			generate_id(swarm[i].peer_id);
 			swarm[i].info_hash = tinfo->_info_hash;
+			swarm[i].tinfo = tinfo;
 
 			for (j = 0; j < MAX_TRACKERS; j++)
 			{
@@ -86,8 +105,8 @@ void swarm_reset(swarm_t* swarm)
 			close(&swarm->peer[i].sockfd);
 		swarm->peer[i].sockfd = 0;*/
 
-		memset(swarm->peer[i].ip, '\0', 21);
-		memset(swarm->peer[i].port, '\0', 6); 
+		//memset(swarm->peer[i].ip, '\0', 21);
+		//memset(swarm->peer[i].port, '\0', 6); 
 	}
 
 	swarm->peercount = 0;
@@ -167,14 +186,17 @@ void swarm_scour(swarm_t* swarm)
 
     for (i = 0; i < swarm->peercount; i++)
     {
+
+    	printf("\nPeer [#%d/%d] in Swarm: %s:%s", i, swarm->peercount, swarm->peer[i].ip, swarm->peer[i].port);
+
     	if (swarm->peer[i].sockfd == 0)
     	{
     		swarm->peer[i].info_hash = swarm->info_hash;
     		swarm->peer[i].peer_id = swarm->peer_id;
     		swarm->peer[i].tinfo = swarm->tinfo;	//peers needs access to torrent_info for reading/writing to file.
 
-    		if (!(pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
-    			printf("\nStarting peerwire_thread_tcp..");
+    		if ((pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
+    			printf("\nStarting peerwire_thread_tcp.. Failed.");
     	}
     }
 }
