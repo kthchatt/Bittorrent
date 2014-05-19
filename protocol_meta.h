@@ -48,6 +48,26 @@
 #define DOWNLOAD_BUFFER 2388608
 #define BLOCK_SIZE	16384
 
+//units and rates.
+#define U_NONE 0
+#define U_BYTE 1
+#define U_KILO 1000
+#define U_MEGA 1000000
+#define U_GIGA 1000000000
+
+//sizes
+#define S_BYTE " B"
+#define S_KILO " KB"
+#define S_MEGA " MB"
+#define S_GIGA " GB"
+
+//rates
+#define R_BYTE "B/s"
+#define R_KILO "KB/s"
+#define R_MEGA "MB/s"
+
+#define FORMATSTRING_LEN 24
+
 typedef struct
 {
 	char* url;

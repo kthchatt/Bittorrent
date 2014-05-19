@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "protocol_meta.h"
 
  void url_hostname(char* url, char* host);			//get hostname from url. (sub.domain.tld)
  void url_protocol(char* url, char* protocol);		//get protocol from url. (http/udp)
@@ -12,5 +13,6 @@
  void url_path(char* url, char* path);				//extract path from url.
  int bdecode_value(char* source, char* search);		//extract value from bencode string.
  void url_encode(char* hash, char* output);			//url-encode hash. output = 60.
+ void url_filesize(char* format_string, float size); //format a filesize
 
 #endif

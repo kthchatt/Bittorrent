@@ -6,6 +6,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h> 
+#include "protocol_meta.h"
 
 #define bool char
 #define true 1
@@ -14,14 +15,6 @@
 #define OUTPUT 2
 #define ENABLE 1
 #define DISABLE 0
-#define U_NONE 0
-#define U_BYTE 1
-#define U_KILO 1000
-#define U_MEGA 1000000
-#define BYTE "B/s"
-#define KILO "KB/s"
-#define MEGA "MB/s"
-#define FORMATSTRING_LEN 25
 #define DELTA_SAMPLE 1000
 #define lock pthread_mutex_lock
 #define unlock pthread_mutex_unlock

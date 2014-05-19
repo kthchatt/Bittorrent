@@ -7,6 +7,8 @@
 #include "MOTD.h"
 #include "tracker.h"
 #include "bencodning.h"
+#include "protocol_meta.h"
+#include "urlparse.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -89,6 +91,7 @@ typedef struct
 	int id;				//used to identify actions on a torrent.
 	int state; 			//used to identify the current operation, when starting torrents check how many torrents have the state already, if there are slots free.
 	int swarm_id;		//used to identify the swarm serving the torrent. used for getting peer/seed/swarm size from swarm.c.
+	char* filesize;
 	char* status;
 	torrent_info* tinfo;
 } torrentlist_t;		//sort the list to implement priority.
@@ -112,6 +115,19 @@ GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding;
 GtkWidget *lb_netstat, *lb_motd;
 GtkWidget *notebook;
 
+//calculate the filesize from bencodning.c .. ~RD
+void torrent_size(torrent_info* tinfo, char* filesize)
+{
+	int i;
+	float size = 0;
+
+	memset(filesize, '\0', FORMATSTRING_LEN);
+
+	for (i = 0; i < tinfo->_number_of_files; i++)
+		size += tinfo->_file_length[i];
+
+	url_filesize(filesize, size);
+}
 
 //add a row when the torrent-info already exists. ~RD
 void row_add(int id, GtkListStore* ls)
@@ -122,7 +138,7 @@ void row_add(int id, GtkListStore* ls)
    	gtk_list_store_set(ls, &iter,
    						COL_ID, id, 
    						COL_NAME, torrentlist[id].tinfo->_torrent_file_name, 
-   						COL_SIZE, "0.0 MB", 
+   						COL_SIZE, torrentlist[id].filesize, 
    						COL_DONE, "0.00%", 									//todo get this from fileman. 
    						COL_STATUS, torrentlist[id].status, 
    						COL_DOWNRATE, "N/A", 
@@ -158,10 +174,12 @@ void list_add(char* status, torrent_info* tinfo, int state)
 {
 	if ((torrentlist = realloc(torrentlist, sizeof(torrentlist_t) * (torrentlist_count + 1))) != NULL )
 	{
-		torrentlist[torrentlist_count].status = (char*) malloc(60);
+		torrentlist[torrentlist_count].status = malloc(60);
+		torrentlist[torrentlist_count].filesize = malloc(FORMATSTRING_LEN); 
 		strcpy(torrentlist[torrentlist_count].status, status);
 		torrentlist[torrentlist_count].swarm_id = -1;
 		torrentlist[torrentlist_count].tinfo = tinfo;
+		torrent_size(tinfo, torrentlist[torrentlist_count].filesize);
 		torrentlist_count++;
 
    		switch (state)

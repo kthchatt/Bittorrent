@@ -201,6 +201,33 @@ void url_encode(char* hash, char* output)
     free(tmp);
 }
 
+void url_filesize(char* format_string, float size)
+{
+    int unit;
+    memset(format_string, '\0', FORMATSTRING_LEN);
+
+    if (size < U_BYTE)
+    {
+        strcat(format_string, "N/A");
+        return;
+    }
+
+    if (U_NONE < size  && size < U_KILO) unit = U_BYTE;
+    if (U_KILO <= size && size < U_MEGA) unit = U_KILO;
+    if (U_MEGA <= size && size < U_GIGA) unit = U_MEGA;
+    if (size >= U_GIGA)                  unit = U_GIGA;
+
+    size = (size/unit);
+    sprintf(format_string, "%.1f ", size);
+
+    switch (unit)
+    {
+        case U_BYTE: strcat(format_string, S_BYTE); break;
+        case U_KILO: strcat(format_string, S_KILO); break;
+        case U_MEGA: strcat(format_string, S_MEGA); break;
+        case U_GIGA: strcat(format_string, S_GIGA); break;
+    }
+}
 
 /*------------------------------- BEGIN: REMOVE WHEN COMPLETE ----------------------------------*/
 /*void testing(char* urls)

@@ -56,13 +56,18 @@ int tracker_track(torrent_info* tinfo)
 
 void tracker_untrack(torrent_info* tinfo)
 {
-	int i;
+	int i, k;
 
 	for (i = 0; i < MAX_SWARMS; i++)
 	{
 		if (swarm[i].info_hash == tinfo->_info_hash)
 		{
+			printf("\nGot untrack in tracker!"); fflush(stdout);
+
 			swarm[i].taken = false;	//call swarm_free. This is not thread-safe nor a reliable mean to stop swarm-threads. Peer threads are not stopped.
+
+			for (k = 0; k < swarm[i].peercount; k++)
+				swarm[i].peer[k].sockfd = 0;
 		}
 	}
 }
