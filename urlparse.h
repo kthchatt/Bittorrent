@@ -13,6 +13,6 @@
  void url_path(char* url, char* path);				//extract path from url.
  int bdecode_value(char* source, char* search);		//extract value from bencode string.
  void url_encode(char* hash, char* output);			//url-encode hash. output = 60.
- void url_filesize(char* format_string, float size); //format a filesize
+ void url_filesize(char* format_string, long long int size); //format a filesize
 
 #endif

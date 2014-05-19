@@ -201,9 +201,10 @@ void url_encode(char* hash, char* output)
     free(tmp);
 }
 
-void url_filesize(char* format_string, float size)
+void url_filesize(char* format_string, long long int size)
 {
     int unit;
+    float value;
     memset(format_string, '\0', FORMATSTRING_LEN);
 
     if (size < U_BYTE)
@@ -217,8 +218,8 @@ void url_filesize(char* format_string, float size)
     if (U_MEGA <= size && size < U_GIGA) unit = U_MEGA;
     if (size >= U_GIGA)                  unit = U_GIGA;
 
-    size = (size/unit);
-    sprintf(format_string, "%.1f ", size);
+    value = ((float) size/ (float) unit);
+    sprintf(format_string, "%.1f ", value);
 
     switch (unit)
     {

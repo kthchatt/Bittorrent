@@ -36,7 +36,7 @@
 void handshake(peer_t* peer, char* info_hash, char* peer_id)
 {
 	int payload = 0;
-    unsigned char protocol_len = htonl(strlen(PROTOCOL));
+    unsigned char protocol_len = strlen(PROTOCOL);
     unsigned char reserved[8];
     char* request = malloc(1 + protocol_len + 8 + 20 + 20);
 
@@ -160,7 +160,7 @@ static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 
 	//load piece data here, verify length to avoid bleeds.
 	headerlen = header + ntohl(length) - 4;
-	printf("[\nsockfd = %d] - Seeding Piece  [index: %d, offset: %d, length: %d]", peer->sockfd, ntohl(index), ntohl(offset), ntohl(length));
+	printf("[%s:%s] - Seeding Piece  [index: %d, offset: %d, length: %d]", peer->ip, peer->port, ntohl(index), ntohl(offset), ntohl(length));
 	//memcpy(packet + 13, filebuffer + ntohl(offset) + (index * 16384), ntohl(length));
 	headerlen = htonl(headerlen);							//length might be smaller on last piece!
 
@@ -191,17 +191,18 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 			return;
 		}
 		*num += tmp;
-
-		printf("\nloopcontrol-receive-piece"); fflush(stdout);
 	}
 	memcpy(piebuffer + htonl(offset), buffer + header, BLOCK_SIZE);
 	netstat_update(INPUT, BLOCK_SIZE, peer->info_hash);
 	
 	if (write_piece(peer->tinfo, (void*) piebuffer) == 0)
 	{
-		printf("\n(Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", htonl(index), 
+		printf("\n[%s:%s] - (Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), 
 									offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
 	}
+	else
+		printf("\n[%s:%s] - (Error) Piece Failed Checksum! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), offset, 
+									(unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
 }
 
 //BT - Listener.
@@ -213,17 +214,14 @@ void* listener_tcp(void* arg)
 	char* piebuffer = malloc(peer->tinfo->_piece_length);	//get piece size here.
 	int num = 0, msglen;
 
-	printf("\n[sockfd = %d]\tTCP Listener init.", peer->sockfd);
+	printf("\n[%s:%s]\tTCP Listener init.", peer->ip, peer->port);
 	while (peer->sockfd != 0)
 	{
 		memset(message, '\0', 45);	//for debugging, remove.
 
 		if (num > 4 || (num = recv(peer->sockfd, recvbuf, DOWNLOAD_BUFFER, 0)) > 0) //if buffer less than header size, issue a read op.
 		{
-			if (num < 1) //check for peer disconnect.
-				break;
-
-			printf("\nloopcontrol-download-tcp"); fflush(stdout);
+			printf("\n[%s:%s] - Incoming Data: TYPE = %d", peer->ip, peer->port, (unsigned char) recvbuf[4]);
 
 			memcpy(&msglen, recvbuf, 4);
 			msglen = htonl(msglen);
@@ -250,9 +248,12 @@ void* listener_tcp(void* arg)
 			else
 				num = 0;
 		} 
+		else if (num < 1)
+			break;
 	}
 
-	printf("\nPeer disconnected from tcp_reader."); fflush(stdout);
+	printf("\n[%s:%s] - Disconnected while reading.", peer->ip, peer->port); fflush(stdout);
+	close(peer->sockfd);
 
 	free(message);
 	return arg;
@@ -262,7 +263,6 @@ void* listener_tcp(void* arg)
 //this thread may be invoked from the listener, where the sockfd is already set.
 void* peerwire_thread_tcp(void* arg)
 {
-		printf("\npeerwire_thread_tcp"); fflush(stdout);
     struct addrinfo hints, *res;
     pthread_t listen_thread;
     peer_t* peer = (peer_t*) arg;
@@ -291,11 +291,11 @@ void* peerwire_thread_tcp(void* arg)
 	}
 
     if (!(pthread_create(&listen_thread, NULL, listener_tcp, peer)))
-		printf("\n[sockfd = %d]\tStarting peer listener..", peer->sockfd);
+		printf("\n[%s:%s]\tStarting peer listener..", peer->ip, peer->port);
 
 
-	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
-	printf("\n[sockfd = %d], piece length = %lld", peer->sockfd, peer->tinfo->_piece_length);
+	printf("\n[%s:%s] - Connected!\n", peer->ip, peer->port); fflush(stdout);
+	//printf("\n[sockfd = %d], piece length = %lld", peer->sockfd, peer->tinfo->_piece_length);
 	sleep(2);
 	handshake(peer, peer->info_hash, peer->peer_id);
 	//bitfield(peer);
@@ -303,7 +303,7 @@ void* peerwire_thread_tcp(void* arg)
 	message(peer, INTERESTED);
 	sleep(4);
 	message(peer, UNCHOKE);
-	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd); fflush(stdout);
+	printf("\n[%s:%s] - Handshake sequence finished.", peer->ip, peer->port); fflush(stdout);
 
 
 	int block, index, piecelen = peer->tinfo->_piece_length, blockcount;
@@ -316,17 +316,16 @@ void* peerwire_thread_tcp(void* arg)
 		block = 0;
 		while (index > -1 && block < blockcount)
 		{
-			printf("\nblock = %d, count = %d, pLen = %d, bLen = %d", block, blockcount, piecelen, BLOCK_SIZE);
+			printf("\n[%s:%s] - Requesting: block = %d, count = %d, pLen = %d, bLen = %d", peer->ip, peer->port, block, blockcount, piecelen, BLOCK_SIZE);
 			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(BLOCK_SIZE));	//request 16384 if not last piece
 			block++;
 			sleep(2); //issue /have on download complete. not implemented.
 		}
 
-		printf("\nloopcontrol-upload-tcp"); fflush(stdout);
 		sleep(1);
 		break;
 	}
-	printf("\n[sockfd = %d]\tPeer disconnected.", peer->sockfd);
+	printf("\n[%s:%s] - Peer disconnected while writing.", peer->ip, peer->port);
 	//shutdown the listener, free the peer, close the sockfd.
 
 	return arg;

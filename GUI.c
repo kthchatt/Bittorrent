@@ -119,12 +119,16 @@ GtkWidget *notebook;
 void torrent_size(torrent_info* tinfo, char* filesize)
 {
 	int i;
-	float size = 0;
+	long long int size = 0;
 
 	memset(filesize, '\0', FORMATSTRING_LEN);
 
 	for (i = 0; i < tinfo->_number_of_files; i++)
+	{
 		size += tinfo->_file_length[i];
+		url_filesize(filesize, size);
+		//printf("\nGetting Filesize (%d/%d), this: %lld, total: %lld, format: %s", i+1, tinfo->_number_of_files, tinfo->_file_length[i], size, filesize);fflush(stdout);
+	}
 
 	url_filesize(filesize, size);
 }
@@ -142,10 +146,10 @@ void row_add(int id, GtkListStore* ls)
    						COL_DONE, "0.00%", 									//todo get this from fileman. 
    						COL_STATUS, torrentlist[id].status, 
    						COL_DOWNRATE, "N/A", 
-   						COL_UPRATE, "N/A", 		//get up/downrate from netstat.c ~RD
+   						COL_UPRATE, "N/A", 		
    						COL_LEECHER, 0, 
    						COL_SEEDER, 0, 
-   						COL_SWARM, 0, 			//get these values from swarm.c ~RD
+   						COL_SWARM, 0, 			
    						COL_RATIO, 0.0000, -1);
 }
 
