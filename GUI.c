@@ -7,6 +7,8 @@
 #include "MOTD.h"
 #include "tracker.h"
 #include "bencodning.h"
+#include "protocol_meta.h"
+#include "urlparse.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -89,12 +91,9 @@ typedef struct
 	int id;				//used to identify actions on a torrent.
 	int state; 			//used to identify the current operation, when starting torrents check how many torrents have the state already, if there are slots free.
 	int swarm_id;		//used to identify the swarm serving the torrent. used for getting peer/seed/swarm size from swarm.c.
-	char* size;
-	char* done;
+	char* filesize;
 	char* status;
-	char* name;
-	char* info_hash;	//hidden attribute used for updating data
-	char* path;			//hidden attribute used for double-click.
+	torrent_info* tinfo;
 } torrentlist_t;		//sort the list to implement priority.
 
 //to add a column: increase the COUNT and add a NAME. ~RD
@@ -116,6 +115,23 @@ GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding;
 GtkWidget *lb_netstat, *lb_motd;
 GtkWidget *notebook;
 
+//calculate the filesize from bencodning.c .. ~RD
+void torrent_size(torrent_info* tinfo, char* filesize)
+{
+	int i;
+	long long int size = 0;
+
+	memset(filesize, '\0', FORMATSTRING_LEN);
+
+	for (i = 0; i < tinfo->_number_of_files; i++)
+	{
+		size += tinfo->_file_length[i];
+		url_filesize(filesize, size);
+		//printf("\nGetting Filesize (%d/%d), this: %lld, total: %lld, format: %s", i+1, tinfo->_number_of_files, tinfo->_file_length[i], size, filesize);fflush(stdout);
+	}
+
+	url_filesize(filesize, size);
+}
 
 //add a row when the torrent-info already exists. ~RD
 void row_add(int id, GtkListStore* ls)
@@ -125,15 +141,15 @@ void row_add(int id, GtkListStore* ls)
    	gtk_list_store_append(ls, &iter);
    	gtk_list_store_set(ls, &iter,
    						COL_ID, id, 
-   						COL_NAME, torrentlist[id].name, 
-   						COL_SIZE, torrentlist[id].size, 
-   						COL_DONE, torrentlist[id].done, 
+   						COL_NAME, torrentlist[id].tinfo->_torrent_file_name, 
+   						COL_SIZE, torrentlist[id].filesize, 
+   						COL_DONE, "0.00%", 									//todo get this from fileman. 
    						COL_STATUS, torrentlist[id].status, 
    						COL_DOWNRATE, "N/A", 
-   						COL_UPRATE, "N/A", 		//get up/downrate from netstat.c ~RD
+   						COL_UPRATE, "N/A", 		
    						COL_LEECHER, 0, 
    						COL_SEEDER, 0, 
-   						COL_SWARM, 0, 			//get these values from swarm.c ~RD
+   						COL_SWARM, 0, 			
    						COL_RATIO, 0.0000, -1);
 }
 
@@ -158,33 +174,26 @@ void row_delete(int id, GtkListStore* ls)
 }
 
 //add an info-item to list. ~RD
-void list_add(char* name, char* status, char* size, char* done, char* info_hash, int state)
+void list_add(char* status, torrent_info* tinfo, int state)
 {
 	if ((torrentlist = realloc(torrentlist, sizeof(torrentlist_t) * (torrentlist_count + 1))) != NULL )
 	{
-		torrentlist[torrentlist_count].size = malloc(8);
-		torrentlist[torrentlist_count].done = malloc(8);
-		torrentlist[torrentlist_count].status = malloc(16);
-		torrentlist[torrentlist_count].name = malloc(32);
-		torrentlist[torrentlist_count].info_hash = malloc(21);
-
-		memcpy(torrentlist[torrentlist_count].info_hash, info_hash, 21);
-		strcpy(torrentlist[torrentlist_count].size, size);
-		strcpy(torrentlist[torrentlist_count].done, done);
+		torrentlist[torrentlist_count].status = malloc(60);
+		torrentlist[torrentlist_count].filesize = malloc(FORMATSTRING_LEN); 
 		strcpy(torrentlist[torrentlist_count].status, status);
-		strcpy(torrentlist[torrentlist_count].name, name);
-		torrentlist[torrentlist_count].id = torrentlist_count;
-
+		torrentlist[torrentlist_count].swarm_id = -1;
+		torrentlist[torrentlist_count].tinfo = tinfo;
+		torrent_size(tinfo, torrentlist[torrentlist_count].filesize);
 		torrentlist_count++;
-	}
 
-   	switch (state)
-   	{
-   		case STATE_COMPLETED: 	row_add(torrentlist_count-1, md_completed); break;
-   		case STATE_SEEDING: 	row_add(torrentlist_count-1, md_seeding); break;
-   		case STATE_DOWNLOADING: row_add(torrentlist_count-1, md_downloading); break;
-   		case STATE_INACTIVE:	row_add(torrentlist_count-1, md_inactive); break;
-   	}
+   		switch (state)
+   		{
+   			case STATE_COMPLETED: 	row_add(torrentlist_count-1, md_completed); break;
+   			case STATE_SEEDING: 	row_add(torrentlist_count-1, md_seeding); break;
+   			case STATE_DOWNLOADING: row_add(torrentlist_count-1, md_downloading); break;
+   			case STATE_INACTIVE:	row_add(torrentlist_count-1, md_inactive); break;
+   		}
+    }
 }
 
 //return selected tab as id. ~RD
@@ -287,7 +296,6 @@ void list_update(GtkListStore *ls)
 
 	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
 
-	//todo: 
     while (nextitem_exist)
  	{
     	//todo: fetch actual values, percent, peercount, swarm-size, leeches, seeders.
@@ -301,31 +309,31 @@ void list_update(GtkListStore *ls)
     	}
 
     	//todo: if percent = 100.0 set state to downloading, change status from creating -> downloading, or downloading -> seeding. (update torrent[id].status too)
-		netstat_formatbytes(INPUT, torrentlist[id].info_hash, netstat_down);
-		netstat_formatbytes(OUTPUT, torrentlist[id].info_hash, netstat_up);
+		netstat_formatbytes(INPUT, torrentlist[id].tinfo->_info_hash, netstat_down);
+		netstat_formatbytes(OUTPUT, torrentlist[id].tinfo->_info_hash, netstat_up);
    		gtk_list_store_set(ls, &iter,
-   						COL_DONE, torrentlist[id].done, 
+   						COL_DONE, "0.00%",		//todo: get this from fileman 
    						COL_STATUS, torrentlist[id].status, 
    						COL_DOWNRATE, netstat_down, 
-   						COL_UPRATE,   netstat_up, 		//get up/downrate from netstat.c ~RD
-   						COL_LEECHER, 0, 
-   						COL_SEEDER, 0, 
-   						COL_SWARM, swarm_peercount(torrentlist[id].swarm_id), 			//get these values from swarm.c ~RD
+   						COL_UPRATE,   netstat_up, 		//get up/downrate from netstat.c 
+   						COL_LEECHER, swarm_incomplete(torrentlist[id].swarm_id), 
+   						COL_SEEDER, swarm_completed(torrentlist[id].swarm_id), 
+   						COL_SWARM, swarm_peercount(torrentlist[id].swarm_id), 			//get these values from swarm.c 
    						COL_RATIO, 0.0000, -1);
-
 
        nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}
 }
 
 
+//a timer for updating the MOTD after the retrieval timeout has passed. ~RD
 void* motd_timer_thread(void* arg)
 {
 	char* response = (char*) malloc(MOTD_MAXLEN+1);
 
 	MOTD_fetch(response);
 	sleep(MOTD_TIMEOUT + 1);			//wait timeout.
-	gtk_label_set_text((GtkLabel*) lb_motd, response);		//todo: get speeds from netstat.c
+	gtk_label_set_text((GtkLabel*) lb_motd, response);		//todo: fix the design, updating GtkLabel isn't pretty.
 	return NULL;
 }
 
@@ -394,8 +402,7 @@ void list_doubleclick(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *c
 	if (gtk_tree_model_get_iter(model, &iter, path))
 	{
 		gtk_tree_model_get(model, &iter, COL_ID, &id, -1);
-
-		printf("\nDouble clicking [%s].", torrentlist[id].info_hash);
+		printf("\nDouble clicking [%s].", torrentlist[id].tinfo->_info_hash);
 		fflush(stdout);
 		//fork and spawn nautilus with directory from top level file.
 		//the directory should be found in the file-manager. bencodning.c?
@@ -410,28 +417,22 @@ void torrent_start()
 	if ((id = selected_id()) < 0)
 		return;
 
-
-		char *trackers[MAX_TRACKERS] = {"http://127.0.0.1:80/tracker/announce.php", 
-										"",
-									"", //http://127.0.0.1:80/tracker/announce.php 
-									""};
-
 	switch(tab)
 	{
 		case TAB_COMPLETED: row_delete(id, md_completed);
 							row_add(id, md_seeding); 
-							netstat_track(torrentlist[id].info_hash);
-							torrentlist[id].swarm_id = tracker_track(torrentlist[id].info_hash, trackers);
+							netstat_track(torrentlist[id].tinfo->_info_hash);
+							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
 							 break;
 		case TAB_INACTIVE:  row_delete(id, md_inactive);
 							//todo add check if torrent is done or not, if done then seed, if not done then download.
 							row_add(id, md_downloading);
-							netstat_track(torrentlist[id].info_hash);
-							torrentlist[id].swarm_id = tracker_track(torrentlist[id].info_hash, trackers);
+							netstat_track(torrentlist[id].tinfo->_info_hash);
+							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
 							 break;
 	}
 
-	printf("\nStarted torrent %s.", torrentlist[id].info_hash);
+	printf("\nStarted torrent %s with swarm #%d.", torrentlist[id].tinfo->_info_hash, torrentlist[id].swarm_id);
 	fflush(stdout);
 }
 
@@ -446,18 +447,18 @@ void torrent_stop()
 	{
 		case TAB_SEEDING: 		row_delete(id, md_seeding); 
 						  		row_add(id, md_completed); 
-						  		netstat_untrack(torrentlist[id].info_hash);
-						  		tracker_untrack(torrentlist[id].info_hash); 
+						  		netstat_untrack(torrentlist[id].tinfo->_info_hash);
+						  		tracker_untrack(torrentlist[id].tinfo); 
 						  		break;
 
 		case TAB_DOWNLOADING: 	row_delete(id, md_downloading);
 								row_add(id, md_inactive);
-							  	netstat_untrack(torrentlist[id].info_hash);
-							  	tracker_untrack(torrentlist[id].info_hash); 
+							  	netstat_untrack(torrentlist[id].tinfo->_info_hash);
+							  	tracker_untrack(torrentlist[id].tinfo); 
 							  	break;
 	}
 	
-	printf("\nStopped torrent %s.", torrentlist[id].info_hash);
+	printf("\nStopped torrent %s.", torrentlist[id].tinfo->_info_hash);
 	fflush(stdout);
 }
 
@@ -479,9 +480,9 @@ void torrent_delete()
 	}
 
 	//todo: delete torrent files && delete torrentinfo record?
-	netstat_untrack(torrentlist[id].info_hash);
+	netstat_untrack(torrentlist[id].tinfo->_info_hash);
 
-	printf("\nDeleted torrent %s.", torrentlist[id].info_hash);
+	printf("\nDeleted torrent %s.", torrentlist[id].tinfo->_info_hash);
 	fflush(stdout);
 }
 
@@ -550,8 +551,10 @@ void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 					      NULL);
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
+		// clear old text from textbox
 		gtk_text_buffer_delete(txtBuffer, &start, &end);
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+		// set text in textbox to selected folder path
 		gtk_text_buffer_insert(txtBuffer, &start, filePath, strlen(filePath));
 	}
 		
@@ -615,11 +618,12 @@ void torrent_create()
 void add_torrent(){
 	GtkWidget *dialog, *win;
 	torrent_info *torrent;
-	char *filePath, *fileSize;
+	char *filePath, *fileName, *fileSize, *tmp;
 
 	torrent = malloc(sizeof(torrent_info));
 
-	dialog = gtk_file_chooser_dialog_new ("Select folder",
+	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	dialog = gtk_file_chooser_dialog_new ("Open File",
 					      GTK_WINDOW(win),
 					      GTK_FILE_CHOOSER_ACTION_OPEN,
 					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -628,17 +632,40 @@ void add_torrent(){
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
-		if(1==1){ // check if file is valid
-			decode_bencode("photoshop.torrent", torrent);
-			sprintf(fileSize, "%lld", torrent->_total_length);
-			list_add(torrent._torrent_file_name, "Downloading", fileSize, "0.00%", torrent._info_hash, STATE_CREATING);
+		if (strcmp(strrchr(filePath, '.'), ".torrent") == 0){ 		//Fixed:  (strrchr(filePath, '.')=="torent"): comparing pointer to "." in filePath with pointer to string "(t)orent". Fixed ~RD
+			tmp = malloc(strlen(filePath));
+			strcpy(tmp, filePath);
+			tmp = strtok(tmp, "/");
+			fileName = malloc(strlen(tmp));
+			memset(fileName, '\0', strlen(tmp));
+			while(tmp!=NULL){
+				// extract filename from filepath
+				fileName = realloc(fileName, strlen(tmp));
+				strcpy(fileName, tmp);
+				tmp = strtok(NULL, "/");
+			}
+			tmp = realloc(tmp, strlen(filePath)+strlen(fileName)+6);
+			// build copy string
+			sprintf(tmp, "cp %s %s", filePath, fileName); //use cp, not copy. ~RD
+			fprintf(stderr, "%s\n", tmp);
+			// copy torrent file to working dir
+			system(tmp);
+			// get torrent info
+			if (decode_bencode(fileName, torrent) == 1)		//if decode_bencode returns with error, don't add to list. Display error dialog? ~RD
+			{
+				// convert filesize from long long int to char
+				fileSize = malloc(sizeof(torrent->_total_length));
+				memset(fileSize, '\0', sizeof(torrent->_total_length));
+				sprintf(fileSize, "%lld", torrent->_total_length);
+				// add torrent to list and initiate download
+				//list_add(torrent->_torrent_file_name, "Ready", fileSize, "0.00%", torrent->_info_hash, STATE_INACTIVE, torrent);
+				list_add("Ready", torrent, STATE_INACTIVE);
+			}
+			else
+				free(torrent);
 		}
-
 	}
-		
-	
-	gtk_widget_destroy(dialog);
-	//gtk_widget_destroy(win);
+	gtk_widget_destroy(dialog); //some torrents will cause a segmentation fault here ~RD
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
@@ -801,45 +828,15 @@ int main (int argc, char *argv[])
 	enum_list(&tv_inactive, &md_inactive, &column);
 	create_torrent_tab(&tlb_inactive, &scrolled_window, &notebook, &tv_inactive, "Inactive", 4);
 
-
-	/*info_hash[0] = 0xf4;
-	info_hash[1] = 0x3e;
-	info_hash[2] = 0x6d;
-	info_hash[3] = 0x2b;
-	info_hash[4] = 0x91;
-	info_hash[5] = 0x3f;
-	info_hash[6] = 0x22;
-	info_hash[7] = 0xc3;
-	info_hash[8] = 0xb0;
-	info_hash[9] = 0x61;
-	info_hash[10] = 0x25;
-	info_hash[11] = 0x95;
-	info_hash[12] = 0xf0;
-	info_hash[13] = 0x25;
-	info_hash[14] = 0xb1;
-	info_hash[15] = 0x25;
-	info_hash[16] = 0x2a;
-	info_hash[17] = 0x99;
-	info_hash[18] = 0x85;
-	info_hash[19] = 0xdf;
-	info_hash[20] = '\0';*/
-
-	//printf("\nXHASH: %s", "\xf4\x3e\x6d\x2b\x91\x3f\x22\xc3\xb0\x61\x25\x95\xf0\x25\xb1\x25\x2a\x99\x85\xdf"); fflush(stdout);
-
-	//dynamic adding at runtime. State is defined by the torrent-loader, unfinished torrents should always be placed in downloading
-	//keep track of which torrents are in seeding/completed-mode in config file. Also keep track of priorities in settings file.
-	//the setting file should be compiled whenever there are changes to a state in torrents. (moved by user) ~RD
-	list_add("Photoflop CS7", 			"Completed", 	"8.43 GB", 	 "0.00%",     "----  INFOHASA  ----", STATE_INACTIVE);
-	list_add("World of Catcraft", 		"Downloading", 	"12.47 GB",  "0.00%",     "----  INFOHASB  ----", STATE_INACTIVE);
-	list_add("The.Shrimpsons S08E03", 	"Downloading", 	"413.89 MB", "0.00%",     "----  INFOHASB  ----", STATE_INACTIVE);
-	list_add("EBook_ASM_Cookbook", 		"Downloading", 	"55.10 MB",  "0.00%",     "----  INFOHASD  ----", STATE_INACTIVE);
-	list_add("The.Shrimpsons S08E04", 	"Seeding", 	    "374.95 MB", "0.00%",     "----  INFOHASH  ----", STATE_INACTIVE);
-	list_add("The.Shrimpsons S08E05", 	"Completed", 	"415.10 MB", "0.00%",     "----  INFOHASE  ----", STATE_INACTIVE);
-	list_add("px.image", "Dowloading", "853.20 KB", "0.00%", "\xf4\x3e\x6d\x2b\x91\x3f\x22\xc3\xb0\x61\x25\x95\xf0\x25\xb1\x25\x2a\x99\x85\xdf", STATE_INACTIVE);
-	printf("\nlist_add = ok"); fflush(stdout); 
-
-	//initializers.
+	//initializers
 	netstat_initialize();
+	swarm_initialize();
+
+	if (!(pthread_create(&update_thread, NULL, gui_update_thread, NULL)))
+			printf("\nUpdating your values in Thread.");
+
+	if (!(pthread_create(&motd_thread, NULL, motd_timer_thread, NULL)))
+			printf("\nWaiting for MOTD in Thread.");
 
 //---------------------------------------------------------------------------  ~RD
 
@@ -850,15 +847,6 @@ int main (int argc, char *argv[])
 // Show window widget and it's child widgets
 	gtk_widget_show_all(window);
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
-	netstat_initialize();
-	swarm_initialize();
-
-	if (!(pthread_create(&update_thread, NULL, gui_update_thread, NULL)))
-			printf("\nUpdating your values in Thread.");
-
-	if (!(pthread_create(&motd_thread, NULL, motd_timer_thread, NULL)))
-			printf("\nWaiting for MOTD in Thread.");
 
 
 	gtk_main();

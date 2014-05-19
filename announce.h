@@ -1,6 +1,7 @@
 #ifndef _announce_h
 #define _announce_h
 
+ #include <pthread.h>
  #include <netdb.h>
  #include <unistd.h>
  #include <errno.h>
@@ -18,6 +19,6 @@
 
 //announce all trackers in trackerlist, algorithm for announcing only on trackers with
 //enough peers not added yet.
-int tracker_announce(swarm_t* swarm);
+void tracker_announce(swarm_t* swarm);
 
 #endif

@@ -153,9 +153,9 @@ char* format_string(char* format_string, float rate)
 
 	switch (unit)
 	{
-		case U_BYTE: strcat(format_string, BYTE); break;
-		case U_KILO: strcat(format_string, KILO); break;
-		case U_MEGA: strcat(format_string, MEGA); break;
+		case U_BYTE: strcat(format_string, R_BYTE); break;
+		case U_KILO: strcat(format_string, R_KILO); break;
+		case U_MEGA: strcat(format_string, R_MEGA); break;
 	}
 
 	return format_string;

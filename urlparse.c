@@ -185,18 +185,50 @@ void url_announce(char* url, char* announce)
  //output = 60+nullterm
 void url_encode(char* hash, char* output)
 {
+    char* tmp = malloc(3);
     memset(output, '\0', 61);
 
     int i, k = 1;
     for (i = 0; i < 20; i++)
     { 
-        strcat(output, "%");
-        snprintf(output+k, 61, "%x", (unsigned char) hash[i]);
+        output[k-1] = '%';
+        tmp[0] = hash[i];
+        snprintf(tmp, 3, "%02x", (unsigned char) hash[i]);
+        output[k] = tmp[0];
+        output[k+1] = tmp[1];
         k += 3;
     }
-    output[60] = '\0';
+    free(tmp);
 }
 
+void url_filesize(char* format_string, long long int size)
+{
+    int unit;
+    float value;
+    memset(format_string, '\0', FORMATSTRING_LEN);
+
+    if (size < U_BYTE)
+    {
+        strcat(format_string, "N/A");
+        return;
+    }
+
+    if (U_NONE < size  && size < U_KILO) unit = U_BYTE;
+    if (U_KILO <= size && size < U_MEGA) unit = U_KILO;
+    if (U_MEGA <= size && size < U_GIGA) unit = U_MEGA;
+    if (size >= U_GIGA)                  unit = U_GIGA;
+
+    value = ((float) size/ (float) unit);
+    sprintf(format_string, "%.1f ", value);
+
+    switch (unit)
+    {
+        case U_BYTE: strcat(format_string, S_BYTE); break;
+        case U_KILO: strcat(format_string, S_KILO); break;
+        case U_MEGA: strcat(format_string, S_MEGA); break;
+        case U_GIGA: strcat(format_string, S_GIGA); break;
+    }
+}
 
 /*------------------------------- BEGIN: REMOVE WHEN COMPLETE ----------------------------------*/
 /*void testing(char* urls)

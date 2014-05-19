@@ -6,11 +6,12 @@
 #include <string.h>
 #include <pthread.h>
 #include "peerwire.h"
+#include "bencodning.h"
 #include "protocol_meta.h"
 
 
  //return a free swarm
-int swarm_select(char* info_hash, char* trackers[MAX_TRACKERS]);
+int swarm_select(torrent_info* tinfo);
 //lock the mutex of swarm index
 void swarm_lock(int index);
 //unlock the mutex of swarm index
@@ -27,5 +28,9 @@ void swarm_scour(swarm_t* swarm);
 int swarm_peercount(int swarm_id);
 //initialize swarms.
 void swarm_initialize(); 
+//returns the amount of leechers
+int swarm_incomplete(int swarm_id);
+//returns the amount of seeders
+int swarm_complete(int swarm_id);
 
 #endif

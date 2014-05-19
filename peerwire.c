@@ -29,8 +29,8 @@
 
 	PAYLOAD MESSAGES
 		piece: 	<len=0009+X><id=7><index><begin><block> 
-		cancel: <len=0013>  <id=8><index><begin><length>		
-		port: 	<len=0003>  <id=9><listen-port>
+		cancel: <len=0013><id=8><index><begin><length>		
+		port: 	<len=0003><id=9><listen-port>
 */
 
 void handshake(peer_t* peer, char* info_hash, char* peer_id)
@@ -75,12 +75,12 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
 //<len=0001+X><id=5><bitfield>
 void bitfield(peer_t* peer)
 {
-	/*int piece_count, i;						//piece_count from include.
+	int piece_count, i;	
 	int payload = 0, len;
     char* bitfield;
     unsigned char id = 5; 	
 
-    //piece_count = get_bitfield(torrent_info_pointer, bitfield);	
+    //piece_count = get_bitfield(torrent_info_pointer, bitfield);		//get the bitfield from 'bencodning.c'
     len = htons(piece_count + 1);
 
     char* request = malloc(1 + piece_count/8+1);
@@ -89,7 +89,7 @@ void bitfield(peer_t* peer)
     memcpy(request + payload, bitfield, piece_count); 	payload += piece_count/8+1;
 
     send(peer->sockfd, request, payload, 0);		
-    free(request);	*/
+    free(request);	
 }
 
 //message [choke, unchoke, interested, not interested]
@@ -118,6 +118,7 @@ void have(peer_t* peer, int piece_index)
 	int payload = 0, len = htonl(5);
 	unsigned char id = 4;
 	char* request = malloc(4 + 1 + 4);
+	piece_index = htonl(piece_index);
 
 	memcpy(request, &len, 4); 						payload += 4;
 	memcpy(request + payload, &id, 1);				payload += 1;
@@ -126,142 +127,134 @@ void have(peer_t* peer, int piece_index)
 	free(request);
 }
 
-//while .. read.. dgram
-void* listener_udp(peer_t* peer)
+//hex formatting.
+void printf_hexit(char* buf, int num)
 {
-	return peer;
+	int i, a;
+
+	for (i = 0; i < num; i++)
+	{
+		if (i > 0)
+		{
+			if ((i%8 == 0))
+				printf("\t");
+
+			if ((i%16 == 0))
+				printf("\n");
+		}
+		printf("%02x  ", (unsigned char) buf[i]);
+	}
+	printf("\n------------------------------------------------------------------------");
 }
 
-//todo not yet implemented
-void* peerwire_thread_udp(peer_t* peer)
+//<len=0009+X><id=7><index><begin><block> 
+static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer) 
 {
-	//pthread_create(&thread, null, listener_udp, peer);
-	while (peer->sockfd != 0)
-		sleep(1);
+	unsigned int index = 0, offset = 0, length = 0, header = 13, headerlen;
+	unsigned char id = PIECE;
+	memcpy(&index, buffer + 5, 4);
+	memcpy(&offset, buffer + 9, 4);
+	memcpy(&length, buffer + 13, 4);
+	char* piece = malloc(ntohl(length));	//allocate length for piece
+	char* packet = malloc(ntohl(length) + header);
 
-	return peer;
+	//load piece data here, verify length to avoid bleeds.
+	headerlen = header + ntohl(length) - 4;
+	printf("[%s:%s] - Seeding Piece  [index: %d, offset: %d, length: %d]", peer->ip, peer->port, ntohl(index), ntohl(offset), ntohl(length));
+	//memcpy(packet + 13, filebuffer + ntohl(offset) + (index * 16384), ntohl(length));
+	headerlen = htonl(headerlen);							//length might be smaller on last piece!
+
+	memcpy(packet, &headerlen, 4); 
+	memcpy(packet + 4, &id, 1);
+	memcpy(packet + 5, &index, 4);
+	memcpy(packet + 9, &offset, 4);
+
+	send(peer->sockfd, packet, ntohl(length) + header, 0);
+	free(piece);
+	free(packet);
 }
 
+//todo: fill one piece from the buffer, return num with the offset.
+static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* msglen, peer_t* peer)
+{
+	int downloaded = 0, left = *msglen - 9, length = *msglen - 9, index, offset, header = 13, tmp;
 
-//every time data is received update lastrecv with system tick.
-//listens to incoming data/messages
-//todo: if not interesting and not interested drop the connection and mark peer as such. after 5 minutes reconnect..
+	memcpy(&index, buffer + 5, 4);
+	memcpy(&offset, buffer + 9, 4);
+
+	while (*num < *msglen + 4)
+	{
+		tmp = recv(peer->sockfd, buffer + *num, DOWNLOAD_BUFFER - (*msglen + 4), 0);
+		if (tmp < 1)
+		{
+			*num = 0;
+			return;
+		}
+		*num += tmp;
+	}
+	memcpy(piebuffer + htonl(offset), buffer + header, BLOCK_SIZE);
+	netstat_update(INPUT, BLOCK_SIZE, peer->info_hash);
+	
+	if (write_piece(peer->tinfo, (void*) piebuffer) == 0)
+	{
+		printf("\n[%s:%s] - (Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), 
+									offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
+	}
+	else
+		printf("\n[%s:%s] - (Error) Piece Failed Checksum! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), offset, 
+									(unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
+}
+
+//BT - Listener.
 void* listener_tcp(void* arg)
 {
 	peer_t* peer = (peer_t*) arg;
 	char recvbuf[DOWNLOAD_BUFFER];
-	char* message = (char*) malloc(45);
-	int num, i, a, numpiece, piecedata, piecelen, pieceindex;
-	char* piecebuf;
-	bool piece = false;
-	unsigned long msglen;
+	char* message =   malloc(45);
+	char* piebuffer = malloc(peer->tinfo->_piece_length);	//get piece size here.
+	int num = 0, msglen;
 
-	printf("\n[sockfd = %d]\tTCP Listener init.", peer->sockfd);
-
+	printf("\n[%s:%s]\tTCP Listener init.", peer->ip, peer->port);
 	while (peer->sockfd != 0)
 	{
-		memset(recvbuf, '\0', DOWNLOAD_BUFFER);
-		memset(message, '\0', 45);
+		memset(message, '\0', 45);	//for debugging, remove.
 
-		if ((num = recv(peer->sockfd, recvbuf, DOWNLOAD_BUFFER, 0)) > 0)
+		if (num > 4 || (num = recv(peer->sockfd, recvbuf, DOWNLOAD_BUFFER, 0)) > 0) //if buffer less than header size, issue a read op.
 		{
-			//printf("\nUpdating stats."); fflush(stdout);
-			netstat_update(INPUT, num, peer->info_hash); 
-			//printf("\nUpdating stats done."); fflush(stdout);
-			memcpy(&msglen, recvbuf, 4);
-			msglen = htonl(msglen);	
+			printf("\n[%s:%s] - Incoming Data: TYPE = %d", peer->ip, peer->port, (unsigned char) recvbuf[4]);
 
-			//do not include K-A, this will unchoke the client on ping ^^
-			if (msglen > 0)
+			memcpy(&msglen, recvbuf, 4);
+			msglen = htonl(msglen);
+
+			if (msglen > 0) //K-A has 9 bytes set to zero, if not msglen is checked K-A will trigger choke. [ID read as 0]
 			switch ((unsigned char) recvbuf[4])
 			{
-				case UNCHOKE: 		peer->choked = false;    strcat(message, "UNCHOKE");			break;
-				case CHOKE:			peer->choked = true;     strcat(message, "CHOKE"); 				break;
-				case INTERESTED: 	peer->interested = true; strcat(message, "INTERESTED");			break;
-				case NOT_INTERESTED:peer->interested = false;strcat(message, "NOT_INTERESTED");  	break;
-				case HAVE: 			strcat(message, "HAVE");			break; 
-				case REQUEST: 		strcat(message, "REQUEST");			break;	
-				case PIECE: 		strcat(message, "PIECE");			break; //todo allocate piece buffer with piece length, if alreadyexists throw cancel.
-				case 84: 			strcat(message, "HANDSHAKE");		break; //Bittorrent Protocol...
-				default: 			strcat(message, "UNDEFINED"); 		break;
+				case REQUEST: 		seed_piece(recvbuf, &num, &msglen, peer);					break;		//continue: these methods will manage the buffer shifting.
+				case PIECE: 		receive_piece(recvbuf, piebuffer, &num, &msglen, peer); 	break;
+				case HAVE: 			strcat(message, "HAVE");									break; 
+				case UNCHOKE: 		peer->choked = false;    strcat(message, "UNCHOKE");		break;		//break: short messages, the buffer shifting is done below.
+				case CHOKE:			peer->choked = true;     strcat(message, "CHOKE"); 			break;
+				case INTERESTED: 	peer->interested = true; strcat(message, "INTERESTED");		break;
+				case NOT_INTERESTED:peer->interested = false;strcat(message, "NOT_INTERESTED"); break;
+				case 84: 			strcat(message, "HANDSHAKE");	num = 0;					continue; 	//Bittorrent Protocol...
+				default: 			strcat(message, "UNDEFINED"); 	num = 0;					continue;
 			}
 
-			piecedata = 0;
-			if (recvbuf[4] == PIECE && piece == false)
+			if (num > 0 && msglen > 0 && msglen + 4 < DOWNLOAD_BUFFER)
 			{
-				piecelen = msglen - 9; //skip piece header.
-				numpiece = 0;
-				piecebuf = malloc(16384); //allocate size of 1 piece.
-				piecedata += 9;
-				piece = true;
+				num = num - (msglen + 4);	
+				memmove(recvbuf, recvbuf + msglen + 4, DOWNLOAD_BUFFER - (msglen + 4));
 			}
-
-			if (piece == true && num + numpiece <= 16384)	//where 16384 is size from Piece reply.
-			{
-				memcpy(piecebuf+numpiece, recv + piecedata, num - piecedata);
-			    numpiece += num - piecedata;
-			}
-
-			printf("\nDownloading Piece %d/%d", numpiece, 16384);
-			sleep(10);
-
-			if (numpiece > 15000)
-			{
-				piece = false;
-				//send piece to fileman, which will free it.
-
-			for (i = 0; i < numpiece; i++)
-			{
-				if (i > 0)
-				{
-					if ((i%8 == 0))
-						printf("\t");
-
-					if ((i%16 == 0))
-					{
-						printf("\t");
-						for (a = 0; a < 15 && i+a < num; a++)
-						{
-							printf("%c", piecebuf[i+a]);
-						}
-						printf("\n");
-					}
-				}
-				printf("%02x  ", (unsigned char) piecebuf[i]);
-			}
-			printf("\n------------------------------------------------------------------------");
-			}
-
-
-			printf("\n[sockfd = %d]\t-Hex Dump %d Byte(s)-\t Header: [Type = %s, Id = %x, Len = %ld]\
-				    \n------------------------------------------------------------------------\n", 
-				    	peer->sockfd, num, message, recvbuf[4], msglen);
-
-			continue;
-
-			for (i = 0; i < num; i++)
-			{
-				if (i > 0)
-				{
-					if ((i%8 == 0))
-						printf("\t");
-
-					if ((i%16 == 0))
-					{
-						printf("\t");
-						for (a = 0; a < 15 && i+a < num; a++)
-						{
-							printf("%c", recvbuf[i+a]);
-						}
-						printf("\n");
-					}
-				}
-				printf("%02x  ", (unsigned char) recvbuf[i]);
-			}
-			printf("\n------------------------------------------------------------------------");
-		}
-		sleep(1); 
+			else
+				num = 0;
+		} 
+		else if (num < 1)
+			break;
 	}
+
+	printf("\n[%s:%s] - Disconnected while reading.", peer->ip, peer->port); fflush(stdout);
+	close(peer->sockfd);
+
 	free(message);
 	return arg;
 }
@@ -280,114 +273,77 @@ void* peerwire_thread_tcp(void* arg)
     peer->interested = 0;
     peer->interesting = 0;
 
-	printf("\nConnecting to peer..");
-
 	if (peer->sockfd == 0)
 	{
-            memset(&hints, 0, sizeof(hints));
-            hints.ai_family = AF_UNSPEC;
-            hints.ai_socktype = SOCK_STREAM;
-            hints.ai_flags = AI_PASSIVE;
-            getaddrinfo(peer->ip, peer->port, &hints, &res);
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+        getaddrinfo(peer->ip, peer->port, &hints, &res);
 
-            if (!((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
-				printf("\nCould not set up socket.");
-            if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
-            {
-				printf("\nCould not connect.");
-				return arg; //thread_exit, peer_free/peer_stale
-			}
+        if (!((peer->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1))
+			printf("\nCould not set up socket.");
+        if (!((connect(peer->sockfd, res->ai_addr, res->ai_addrlen) > -1)))
+        {
+			printf("\nCould not connect.");
+			return arg; //thread_exit, peer_free/peer_stale
+		}
 	}
 
-	if (!(pthread_create(&listen_thread, NULL, listener_tcp, peer)))
-		printf("\n[sockfd = %d]\tStarting peer listener..", peer->sockfd);
+    if (!(pthread_create(&listen_thread, NULL, listener_tcp, peer)))
+		printf("\n[%s:%s]\tStarting peer listener..", peer->ip, peer->port);
 
-	printf("\n[sockfd = %d]\tConnected! [%s:%s], sending handshake..\n", peer->sockfd, peer->ip, peer->port); fflush(stdout);
+
+	printf("\n[%s:%s] - Connected!\n", peer->ip, peer->port); fflush(stdout);
+	//printf("\n[sockfd = %d], piece length = %lld", peer->sockfd, peer->tinfo->_piece_length);
+	sleep(2);
 	handshake(peer, peer->info_hash, peer->peer_id);
-	sleep(1);
 	//bitfield(peer);
-	sleep(9);
-	message(peer, UNCHOKE);
 	sleep(4);
 	message(peer, INTERESTED);
-	printf("\n[sockfd = %d]\tHandshake sent.", peer->sockfd);
+	sleep(4);
+	message(peer, UNCHOKE);
+	printf("\n[%s:%s] - Handshake sequence finished.", peer->ip, peer->port); fflush(stdout);
 
-		int jk;
-	while (peer->sockfd != 0)
+
+	int block, index, piecelen = peer->tinfo->_piece_length, blockcount;
+	while (peer->sockfd != 0) //&& index > -1, stop this thread when the peer is no longer interesting, close the socket but do not change sockfd value.
 	{
-		//do peerstuff. //choke, unchoke, interested, not nterested, have, piece
 
-		for (jk = 0; jk < 16; jk++)
+		//get not downloaded piece, request for every block in piece.
+		index = random()%8; //get piece index here.
+		blockcount = piecelen / BLOCK_SIZE; //how many full blocks.
+		block = 0;
+		while (index > -1 && block < blockcount)
 		{
-			request(peer, htonl(jk), htonl(0), htonl(16384));
-					sleep(15);
+			printf("\n[%s:%s] - Requesting: block = %d, count = %d, pLen = %d, bLen = %d", peer->ip, peer->port, block, blockcount, piecelen, BLOCK_SIZE);
+			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(BLOCK_SIZE));	//request 16384 if not last piece
+			block++;
+			sleep(2); //issue /have on download complete. not implemented.
 		}
-		//printf("\n[sockfd = %d]\tdoing peerstuff. [choked = %d, choking = %d] ^^ ", peer->sockfd, peer->choking, peer->choked);
+
+		sleep(1);
+		break;
 	}
-	printf("\n[sockfd = %d]\tPeer disconnected.", peer->sockfd);
+	printf("\n[%s:%s] - Peer disconnected while writing.", peer->ip, peer->port);
 	//shutdown the listener, free the peer, close the sockfd.
 
 	return arg;
 }
-                                                                         
 
-/*
-void main(void)
+//while .. read.. dgram
+void* listener_udp(peer_t* peer)
 {
-	peer_t peer;
-	char info_hash[20];
-	char peer_id[20];
-
-	printf("-----"); fflush(stdout);
-
-
-	// gcc sha1Openssl.c -o sha1Openssl -lssl -lcrypto
-
-	strcpy(peer_id, "NSA-PirateBust-05Ac7");
-	strcpy(peer.port, "6881");
-	strcpy(peer.ip,   "192.168.0.10");
-
-	//sprintf(info_hash, "%x", "d15b9f7471d78dd64f1419d630a8c48d708924dd");
-
-	info_hash[0] = 0xf4;
-	info_hash[1] = 0x3e;
-	info_hash[2] = 0x6d;
-	info_hash[3] = 0x2b;
-	info_hash[4] = 0x91;
-	info_hash[5] = 0x3f;
-	info_hash[6] = 0x22;
-	info_hash[7] = 0xc3;
-	info_hash[8] = 0xb0;
-	info_hash[9] = 0x61;
-	info_hash[10] = 0x25;
-	info_hash[11] = 0x95;
-	info_hash[12] = 0xf0;
-	info_hash[13] = 0x25;
-	info_hash[14] = 0xb1;
-	info_hash[15] = 0x25;
-	info_hash[16] = 0x2a;
-	info_hash[17] = 0x99;
-	info_hash[18] = 0x85;
-	info_hash[19] = 0xdf;
-
-
-	//strcpy(info_hash, hash);
-	//strcpy(peer_id,   hash);
-
-	//OOO
-	//handshake -> extended/bitfield/have -> interested/not interested -> unchoke/choke -> request/piece(reply)
-
-
-	//piece transfer over TCP.
-	handshake(&peer, info_hash, peer_id);
-	sleep(1);
-	message(&peer, INTERESTED);
-	sleep(6);
-	request(&peer, htonl(0), htonl(0), htonl(16384));
-	//message(&peer, CHOKE);
-	//message(&peer, NOT_INTERESTED);
-	//message(&peer, UNCHOKE);
-	//message(&peer, INTERESTED);
-	sleep(30);
+	return peer;
 }
-*/
+
+//todo not yet implemented
+void* peerwire_thread_udp(peer_t* peer)
+{
+	//pthread_create(&thread, null, listener_udp, peer);
+	while (peer->sockfd != 0)
+		sleep(1);
+
+	return peer;
+}
+                                                                         
