@@ -7,12 +7,11 @@
 }*/
 
 int scan_all (torrent_info *torrent, char *bitstring) {
-	int total = (torrent->_hash_length / 20);
-	int found =0, j = 0, total_to_load = 0, loaded_files = 0, start_from = 0, stop_at = 0, bytes_read = 0, total_loaded_files = 0;
+	int number_of_pieces = (torrent->_hash_length / 20);
+	int found = -1, j = 0, total_to_load = 0, loaded_files = 0, start_from = 0, stop_at = 0, bytes_read = 0, total_bytes_read = 0;
 	int fileindex = 0, nom_of_files_to_load = 0;
-	int i, toalloc = (total/8)+1;
+	int i, first_file_to_open, toalloc = (number_of_pieces/8)+1;
 	int piece_length = torrent->_piece_length;
-	char *file_name;
 
 	bitstring = malloc(toalloc);
 	memset(bitstring, 0, toalloc);
@@ -20,63 +19,57 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 
 	char hash[21];
 
-	char *data;
-	data = (char *) malloc(piece_length);
-	memset(data, 0, piece_length);
+	void *piece;
+	piece = malloc(piece_length);
+	void *copy_piece = piece;
+	memset(piece, 0, piece_length);
 
-	FILE *sfp[250];
-	for (i = 0; i < total; i++){
-		start_from = stop_at + 1;
+	for(j = 0; j < number_of_pieces; j++){
+		int bytes_to_read = piece_length;
+		int start_in_file = torrent->_piece_length * j;
+		i = 0;
+		while((start_in_file - torrent->_file_length[i]) > 0){
+			start_in_file -= torrent->_file_length[i++];
+		}
 
-		/*Calculates what to load, exits loop if trying to load more than what exists.*/
-		while (total_to_load < piece_length && fileindex < torrent->_number_of_files){
-    		total_to_load = total_to_load + torrent->_file_length[fileindex];
-    		nom_of_files_to_load++;
-    		fileindex++;
-    	}
-    	stop_at = fileindex;
-    	for (j = start_from; j <= fileindex; j++)
-    	{
-    		file_name = torrent->_file_path[j];
-    		file_name++;
-    		fprintf(stderr, "File name: %s\n", file_name);
-    		sfp[j - start_from] = fopen(file_name, "r");
-    		if (sfp[j] != NULL){
+		first_file_to_open = i;
+
+		while(bytes_to_read > 0 && first_file_to_open <= torrent->_number_of_files){
+			FILE *fp;
+			fp = fopen(torrent->_file_path[first_file_to_open], "rb+");
+			//fprintf(stderr, "File: %s\n", torrent->_file_path[first_file_to_open]);
+			if (fp == NULL){
+				fprintf(stderr, "Error opening file\n");
+				return -1;
 			} else {
-				fprintf(stderr, "Error opening file %s\n", file_name);
-				return(-1);
+				//fprintf(stderr, "File %s is open\n", torrent->_file_path[first_file_to_open]);
 			}
-    	}
+			fseek(fp, start_in_file, SEEK_SET);
+			start_in_file = 0;
 
-    	loaded_files = stop_at - start_from;
-    	fprintf(stderr, "Files are open\n");
+			bytes_read = fread(piece, 1, bytes_to_read, fp);
+			//fprintf(stderr, "Bytes Written: %d\n", bytes_read);
+			bytes_to_read -= bytes_read;
+			piece += bytes_read;
+			total_bytes_read += bytes_read;
+			first_file_to_open++;
+			close(fp);
+		}
 
-    	total_to_load = piece_length;
-    	for (j = 0; j < loaded_files; j++)
-    	{
-    		bytes_read = fread(data, 1, total_to_load, sfp[j]);
-    		fprintf(stderr, "Bytes read %d, Number of bytes should be read %d\n", bytes_read, total_to_load);
-    		total_to_load -= bytes_read;
-    	}
-    	total_loaded_files += loaded_files;
+		SHA1(piece, total_bytes_read, hash);
 
-		SHA1(data, bytes_read, hash);
+		if (strncmp(hash, torrent->_pieces[j], 20) == 0){
+		//TODO, fix so that bitstring is used 1 = have piece, 0 = missing piece. 
 
-		if (strncmp(hash, torrent->_pieces[i], 20) == 0){
-//TODO, fix so that bitstring is used 1 = have piece, 0 = missing piece. 
-
-			*bit_field |= (1<<(i%8));
-			found = 1;
-			return 1;
-			break;
+			*bit_field |= (1<<(j%8));
+			if (found == -1){
+				found  = j;
+			}
 		}
 		bit_field++;
-
-
-
 	}
-	free(data);
-	return total;
+	free(copy_piece);
+	return found;
 }
 
 int search_multi_file (torrent_info *torrent, char *original_hash){

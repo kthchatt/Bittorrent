@@ -24,7 +24,7 @@ int main (int argc, char *argv[]){
 	//fprintf(stderr, "This is main\n");
 	decode_bencode(argv[1], torrents[0]);
 	//fprintf(stderr, "Tracker no:0 = %s\n", trackers[0]);
-	//fprintf(stderr, "Piece length is %lld\n", torrents[0]->_piece_length);
+	fprintf(stderr, "Piece length is %lld\n", torrents[0]->_piece_length);
 
 	create_file(torrents[0]);
 	//fprintf(stderr, "File path: %s\n", torrents[0]->_file_path[0]);
