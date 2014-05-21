@@ -669,16 +669,16 @@ void add_torrent(){
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
-	//gtk_label_set_width_chars((GtkLabel*) label);
+	gtk_label_set_width_chars((GtkLabel*) *label, 100);
 	*label = gtk_label_new("Loading MOTD ..."); // Label content
   	gtk_misc_set_alignment(GTK_MISC(*label), 0, 1); // Sets alignment of label
-  	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 1, 10, 11); // Sets beginning position of label in table
+  	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 4, 10, 11); 
 }
 
 void netstat_label(GtkWidget **label, GtkWidget **table) {
 	*label = gtk_label_new("Upload/Download speed");
   	gtk_misc_set_alignment(GTK_MISC (*label), 1, 1);
-  	gtk_table_attach_defaults(GTK_TABLE (*table), *label, 5, 6, 10, 11);
+  	gtk_table_attach_defaults(GTK_TABLE (*table), *label, 4, 6, 10, 11);//???
 }
 
 void create_notebook (GtkWidget **table, GtkWidget **notebook) {
