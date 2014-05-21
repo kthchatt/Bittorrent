@@ -80,10 +80,11 @@ void bitfield(peer_t* peer)
     char* bitfield;
     unsigned char id = 5; 	
 
-    //piece_count = get_bitfield(torrent_info_pointer, bitfield);		//get the bitfield from 'bencodning.c'
-    len = htons(piece_count + 1);
+    len = htonl(scan_all(peer->tinfo, bitfield));
+    printf("\n[%s:%s] - Length: %d Bitfield: %s", peer->ip, peer->port, ntohl(len), bitfield);
+    //len = htons(piece_count + 1);
 
-    char* request = malloc(1 + piece_count/8+1);
+    char* request = malloc(1 + 4 + len);
     memcpy(request, &len, 4);					payload += 4;
     memcpy(request + payload, &id, 1);			payload += 1;
     memcpy(request + payload, bitfield, piece_count); 	payload += piece_count/8+1;
@@ -139,7 +140,7 @@ void printf_hexit(char* buf, int num)
 			if ((i%8 == 0))
 				printf("\t");
 
-			if ((i%16 == 0))
+			if ((i%32 == 0))
 				printf("\n");
 		}
 		printf("%02x  ", (unsigned char) buf[i]);
@@ -157,6 +158,13 @@ static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 	memcpy(&length, buffer + 13, 4);
 	char* piece = malloc(ntohl(length));	//allocate length for piece
 	char* packet = malloc(ntohl(length) + header);
+
+	if ((*msglen > 16384 + header + 4) || ntohl(length) > 16384)
+	{
+		free(piece);
+		free(packet);
+		return;
+	}
 
 	//load piece data here, verify length to avoid bleeds.
 	headerlen = header + ntohl(length) - 4;
@@ -182,7 +190,13 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
 
-	while (*num < *msglen + 4)
+	if (htonl(index) > 500 || htonl(index) < 0)
+	{
+		*num = 0;
+		return;
+	}
+
+	while (*num < BLOCK_SIZE + 4)
 	{
 		tmp = recv(peer->sockfd, buffer + *num, DOWNLOAD_BUFFER - (*msglen + 4), 0);
 		if (tmp < 1)
@@ -192,17 +206,20 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 		}
 		*num += tmp;
 	}
+
 	memcpy(piebuffer + htonl(offset), buffer + header, BLOCK_SIZE);
 	netstat_update(INPUT, BLOCK_SIZE, peer->info_hash);
 	
-	if (write_piece(peer->tinfo, (void*) piebuffer) == 0)
-	{
+	/* todo: uncomment when write_piece is working */
+	//if (write_piece(peer->tinfo, (void*) piebuffer) == 0)
+	//{
 		printf("\n[%s:%s] - (Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), 
 									offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
-	}
-	else
-		printf("\n[%s:%s] - (Error) Piece Failed Checksum! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), offset, 
-									(unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
+		fflush(stdout);
+	//}
+	//else
+	//	printf("\n[%s:%s] - (Error) Piece Failed Checksum! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), offset, 
+	//								(unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
 }
 
 //BT - Listener.
@@ -210,39 +227,40 @@ void* listener_tcp(void* arg)
 {
 	peer_t* peer = (peer_t*) arg;
 	char recvbuf[DOWNLOAD_BUFFER];
-	char* message =   malloc(45);
 	char* piebuffer = malloc(peer->tinfo->_piece_length);	//get piece size here.
 	int num = 0, msglen;
 
 	printf("\n[%s:%s]\tTCP Listener init.", peer->ip, peer->port);
 	while (peer->sockfd != 0)
 	{
-		memset(message, '\0', 45);	//for debugging, remove.
-
 		if (num > 4 || (num = recv(peer->sockfd, recvbuf, DOWNLOAD_BUFFER, 0)) > 0) //if buffer less than header size, issue a read op.
 		{
-			printf("\n[%s:%s] - Incoming Data: TYPE = %d", peer->ip, peer->port, (unsigned char) recvbuf[4]);
-
+			printf("\n[%s:%s] - Incoming Data: TYPE = %d LEN = %d MSG = %d\n", peer->ip, peer->port, (unsigned char) recvbuf[4], msglen, num);
 			memcpy(&msglen, recvbuf, 4);
 			msglen = htonl(msglen);
+			
+			if ((unsigned char) recvbuf[4] > 20)
+				printf_hexit(recvbuf, num);
 
 			if (msglen > 0) //K-A has 9 bytes set to zero, if not msglen is checked K-A will trigger choke. [ID read as 0]
 			switch ((unsigned char) recvbuf[4])
 			{
-				case REQUEST: 		seed_piece(recvbuf, &num, &msglen, peer);					break;		//continue: these methods will manage the buffer shifting.
-				case PIECE: 		receive_piece(recvbuf, piebuffer, &num, &msglen, peer); 	break;
-				case HAVE: 			strcat(message, "HAVE");									break; 
-				case UNCHOKE: 		peer->choked = false;    strcat(message, "UNCHOKE");		break;		//break: short messages, the buffer shifting is done below.
-				case CHOKE:			peer->choked = true;     strcat(message, "CHOKE"); 			break;
-				case INTERESTED: 	peer->interested = true; strcat(message, "INTERESTED");		break;
-				case NOT_INTERESTED:peer->interested = false;strcat(message, "NOT_INTERESTED"); break;
-				case 84: 			strcat(message, "HANDSHAKE");	num = 0;					continue; 	//Bittorrent Protocol...
-				default: 			strcat(message, "UNDEFINED"); 	num = 0;					continue;
+				case REQUEST: 		if (num < 17) { num = 0; continue; } seed_piece(recvbuf, &num, &msglen, peer);					break;		//continue: these methods will manage the buffer shifting.
+				case PIECE: 		if (num < 17) { num = 0; continue; } receive_piece(recvbuf, piebuffer, &num, &msglen, peer); 	break;
+				case HAVE: 			printf("\nHave!");											break; 
+				case UNCHOKE: 		peer->choked = false;    printf("\nUnchoked!");				break;		//break: short messages, the buffer shifting is done below.
+				case CHOKE:			peer->choked = true;     printf("\nChoked!");				break;
+				case INTERESTED: 	peer->interested = true; printf("\nInterested!");			break;
+				case NOT_INTERESTED:peer->interested = false;printf("\nNot Interested!");	 	break;
+				case PORT:			printf("\nPort message received.");							break;
+				case 84: 			printf("\nHandshake!");			msglen = num - 4;/*num = 0;*/				break; 	//Bittorrent Protocol...
+				default: 			printf("\nUndefined!"); 		msglen = num - 4;/*num = 0;*/				break;
 			}
 
-			if (num > 0 && msglen > 0 && msglen + 4 < DOWNLOAD_BUFFER)
+			if (num - (msglen + 4) > 0 && msglen > 0 && msglen + 4 < DOWNLOAD_BUFFER)
 			{
-				num = num - (msglen + 4);	
+				num = num - (msglen + 4);
+				printf("\nMem is on the move! msglen = %d, num = %d", msglen, num); fflush(stdout);
 				memmove(recvbuf, recvbuf + msglen + 4, DOWNLOAD_BUFFER - (msglen + 4));
 			}
 			else
@@ -251,11 +269,8 @@ void* listener_tcp(void* arg)
 		else if (num < 1)
 			break;
 	}
-
 	printf("\n[%s:%s] - Disconnected while reading.", peer->ip, peer->port); fflush(stdout);
 	close(peer->sockfd);
-
-	free(message);
 	return arg;
 }
 
@@ -296,12 +311,13 @@ void* peerwire_thread_tcp(void* arg)
 
 	printf("\n[%s:%s] - Connected!\n", peer->ip, peer->port); fflush(stdout);
 	//printf("\n[sockfd = %d], piece length = %lld", peer->sockfd, peer->tinfo->_piece_length);
-	sleep(2);
+	sleep(1);
 	handshake(peer, peer->info_hash, peer->peer_id);
-	//bitfield(peer);
-	sleep(4);
+	//sleep(1);
+	//bitfield(peer);  //todo: uncomment when scan_all is working
+	sleep(2);
 	message(peer, INTERESTED);
-	sleep(4);
+	sleep(2);
 	message(peer, UNCHOKE);
 	printf("\n[%s:%s] - Handshake sequence finished.", peer->ip, peer->port); fflush(stdout);
 
@@ -314,16 +330,16 @@ void* peerwire_thread_tcp(void* arg)
 		index = random()%8; //get piece index here.
 		blockcount = piecelen / BLOCK_SIZE; //how many full blocks.
 		block = 0;
-		while (index > -1 && block < blockcount)
+		while (index > -1 && block < blockcount && peer->choked == false)
 		{
-			printf("\n[%s:%s] - Requesting: block = %d, count = %d, pLen = %d, bLen = %d", peer->ip, peer->port, block, blockcount, piecelen, BLOCK_SIZE);
+			//printf("\n[%s:%s] - Requesting: block = %d, count = %d, pLen = %d, bLen = %d", peer->ip, peer->port, block, blockcount, piecelen, BLOCK_SIZE);
 			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(BLOCK_SIZE));	//request 16384 if not last piece
 			block++;
-			sleep(2); //issue /have on download complete. not implemented.
+			//sleep(1); //issue /have on download complete. not implemented.
 		}
 
-		sleep(1);
-		break;
+		usleep(30000);
+		//break;
 	}
 	printf("\n[%s:%s] - Peer disconnected while writing.", peer->ip, peer->port);
 	//shutdown the listener, free the peer, close the sockfd.
