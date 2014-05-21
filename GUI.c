@@ -669,7 +669,7 @@ void add_torrent(){
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
-	gtk_label_set_width_chars((GtkLabel*) *label, 100);
+	gtk_label_set_width_chars(GTK_LABEL(*label), 100);  //???
 	*label = gtk_label_new("Loading MOTD ..."); // Label content
   	gtk_misc_set_alignment(GTK_MISC(*label), 0, 1); // Sets alignment of label
   	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 4, 10, 11); 
