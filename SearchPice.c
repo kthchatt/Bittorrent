@@ -52,7 +52,7 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 			piece += bytes_read;
 			total_bytes_read += bytes_read;
 			first_file_to_open++;
-			close((int)fp);
+			close(*fp);
 		}
 
 		SHA1(piece, total_bytes_read, hash);
