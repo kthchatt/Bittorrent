@@ -6,7 +6,7 @@ crete_file cretes all the files, and create_file_status returns a double on the 
 #ifndef CREATEFILE_H
 #define CREATEFILE_H
 
-#define TO_CREATE 1000000
+#define TO_CREATE 100000
 
 #include "bencodning.h"
 #include <string.h>
@@ -14,7 +14,7 @@ crete_file cretes all the files, and create_file_status returns a double on the 
 #include <stdlib.h>
 
 double create_file_status(torrent_info *);
-int create_file(torrent_info *);
+void *create_file(void *);
 
 
 #endif
