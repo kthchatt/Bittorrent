@@ -14,10 +14,10 @@ int main (int argc, char *argv[]){
 	int i;
 	torrents[0] = malloc(sizeof(torrent_info));
 
-	char *trackers[MAX_TRACKERS];
+	/*char *trackers[MAX_TRACKERS];
 	for (i = 0; i < MAX_TRACKERS; i++){
 		trackers[i] = torrents[0]->_announce_list[i];
-	}
+	}*/
 
 
 	init_torrent(argv[1], torrents[0]);

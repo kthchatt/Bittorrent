@@ -13,9 +13,8 @@ double create_file_status(torrent_info *torrent){
 
 void *create_file(void *ptr){
 	torrent_info *torrent = ptr; 
-	fprintf(stderr, "Create File is running \n");
-	int ret = -1;
-	int i, j;
+	//fprintf(stderr, "Create File is running \n");
+	int i;
 	int length;
 	long long int total_length = 0;
 	long long int total_created = 0;
@@ -24,7 +23,7 @@ void *create_file(void *ptr){
 	char tmp_string[500];
 	char working_dir[200];
 	getcwd(working_dir, 200);
-	fprintf(stderr, "Test 1\n");
+	//fprintf(stderr, "Test 1\n");
 	//fprintf(stderr, "Current working directory is :%s\n", working_dir);
 
 	for (i = 0; i < torrent->_number_of_files; i++)

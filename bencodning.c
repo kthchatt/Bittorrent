@@ -16,12 +16,12 @@ int place_files = 0;
 int decode_bencode(char *file_name, torrent_info *data){
 	fprintf(stderr, "This is print from decode_bencode\n");
 	//torrent_info data;
-	char bencode[25000];
+	//char bencode[25000];
 	char string_name[250];
 	//char file_name[250] = "torrent.torrent";
 	char test_dictonary_list;
 	char *to_null;
-	int i = 0; int j = 0; int length_of_next_int = 0;
+	int j = 0;
 	fprintf(stderr, "decode_bencode got file: %s \n", file_name);
 
 	FILE *fp;
@@ -72,14 +72,14 @@ void info_hash (FILE *sfp, torrent_info *data){
 	end = ftell(sfp) - 1;
 	int toread = end - data->_location;
 	//fprintf(stderr, "End = %d Start = %ld To Read = %d\n", end, data->_location, toread);
-	char *indata = (char *) malloc(toread);
+	unsigned char *indata = (unsigned char *) malloc(toread);
 	fseek(sfp, data->_location, SEEK_SET);
 	//fprintf(stderr, "The current possition is: %ld \n", ftell(sfp));
 	fread(indata, 1, toread, sfp);
 	//fprintf(stderr, "Read is done \n");
-	unsigned char hash[21];
+	const char hash[21];
 	//fprintf(stderr, "Attempting to hash \n");
-	SHA1(indata, toread, hash);
+	SHA1(indata, toread, (unsigned char *)hash);
 	//fprintf(stderr, "Hash is done\n");
 	strncpy(data->_info_hash, hash, 20);
 	//fprintf(stderr, "String is copied\n");
@@ -107,7 +107,7 @@ void path_handler(char *string_value, int ready_to_store, torrent_info *data){
 void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 	char one_char;
 	char string_value[500];
-	char file_path[500];
+	//char file_path[500];
 	int length_of_next_int = 0;	
 	while((one_char = read_one_char(sfp)) != 'e'){
 		//fprintf(stderr, "One char from list_handler %c\n", one_char);
@@ -138,15 +138,15 @@ void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 som består av ordlistor måste hanteras i separata funktioner. 
 */
 void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
-	int i = 0; int length_of_next_int = 0;
-	int not_complete_dictonarry = 0;
+	int length_of_next_int = 0;
+	//int not_complete_dictonarry = 0;
 	char string_name[250];
 	char string_value[250];
 	char one_char;
 	while(1){
 		length_of_next_int = read_length_of_next(sfp);
 		if (length_of_next_int == 0){
-			not_complete_dictonarry = 1;
+			//not_complete_dictonarry = 1;
 			fseek(sfp,-1, SEEK_CUR); //spolar tillbaka filperkaren ett steg.
 			one_char = read_one_char(sfp);
 			switch(one_char){
@@ -184,7 +184,7 @@ void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 		}
 		length_of_next_int = read_length_of_next(sfp);
 		if (length_of_next_int == 0){
-			not_complete_dictonarry = 1;
+			//not_complete_dictonarry = 1;
 			fseek(sfp,-1, SEEK_CUR);
 			one_char = read_one_char(sfp);
 			switch(one_char){
@@ -214,13 +214,13 @@ void dictonarry_handler (FILE *sfp, torrent_info *data, char *string){
 
 }
 void hash_handler(FILE *sfp, torrent_info *data){
-	unsigned char hash[20];
-	int i = 0; int j = 0; int k = 0;
+	//unsigned char hash[20];
+	//int i = 0; int j = 0; int k = 0;
 	int length_of_next_int = 0;
-	unsigned char test[20000];
+	//unsigned char test[20000];
 	length_of_next_int = read_length_of_next(sfp);
 	data->_hash_length = length_of_next_int;
-	char *picesptr = &data->_pieces[0][0];
+	//char *picesptr = &data->_pieces[0][0];
 	//fprintf(stderr, "Hash handler, hash length = %d\n", length_of_next_int);
 	fread(data->_pieces[0], length_of_next_int, 1, sfp);
 
@@ -228,7 +228,7 @@ void hash_handler(FILE *sfp, torrent_info *data){
 
 void int_handler(FILE *sfp, char *string_name, torrent_info *data){
 	char next_char[20];
-	char last_char = '\0'; int i = 0; int length_of_next_int = 0;
+	char last_char = '\0'; int i = 0;
 	while (last_char != 'e'){
 		fscanf(sfp, "%c", &next_char[i]);
 		last_char = next_char[i];
@@ -243,7 +243,7 @@ void announce_list_handler(FILE *sfp, torrent_info *data){
 }
 
 void complete_dictonarry (char *string_name, char *string_value, torrent_info *data){
-	int ascii_int = 0;
+	//int ascii_int = 0;
 	if (strcmp(string_name, "announce") == 0)
 	{	
 		strcpy(data->_announce, string_value);
@@ -283,7 +283,6 @@ void complete_dictonarry (char *string_name, char *string_value, torrent_info *d
 
 
 void read_specific_length (FILE *sfp, int length_of_next_int, char *temporary){
-	int i = 0;
 	fgets(temporary, (length_of_next_int+1), sfp);
 	//printf("\t\t\t\t%s", temporary);
 	//printf("\n");

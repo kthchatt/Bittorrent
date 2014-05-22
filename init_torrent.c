@@ -1,8 +1,7 @@
 //gcc init_torrent.c bencodning.c createfile.c -c -o inittorrent.o -pthread -lssl -lcrypto
 //TODO !!!! Add create file to decode bencode.
 
-#include "bencodning.h"
-#include "createfile.h"
+#include "init_torrent.h"
 
 int init_torrent (char *argv, torrent_info *torrent){
 	pthread_t pthread_init_torrent;
