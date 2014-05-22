@@ -31,6 +31,6 @@ void swarm_initialize();
 //returns the amount of leechers
 int swarm_incomplete(int swarm_id);
 //returns the amount of seeders
-int swarm_complete(int swarm_id);
+int swarm_completed(int swarm_id);
 
 #endif
