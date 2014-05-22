@@ -1,5 +1,5 @@
 #include "SearchPice.h"
-//gcc -lssl -lcrypto
+//gcc SearchPice.c -c -o SearchPice.o -lssl -lcrypto
 /*void main (){
 
 	search_single_file("Arbete och teknik på människans villkor_student.pdf", "00000000000000000000", 56000);
@@ -57,16 +57,17 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 		}
 
 		SHA1(piece, total_bytes_read, hash);
-
+		if (j%8 == 0 && j != 0){
+			bit_field++;
+		}
 		if (strncmp(hash, torrent->_pieces[j], 20) == 0){
-		//TODO, fix so that bitstring is used 1 = have piece, 0 = missing piece. 
 
 			*bit_field |= (1<<(j%8));
 			if (found == -1){
 				found  = j;
 			}
 		}
-		bit_field++;
+		
 	}
 	free(copy_piece);
 	return found;

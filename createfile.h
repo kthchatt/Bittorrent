@@ -12,6 +12,7 @@ crete_file cretes all the files, and create_file_status returns a double on the 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 double create_file_status(torrent_info *);
 void *create_file(void *);

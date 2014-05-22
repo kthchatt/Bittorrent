@@ -15,7 +15,7 @@ int write_piece (torrent_info *torrent, void *piece){
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){
-		if (strncpy(hash, torrent->_pieces[i], 20) == 0){
+		if (strncmp(hash, torrent->_pieces[i], 20) == 0){
 			found_piece = i;
 			break;
 		}
@@ -54,7 +54,7 @@ void *write_piece_thread(void *torrent_piece){
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){
-		if (strncpy(hash, torrent->_pieces[i], 20) == 0){
+		if (strncmp(hash, torrent->_pieces[i], 20) == 0){
 			found_piece = i;
 			break;
 		}
