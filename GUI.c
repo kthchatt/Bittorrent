@@ -401,7 +401,7 @@ void* rss_timer_thread(void* arg)
 	
 	//read rss feed here.
 	int i;
-	for (i = 0; i < rssfeed.item_count && i <= 10; i++){
+	for (i = 0; i < rssfeed.item_count && i < 10; i++){
 	  	gtk_list_store_append(md_rss, &iter);
    		gtk_list_store_set(md_rss, &iter, 0, rssfeed.item[i].title, -1);
 	}
@@ -412,7 +412,7 @@ void rss_table(GtkWidget *tbl){
 	GtkCellRenderer *renderer;
 	GtkWidget *tree_view;
 	GtkTreeViewColumn *column;
-	GtkTreeIter iter;
+	//GtkTreeIter iter;
 
 	md_rss = gtk_list_store_new(1, G_TYPE_STRING);
 	tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(md_rss));
@@ -421,7 +421,7 @@ void rss_table(GtkWidget *tbl){
 	column = gtk_tree_view_column_new_with_attributes("Rss Table", renderer, "text", 0, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
 
-	gtk_table_attach_defaults(GTK_TABLE(tbl), tree_view, 2, 3, 0, 2);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), tree_view, 2, 3, 0, 1);
 
 	rssfeed.host = malloc(MAX_URL_LEN);
 	rssfeed.uri = malloc(MAX_URL_LEN);
@@ -559,36 +559,29 @@ void torrent_deprioritize()
 
 
 // set rotation of a meter
-void set_meter(int m, int percent, GdkPixbuf *pbuf)
+void set_meter(int percent, GdkPixbuf *pbuf, GtkWidget* meter, GtkWidget* home_table)
 {
-  	static int current_deg[4]; 
-  	int to_add;
- 
-  	GdkPixbuf *tmp;
- 	//GtkWidget *meter;
- 
- 	
-  	to_add = (percent - current_deg[m])*1.8;
- 	tmp = pbuf;
-  
-  	while(to_add>0)
-  	{
-  		to_add -= 90;
-  	}
+	static int current_deg = 50;
+	int to_add = (percent - current_deg * 1.8);
+	GdkPixbufRotation rotation = GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE;
 
-  
- 	g_object_unref(tmp);
- 	//meter = gtk_image_new_from_pixbuf(pbuf);
-  	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
- 	g_object_unref(tmp);
- 	//meter = gtk_image_new_from_pixbuf(pbuf);
-  	current_deg[m] = percent;
-  }
+	while (to_add > 90)
+	{
+		pbuf = gdk_pixbuf_rotate_simple(pbuf, rotation);
+		to_add -= 90;
+	}
+
+	current_deg = percent;
+	
+	g_object_unref(meter);
+	meter = gtk_image_new_from_pixbuf(pbuf);
+	gtk_table_attach_defaults(GTK_TABLE(home_table), meter, 0, 2, 0, 1);
+}
 
 void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 {
 	char *filePath;
-	GtkWidget *dialog, *win;
+	GtkWidget *dialog, *win = NULL;
 	GtkTextIter start, end;
 
 	gtk_text_buffer_get_start_iter(txtBuffer, &start); 
@@ -776,10 +769,14 @@ void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, G
 	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 0, 2, 0, 1);
 	gtk_notebook_insert_page(GTK_NOTEBOOK(*notebook), *home_table, *label, 0); // Position of tab, in this case it's first
 
-	GdkPixbuf 	*arrow;
- 	GError		*err;
- 	arrow = gdk_pixbuf_new_from_file("assets/testArrow.png", &err);
-  //	gtk_table_attach_defaults(GTK_TABLE(home_table), arrow, 3, 4, 0, 1);
+	GdkPixbuf* arrow_gpix;
+	//GtkImage* arrow_image = NULL;
+ 	GError** err = NULL;
+ 	GtkWidget* arrow_widget;
+ 	arrow_gpix = gdk_pixbuf_new_from_file("assets/testArrow.png", err);
+ 	arrow_widget = gtk_image_new_from_pixbuf(arrow_gpix);
+  	gtk_table_attach_defaults(GTK_TABLE(*home_table), arrow_widget, 0, 2, 0, 1);
+  	set_meter(120, arrow_gpix, arrow_widget, *home_table);
 }
 
 //create a new torrent-tab with name and pos specified. ~RD
