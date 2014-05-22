@@ -12,6 +12,7 @@
 #include "netstat.h"
 #include "bencodning.h"
 #include "protocol_meta.h"
+#include "SearchPice.h"
 
 //adds a info_hash to be tracked, specify trackers in char* name[MAX_TRACKERS] format.
 int tracker_track(torrent_info* tinfo);

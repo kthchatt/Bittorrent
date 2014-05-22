@@ -114,7 +114,7 @@ pthread_t update_thread, motd_thread, rss_thread;
 //global required, multiple pointers to retain references. ~RD
 GtkWidget *tv_inactive, *tv_downloading, *tv_completed, *tv_seeding;
 GtkWidget *tlb_inactive, *tlb_downloading, *tlb_completed, *tlb_seeding;
-GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding;
+GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding, *md_rss;
 GtkWidget *lb_netstat, *lb_motd;
 GtkWidget *notebook;
 rss_t rssfeed;
@@ -342,24 +342,6 @@ void* motd_timer_thread(void* arg)
 	return NULL;
 }
 
-//a timer for updating the MOTD after the retrieval timeout has passed. ~RD
-void* rss_timer_thread(void* arg)
-{
-	//global variables allows the changing of source. ~RD
-	strcpy(rssfeed.host, "showrss.info");
-	strcpy(rssfeed.uri, "/feeds/27.rss");
-
-	rss_fetch(&rssfeed);
-	sleep(RSS_TIMEOUT + 1);			//wait timeout.
-	
-	//read rss feed here.
-	int i;
-	for (i = 0; i < rssfeed.item_count; i++)
-		printf("\nTitle: %s, Description: %s, Link: %s", rssfeed.item[i].title, rssfeed.item[i].description, rssfeed.item[i].link);
-
-	return NULL;
-}
-
 //update the torrents with data from modules at defined FPS. ~RD
 void* gui_update_thread(void* arg)
 {
@@ -404,6 +386,50 @@ void* gui_update_thread(void* arg)
 	free(throughput_in);
 	free(throughput_out);
 	free(throughput);
+}
+
+//a timer for updating the MOTD after the retrieval timeout has passed. ~RD
+void* rss_timer_thread(void* arg)
+{
+	GtkTreeIter iter;
+	//global variables allows the changing of source. ~RD
+	strcpy(rssfeed.host, "showrss.info");
+	strcpy(rssfeed.uri, "/feeds/27.rss");
+
+	rss_fetch(&rssfeed);
+	sleep(RSS_TIMEOUT + 1);			//wait timeout.
+	
+	//read rss feed here.
+	int i;
+	for (i = 0; i < rssfeed.item_count && i<10; i++){
+	  	gtk_list_store_append(md_rss, &iter);
+   		gtk_list_store_set(md_rss, &iter, 0, rssfeed.item[i].title, -1);
+	}
+	return NULL;
+}
+
+void rss_table(GtkWidget *tbl){
+	GtkCellRenderer *renderer;
+	GtkWidget *tree_view;
+	GtkTreeViewColumn *column;
+	GtkTreeIter iter;
+
+	md_rss = gtk_list_store_new(1, G_TYPE_STRING);
+	tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(md_rss));
+
+	renderer = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes("Rss Table", renderer, "text", 0, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+	gtk_table_attach_defaults(GTK_TABLE(tbl), tree_view, 2, 3, 0, 2);
+
+	rssfeed.host = malloc(MAX_URL_LEN);
+	rssfeed.uri = malloc(MAX_URL_LEN);
+
+	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, tree_view)))
+			printf("\nWaiting for Feed in Thread.");
+
+   	g_object_unref(md_rss);
 }
 
 //create a list model by reference. ~RD
@@ -734,12 +760,15 @@ void static enum_list(GtkWidget **tree_view, GtkListStore **model, GtkTreeViewCo
 
 void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, GtkWidget **notebook) {
 	*label = gtk_label_new("Home"); // Tab name
-	*home_table = gtk_table_new(1,3,TRUE); //4?
+	*home_table = gtk_table_new(2,3,TRUE); //4?
 	*view = gtk_label_new("RSS Table"); // Content of "Home" tab
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
 	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of content
 	gtk_misc_set_padding(GTK_MISC(*view), 10, 10); // Left/Right & Top/Bottom padding
 	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 2, 3, 0, 1);
+
+		rss_table(*home_table);
+
 	*view = gtk_label_new("Counters Table"); // Content of "Home" tab
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
 	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of content
@@ -861,8 +890,6 @@ int main (int argc, char *argv[])
 	netstat_initialize();
 	swarm_initialize();
 
-	rssfeed.host = malloc(MAX_URL_LEN);
-	rssfeed.uri = malloc(MAX_URL_LEN);
 
 	if (!(pthread_create(&update_thread, NULL, gui_update_thread, NULL)))
 			printf("\nUpdating your values in Thread.");
@@ -870,8 +897,7 @@ int main (int argc, char *argv[])
 	if (!(pthread_create(&motd_thread, NULL, motd_timer_thread, NULL)))
 			printf("\nWaiting for MOTD in Thread.");
 
-	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, NULL)))
-			printf("\nWaiting for Feed in Thread.");
+	
 
 //---------------------------------------------------------------------------  ~RD
 

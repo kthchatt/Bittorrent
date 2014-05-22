@@ -16,8 +16,8 @@
  #include "protocol_meta.h"
  #include "netstat.h"
  #include "writepiece.h"
- #include "SearchPice.h"
- #include "bitwise.h"
+ #include "bitfield.h"
+//require readpiece.
 
 //create a peerwire connection using tcp.
 void* peerwire_thread_tcp(void* arg);

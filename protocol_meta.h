@@ -68,6 +68,9 @@
 
 #define FORMATSTRING_LEN 24
 
+//typedef struct peer_t;
+//typedef struct swarm_t;
+
 typedef struct
 {
 	char* url;
@@ -76,7 +79,7 @@ typedef struct
 } tracker_t;
 
 //ing = local, ed = remote, todo: add pointer to swarm, remove peer_id & info_hash. (taken is required?)
-typedef struct 
+typedef struct peer_t
 {
 	int sockfd;
 	int choked, choking; 
@@ -85,23 +88,27 @@ typedef struct
 	char port[6];
 	char* peer_id;		//pointers to swarm_t data. (required for threading.)
 	char* info_hash;
+	char* remote_bitfield;	//bits the remote peer is in posession of.
+	char* local_bitfield;	//local bits that have been announced, diff this to swarm and then 'have'-, then update.
 	torrent_info* tinfo;
+	struct swarm_t* swarm;
 	pthread_t thread;
 } peer_t;
 
 //swarms contain all swarm-connected peers, built from tracker queries.
 //before every scrape, clear scrape data and repopulate.
- typedef struct
+ typedef struct swarm_t
  {
  	int taken;
  	tracker_t tracker 	[MAX_TRACKERS];
  	peer_t peer 		[MAX_SWARM_SIZE];
  	char  peer_id   	[21];
  	char* info_hash;
+ 	char* bitfield;	//bitfield, set bit to 1 when downloaded set bit to 1 when started download, clear bit if download failed.
  	int listenport, peercount, sockfd, completed, incomplete;
  	torrent_info* tinfo;
  	pthread_t thread;
- 	pthread_mutex_t peerlock;
+ 	pthread_mutex_t peerlock, bitlock;	//lock the peerlist, lock the bitfield.
  } swarm_t;
 
  swarm_t swarm[MAX_SWARMS];
