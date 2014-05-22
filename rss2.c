@@ -45,7 +45,7 @@ static void* get_feed(void* arg)
 {
 	item_t item;					// Removed unused variables ~RD
 	rss_t* content = (rss_t*) arg;
-	int sockfd, i, counter = 0;
+	int sockfd, counter = 0;
 	char* request, *buffer, *tmp;
 	struct addrinfo hints, *res;
 
@@ -55,7 +55,7 @@ static void* get_feed(void* arg)
 
 	//rewrote socket code for clarity. ~RD
 	if((sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) 
-		return;
+		return arg;
 
 	memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -74,10 +74,10 @@ static void* get_feed(void* arg)
 			recv(sockfd, buffer, BYTEBUFFER, MSG_DONTWAIT);
         } 
         else
-        	return;
+        	return arg;
     }
     else
-    	return;
+    	return arg;
 
 	//fatal: if only a partial response is received tags will break, getBetweenTags will return a null pointer. 
 	//See main for example. [fixed]  ~RD
@@ -106,7 +106,7 @@ static void* get_feed(void* arg)
 	free(buffer);
 	free(request);	//free request too. ~RD
 	close(sockfd);
-	return;
+	return arg;
 }
 
 //public function, is threaded. call with: items_t xxx; rss_feed(&test);

@@ -5,6 +5,15 @@
  */
 
 #include "peerwire.h"
+ /*
+	todo:
+		swarm keeps track of the actual bitfield
+		peers keep track of the last informed bitfield (XOR), broadcast changes with have message, then update the local bitfield.
+		keep track of the remote peers pieces with a bitfield, update on have.
+		invert local bitfield and AND with remote peer to find pieces to download,
+		when downloading a piece set flag in swarm to completed during download.
+		in swarm: protect bitfield by lock.
+ */
 
 
  //todo: keep track of pieces in flight.
@@ -75,9 +84,9 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
 //<len=0001+X><id=5><bitfield>
 void bitfield(peer_t* peer)
 {
-	int piece_count, i;	
+	int piece_count = peer->tinfo->_piece_length / 20 + 1;	
 	int payload = 0, len;
-    char* bitfield;
+    char* bitfield = NULL;
     unsigned char id = 5; 	
 
     len = htonl(scan_all(peer->tinfo, bitfield));
@@ -131,7 +140,7 @@ void have(peer_t* peer, int piece_index)
 //hex formatting.
 void printf_hexit(char* buf, int num)
 {
-	int i, a;
+	int i;
 
 	for (i = 0; i < num; i++)
 	{
@@ -185,7 +194,7 @@ static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 //todo: fill one piece from the buffer, return num with the offset.
 static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* msglen, peer_t* peer)
 {
-	int downloaded = 0, left = *msglen - 9, length = *msglen - 9, index, offset, header = 13, tmp;
+	int index, offset, header = 13, tmp;
 
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
@@ -345,21 +354,5 @@ void* peerwire_thread_tcp(void* arg)
 	//shutdown the listener, free the peer, close the sockfd.
 
 	return arg;
-}
-
-//while .. read.. dgram
-void* listener_udp(peer_t* peer)
-{
-	return peer;
-}
-
-//todo not yet implemented
-void* peerwire_thread_udp(peer_t* peer)
-{
-	//pthread_create(&thread, null, listener_udp, peer);
-	while (peer->sockfd != 0)
-		sleep(1);
-
-	return peer;
 }
                                                                          

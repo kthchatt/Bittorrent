@@ -16,6 +16,7 @@
  #include "protocol_meta.h"
  #include "netstat.h"
  #include "writepiece.h"
+ #include "SearchPice.h"
 
 //create a peerwire connection using tcp.
 void* peerwire_thread_tcp(void* arg);
