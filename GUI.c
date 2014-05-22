@@ -346,8 +346,6 @@ void* motd_timer_thread(void* arg)
 void* rss_timer_thread(void* arg)
 {
 	//global variables allows the changing of source. ~RD
-	rssfeed.host = malloc(MAX_URL_LEN);
-	rssfeed.uri = malloc(MAX_URL_LEN);
 	strcpy(rssfeed.host, "showrss.info");
 	strcpy(rssfeed.uri, "/feeds/27.rss");
 
@@ -862,6 +860,9 @@ int main (int argc, char *argv[])
 	//initializers
 	netstat_initialize();
 	swarm_initialize();
+
+	rssfeed.host = malloc(MAX_URL_LEN);
+	rssfeed.uri = malloc(MAX_URL_LEN);
 
 	if (!(pthread_create(&update_thread, NULL, gui_update_thread, NULL)))
 			printf("\nUpdating your values in Thread.");
