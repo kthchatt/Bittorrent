@@ -17,6 +17,7 @@ Returns 0 if has is NOT found.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int scan_all (torrent_info *, char *);
 int search_multi_file (torrent_info *, char *);

@@ -1,4 +1,4 @@
-/*
+/*gcc writepiece.c -c -o writepiece.o -Wall
 */
 #include "writepiece.h"
 
@@ -10,12 +10,12 @@ int write_piece (torrent_info *torrent, void *piece){
 	torrent_piece.pieceptr = piece;
 
 	int i, number_of_pieces, found_piece = -1;
-	char hash[20];
+	unsigned char hash[20];
 	SHA1(piece, torrent->_piece_length, hash);
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){
-		if (strncmp(hash, torrent->_pieces[i], 20) == 0){
+		if (strncmp((const char *)hash, torrent->_pieces[i], 20) == 0){
 			found_piece = i;
 			break;
 		}
@@ -50,7 +50,7 @@ void *write_piece_thread(void *torrent_piece){
 	fprintf(stderr, "Thread: This is a fifth test\n");
 
 	char hash[20];
-	SHA1(piece, torrent->_piece_length, hash);
+	SHA1(piece, torrent->_piece_length, (unsigned char *) hash);
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){
@@ -94,7 +94,7 @@ void *write_piece_thread(void *torrent_piece){
 		bytes_to_write -= bytes_written;
 		piece += bytes_written;
 		first_file_to_open++;
-		close(fp);
+		close( (int)fp);
 	}
 	free ( piece_copy );
 	return torrent_piece;
