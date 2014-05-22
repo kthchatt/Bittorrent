@@ -1,3 +1,4 @@
+//TODO !!! Open file but do not overwrite 
 #include "createfile.h"
 double create_file_status(torrent_info *torrent){
 	static torrent_info *torrentptr;
@@ -10,7 +11,10 @@ double create_file_status(torrent_info *torrent){
 	return 0;
 }
 
-int create_file(torrent_info *torrent){
+void *create_file(void *ptr){
+	torrent_info *torrent = ptr; 
+	fprintf(stderr, "Create File is running \n");
+	int ret = -1;
 	int i, j;
 	int length;
 	long long int total_length = 0;
@@ -20,6 +24,7 @@ int create_file(torrent_info *torrent){
 	char tmp_string[500];
 	char working_dir[200];
 	getcwd(working_dir, 200);
+	fprintf(stderr, "Test 1\n");
 	//fprintf(stderr, "Current working directory is :%s\n", working_dir);
 
 	for (i = 0; i < torrent->_number_of_files; i++)
@@ -58,12 +63,12 @@ int create_file(torrent_info *torrent){
 		strcat(tmp_path, "/");
 		strcat(tmp_path, filename);
 		//TODO Comment out foloowing line:
-		fprintf(stderr, "%s\n", tmp_path);
+		//fprintf(stderr, "%s\n", tmp_path);
 
 		fp = fopen(tmp_path, "w+");
 		if (fp == NULL){
 			fprintf(stderr, "ERROR CREATING FILE\n");
-			return -1;
+			return ptr;
 		}
 
 		total_created = 0;
@@ -82,9 +87,11 @@ int create_file(torrent_info *torrent){
 		strcpy(torrent->_file_path[i], tmp_path);
 		//fprintf(stderr, "Round nr: %d is donne\n", i);
 	}
-	return 0;
-	free (tmp_path);
+	/*free (tmp_path);
 	free (tmp_string);
-	free (working_dir);
+	free (working_dir);*/
+	return NULL;
+
+
 }
 
