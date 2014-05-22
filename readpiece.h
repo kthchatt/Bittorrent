@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "bencodning.h"
-
+//Reads one piece and returns a void pointer to the memory address of the piece. 
 void *readpiece(torrent_info *, int);
 
 #endif

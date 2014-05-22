@@ -64,11 +64,18 @@ void *create_file(void *ptr){
 		//TODO Comment out foloowing line:
 		//fprintf(stderr, "%s\n", tmp_path);
 
-		fp = fopen(tmp_path, "w+");
-		if (fp == NULL){
-			fprintf(stderr, "ERROR CREATING FILE\n");
-			return ptr;
+		fp = fopen(tmp_path, "r+");
+		if(fp == NULL){
+			fp = fopen(tmp_path, "w+");
+			if (fp == NULL){
+				fprintf(stderr, "ERROR CREATING FILE\n");
+				return ptr;
+			}
+		} else {
+			//fprintf(stderr, "File already exist\n");
 		}
+
+		
 
 		total_created = 0;
 		while ((total_created+TO_CREATE) < torrent->_file_length[i]){
@@ -79,7 +86,7 @@ void *create_file(void *ptr){
 		create = torrent->_file_length[i] -total_created;
 		fseek(fp, create, SEEK_CUR);
 		torrent->_total_created += create;
-		fputc('A', fp);
+		fputc('\n', fp);
 		fclose(fp);
 
 		//fprintf(stderr, "File is set to size\n");
