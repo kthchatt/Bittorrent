@@ -1,10 +1,10 @@
+//gcc readpiece.c -c -o readpiece.o -Wall
 #include "readpiece.h"
-//TODO, cant handle last piece
 void *readpiece(torrent_info *torrent, int piece_index){
 	int start_in_file = torrent->_piece_length * piece_index, total_bytes_read = 0;
 	int i, first_file_to_open, bytes_read, bytes_to_read, found_piece = -1;
 	int number_of_pieces = (int) torrent->_hash_length /20;
-	long long int bytes_to_write = torrent->_piece_length;
+	//long long int bytes_to_write = torrent->_piece_length;
 
 	if (number_of_pieces < piece_index){
 		return NULL;
@@ -40,11 +40,11 @@ void *readpiece(torrent_info *torrent, int piece_index){
 		piece += bytes_read;
 		total_bytes_read += bytes_read;
 		first_file_to_open++;
-		close(fp);
+		close((int)fp);
 	}
 
 	char hash[20];
-	SHA1(copy_piece, total_bytes_read, hash);
+	SHA1(copy_piece, total_bytes_read, (unsigned char *)hash);
 	
 	for (i = 0; i < number_of_pieces; i++){
 		if (strncpy(hash, torrent->_pieces[i], 20) == 0){

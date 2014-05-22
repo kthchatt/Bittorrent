@@ -8,8 +8,7 @@
 
 int scan_all (torrent_info *torrent, char *bitstring) {
 	int number_of_pieces = (torrent->_hash_length / 20);
-	int found = -1, j = 0, total_to_load = 0, loaded_files = 0, start_from = 0, stop_at = 0, bytes_read = 0, total_bytes_read = 0;
-	int fileindex = 0, nom_of_files_to_load = 0;
+	int found = -1, j = 0, bytes_read = 0, total_bytes_read = 0;
 	int i, first_file_to_open, toalloc = (number_of_pieces/8)+1;
 	int piece_length = torrent->_piece_length;
 
@@ -17,7 +16,7 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 	memset(bitstring, 0, toalloc);
 	char *bit_field = bitstring;
 
-	char hash[21];
+	unsigned char hash[21];
 
 	void *piece;
 	piece = malloc(piece_length);
@@ -53,14 +52,14 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 			piece += bytes_read;
 			total_bytes_read += bytes_read;
 			first_file_to_open++;
-			close(fp);
+			close((int)fp);
 		}
 
 		SHA1(piece, total_bytes_read, hash);
 		if (j%8 == 0 && j != 0){
 			bit_field++;
 		}
-		if (strncmp(hash, torrent->_pieces[j], 20) == 0){
+		if (strncmp((const char*)hash, torrent->_pieces[j], 20) == 0){
 
 			*bit_field |= (1<<(j%8));
 			if (found == -1){
@@ -76,13 +75,12 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 int search_multi_file (torrent_info *torrent, char *original_hash){
 	FILE *sfp[250];
 	int found =0, i = 0, total_to_load = 0, loaded_files = 0, start_from = 0, stop_at = 0, bytes_read = 0, total_loaded_files = 0;
-	char *tmpptr;
 	char *file_name;
-	char hash[21];
+	unsigned char hash[21];
     long long int piece_length = torrent->_piece_length;
 
-    char *data;
-	data = (char *) malloc(piece_length);
+    unsigned char *data;
+	data = (unsigned char *) malloc(piece_length);
 	memset(data, 0, piece_length);
     do{
     	i = stop_at + 1;
@@ -113,9 +111,9 @@ int search_multi_file (torrent_info *torrent, char *original_hash){
     	}
     	total_loaded_files += loaded_files;
 
-		SHA1(data, bytes_read, hash);
+		SHA1((const unsigned char *)data, bytes_read, hash);
 
-		if (strncmp(hash, original_hash, 20) == 0){
+		if (strncmp((const char *)hash, original_hash, 20) == 0){
 			found = 1;
 			return 1;
 			break;
@@ -132,7 +130,7 @@ int search_single_file (char *file_name, char *original_hash, long long int piec
 	char *data;
 	data = (char *) malloc(piece_length);
 	memset(data, 0, piece_length);
-	char hash[21];
+	unsigned char hash[21];
 	memset(hash, 0, 21);
 
 	fprintf(stderr, "file name is %s\n", file_name);
@@ -150,7 +148,7 @@ int search_single_file (char *file_name, char *original_hash, long long int piec
 		pice_index++;
 		bytes_read = fread(data, 1, piece_length, sfp);
 		fprintf(stderr, "Bytes read %d, Number of bytes should be read %lld\n", bytes_read, piece_length);
-		SHA1(data, bytes_read, hash);
+		SHA1((const unsigned char *)data, bytes_read, hash);
 
 
 		fprintf(stderr, "Generated hash = \t");
@@ -166,7 +164,7 @@ int search_single_file (char *file_name, char *original_hash, long long int piec
 		fprintf(stderr, "\n\n");
 
 
-		if (strncmp(hash, original_hash, 20) == 0){
+		if (strncmp((const char*)hash, original_hash, 20) == 0){
 			found = 1;
 			break;
 		}
