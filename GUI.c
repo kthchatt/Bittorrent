@@ -401,7 +401,7 @@ void* rss_timer_thread(void* arg)
 	
 	//read rss feed here.
 	int i;
-	for (i = 0; i < rssfeed.item_count && i<10; i++){
+	for (i = 0; i < rssfeed.item_count && i <= 10; i++){
 	  	gtk_list_store_append(md_rss, &iter);
    		gtk_list_store_set(md_rss, &iter, 0, rssfeed.item[i].title, -1);
 	}
