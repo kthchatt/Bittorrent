@@ -84,19 +84,17 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
 //<len=0001+X><id=5><bitfield>
 void bitfield(peer_t* peer)
 {
-	int piece_count = peer->tinfo->_piece_length / 20 + 1;	
-	int payload = 0, len;
-    char* bitfield = NULL;
+	int piece_count = peer->tinfo->_piece_length / 20;	
+	int payload = 0, len = piece_count + 1;
     unsigned char id = 5; 	
 
-    len = htonl(scan_all(peer->tinfo, bitfield));
-    printf("\n[%s:%s] - Length: %d Bitfield: %s", peer->ip, peer->port, ntohl(len), bitfield);
+    printf("\n[%s:%s] - Length: %d Bitfield: %s", peer->ip, peer->port, ntohl(len), peer->swarm->bitfield);
     //len = htons(piece_count + 1);
 
     char* request = malloc(1 + 4 + len);
     memcpy(request, &len, 4);					payload += 4;
     memcpy(request + payload, &id, 1);			payload += 1;
-    memcpy(request + payload, bitfield, piece_count); 	payload += piece_count/8+1;
+    memcpy(request + payload, peer->swarm->bitfield, piece_count); 	payload += piece_count/8+1;
 
     send(peer->sockfd, request, payload, 0);		
     free(request);	

@@ -14,6 +14,13 @@ static void* tracking(void* arg)
 	swarm_t* swarm = (swarm_t*) arg;
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
+	scan_all(swarm->tinfo, swarm->bitfield);	//get bitfield.
+
+	//test print
+	int i;
+	for (i = 0; i < swarm->tinfo->_piece_length / 20; i++)
+		printf("[%d]", swarm->bitfield[i]);
+
 	sleep(1);				//2 seconds to bind.
 
 	while (swarm->taken == true)
@@ -29,7 +36,7 @@ static void* tracking(void* arg)
 			swarm_scour(swarm);							//find new peers and initiate connections.
 
 		printf("\nWaiting...." ); fflush(stdout);
-		sleep(600);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
+		sleep(300);										//sleep for interval, the lowest announce interval. In announce/scrape check last announce.
 	}
 
 	printf("\nReleasing swarm...[%s]", swarm->info_hash);
