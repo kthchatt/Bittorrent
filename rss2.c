@@ -44,13 +44,13 @@ char* extract_content(char* object, char* open, char* close)
 static void* get_feed(void* arg)
 {
 	item_t item;					// Removed unused variables ~RD
-	items_t* content = (items_t*) arg;
+	rss_t* content = (rss_t*) arg;
 	int sockfd, i, counter = 0;
 	char* request, *buffer, *tmp;
 	struct addrinfo hints, *res;
 
-	request = malloc(sizeof(uri) + sizeof(host) + 31 * sizeof(char));
-	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", uri, host);
+	request = malloc(MAX_URL_LEN);
+	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", content->uri, content->host);
 
 
 	//rewrote socket code for clarity. ~RD
@@ -61,7 +61,7 @@ static void* get_feed(void* arg)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    getaddrinfo(host, PORT, &hints, &res);
+    getaddrinfo(content->host, RSS_PORT, &hints, &res);
 
     //nested sock events for error tolerance. ~RD
     if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1)
@@ -69,9 +69,9 @@ static void* get_feed(void* arg)
         if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
         {
             send(sockfd, request, strlen(request), 0);	//non blocking read.  ~RD
-			usleep(TIMEOUT);							//timeout 1.5s buffer fill, single read. ~RD
 			buffer = malloc(BYTEBUFFER);				//27.rss equals 35.5K bytes at 20 items,  ~RD
-			recv(sockfd, buffer, BYTEBUFFER, 0);
+			sleep(RSS_TIMEOUT);
+			recv(sockfd, buffer, BYTEBUFFER, MSG_DONTWAIT);
         } 
         else
         	return;
@@ -110,11 +110,13 @@ static void* get_feed(void* arg)
 }
 
 //public function, is threaded. call with: items_t xxx; rss_feed(&test);
-void rss_feed(items_t* items)
+void rss_fetch(rss_t* items)
 {
 	pthread_create(&rss_thread, NULL, get_feed, items);
 }
 
+
+/*
 //main is kept for testing. ~RD
 int main()
 {
@@ -127,7 +129,7 @@ int main()
 	{
 		printf("!"); 
 		fflush(stdout);
-		usleep((int) TIMEOUT / 50 + 5000);
+		usleep((int) RSS_TIMEOUT / 50 + 5000);
 	}
 
 	for(i = 0; i < items.item_count; i++)
@@ -138,4 +140,4 @@ int main()
 	printf("%s", extract_content("<item> the item of destruction </it", "<item>", "</item>"));
 
 	return 1;
-}
+}*/

@@ -9,6 +9,7 @@
 #include "bencodning.h"
 #include "protocol_meta.h"
 #include "urlparse.h"
+#include "rss2.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -71,6 +72,8 @@
  	STATE_CREATING,
  };
 
+ //todo: if torrentlist is CREATING and tinfo.created == true, set as downloading and track.
+
 enum {
 	COL_ID = 0,
 	COL_NAME = 1,
@@ -106,7 +109,7 @@ static char* COLUMN_NAME[] = {"#", "Name", "Size", "Done", "Status", "Download",
 //dynamic array of torrentlist.  ~RD
 torrentlist_t* torrentlist; 
 int torrentlist_count;
-pthread_t update_thread, motd_thread;
+pthread_t update_thread, motd_thread, rss_thread;
 
 //global required, multiple pointers to retain references. ~RD
 GtkWidget *tv_inactive, *tv_downloading, *tv_completed, *tv_seeding;
@@ -114,6 +117,8 @@ GtkWidget *tlb_inactive, *tlb_downloading, *tlb_completed, *tlb_seeding;
 GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding;
 GtkWidget *lb_netstat, *lb_motd;
 GtkWidget *notebook;
+rss_t rssfeed;
+
 
 //calculate the filesize from bencodning.c .. ~RD
 void torrent_size(torrent_info* tinfo, char* filesize)
@@ -333,7 +338,25 @@ void* motd_timer_thread(void* arg)
 
 	MOTD_fetch(response);
 	sleep(MOTD_TIMEOUT + 1);			//wait timeout.
-	gtk_label_set_text((GtkLabel*) lb_motd, response);		//todo: fix the design, updating GtkLabel isn't pretty.
+	gtk_label_set_text((GtkLabel*) lb_motd, response);	
+	return NULL;
+}
+
+//a timer for updating the MOTD after the retrieval timeout has passed. ~RD
+void* rss_timer_thread(void* arg)
+{
+	//global variables allows the changing of source. ~RD
+	strcpy(rssfeed.host, "showrss.info");
+	strcpy(rssfeed.uri, "/feeds/27.rss");
+
+	rss_fetch(&rssfeed);
+	sleep(RSS_TIMEOUT + 1);			//wait timeout.
+	
+	//read rss feed here.
+	int i;
+	for (i = 0; i < rssfeed.item_count; i++)
+		printf("\nTitle: %s, Description: %s, Link: %s", rssfeed.item[i].title, rssfeed.item[i].description, rssfeed.item[i].link);
+
 	return NULL;
 }
 
@@ -512,28 +535,29 @@ void torrent_deprioritize()
 // set rotation of a meter
 void set_meter(int m, int percent, GdkPixbuf *pbuf)
 {
-	static int current_deg[4]; 
-	int to_add;
+  	static int current_deg[4]; 
+  	int to_add;
+ 
+  	GdkPixbuf *tmp;
+ 	//GtkWidget *meter;
+ 
+ 	
+  	to_add = (percent - current_deg[m])*1.8;
+ 	tmp = pbuf;
+  
+  	while(to_add>0)
+  	{
+  		to_add -= 90;
+  	}
 
-	GdkPixbuf *tmp;
-	//GtkWidget *meter;
-
-	to_add = (percent - current_deg[m])*1.8;
-	tmp = pbuf;
-
-	while(to_add>0)
-	{
-		pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
-		to_add -= 90;
-	}
-
-	g_object_unref(tmp);
-	//meter = gtk_image_new_from_pixbuf(pbuf);
-	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
-	g_object_unref(tmp);
-	//meter = gtk_image_new_from_pixbuf(pbuf);
-	current_deg[m] = percent;
-}
+  
+ 	g_object_unref(tmp);
+ 	//meter = gtk_image_new_from_pixbuf(pbuf);
+  	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
+ 	g_object_unref(tmp);
+ 	//meter = gtk_image_new_from_pixbuf(pbuf);
+  	current_deg[m] = percent;
+  }
 
 void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
 {
@@ -669,16 +693,16 @@ void add_torrent(){
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
-	//gtk_label_set_width_chars((GtkLabel*) label);
+	gtk_label_set_width_chars(GTK_LABEL( (GtkLabel*) *label), 100);  //???
 	*label = gtk_label_new("Loading MOTD ..."); // Label content
   	gtk_misc_set_alignment(GTK_MISC(*label), 0, 1); // Sets alignment of label
-  	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 1, 10, 11); // Sets beginning position of label in table
+  	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 4, 10, 11); 
 }
 
 void netstat_label(GtkWidget **label, GtkWidget **table) {
 	*label = gtk_label_new("Upload/Download speed");
   	gtk_misc_set_alignment(GTK_MISC (*label), 1, 1);
-  	gtk_table_attach_defaults(GTK_TABLE (*table), *label, 5, 6, 10, 11);
+  	gtk_table_attach_defaults(GTK_TABLE (*table), *label, 4, 6, 10, 11);//???
 }
 
 void create_notebook (GtkWidget **table, GtkWidget **notebook) {
@@ -710,7 +734,7 @@ void static enum_list(GtkWidget **tree_view, GtkListStore **model, GtkTreeViewCo
 
 void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, GtkWidget **notebook) {
 	*label = gtk_label_new("Home"); // Tab name
-	*home_table = gtk_table_new(1,3,TRUE);
+	*home_table = gtk_table_new(1,3,TRUE); //4?
 	*view = gtk_label_new("RSS Table"); // Content of "Home" tab
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
 	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of content
@@ -722,6 +746,11 @@ void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, G
 	gtk_misc_set_padding(GTK_MISC(*view), 10, 10); // Left/Right & Top/Bottom padding
 	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 0, 2, 0, 1);
 	gtk_notebook_insert_page(GTK_NOTEBOOK(*notebook), *home_table, *label, 0); // Position of tab, in this case it's first
+
+	GdkPixbuf 	*arrow;
+ 	GError		*err;
+ 	arrow = gdk_pixbuf_new_from_file("assets/testArrow.png", &err);
+  //	gtk_table_attach_defaults(GTK_TABLE(home_table), arrow, 3, 4, 0, 1);
 }
 
 //create a new torrent-tab with name and pos specified. ~RD
@@ -832,11 +861,17 @@ int main (int argc, char *argv[])
 	netstat_initialize();
 	swarm_initialize();
 
+	rssfeed.host = malloc(MAX_URL_LEN);
+	rssfeed.uri = malloc(MAX_URL_LEN);
+
 	if (!(pthread_create(&update_thread, NULL, gui_update_thread, NULL)))
 			printf("\nUpdating your values in Thread.");
 
 	if (!(pthread_create(&motd_thread, NULL, motd_timer_thread, NULL)))
 			printf("\nWaiting for MOTD in Thread.");
+
+	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, NULL)))
+			printf("\nWaiting for Feed in Thread.");
 
 //---------------------------------------------------------------------------  ~RD
 

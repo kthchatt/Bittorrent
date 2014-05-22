@@ -18,6 +18,5 @@ int tracker_track(torrent_info* tinfo);
 //stops tracking of info_hash, freeing memory, swarm slot and notifies the tracker.
 void tracker_untrack(torrent_info* tinfo);
 
-
 //add methods for retrieveing scrape, peerlist etc.. for GUI display only.
 #endif 
