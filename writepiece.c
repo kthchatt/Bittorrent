@@ -94,7 +94,7 @@ void *write_piece_thread(void *torrent_piece){
 		bytes_to_write -= bytes_written;
 		piece += bytes_written;
 		first_file_to_open++;
-		close(*fp);
+		fclose(fp);
 	}
 	free ( piece_copy );
 	return torrent_piece;
