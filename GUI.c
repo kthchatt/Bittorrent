@@ -6,10 +6,11 @@
 #include "swarm.h"
 #include "MOTD.h"
 #include "tracker.h"
-#include "bencodning.h"
+#include "init_torrent.h"
 #include "protocol_meta.h"
 #include "urlparse.h"
 #include "rss2.h"
+#include "createfile.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -188,6 +189,7 @@ void list_add(char* status, torrent_info* tinfo, int state)
 		strcpy(torrentlist[torrentlist_count].status, status);
 		torrentlist[torrentlist_count].swarm_id = -1;
 		torrentlist[torrentlist_count].tinfo = tinfo;
+		torrentlist[torrentlist_count].state = state;
 		torrent_size(tinfo, torrentlist[torrentlist_count].filesize);
 		torrentlist_count++;
 
@@ -197,6 +199,7 @@ void list_add(char* status, torrent_info* tinfo, int state)
    			case STATE_SEEDING: 	row_add(torrentlist_count-1, md_seeding); break;
    			case STATE_DOWNLOADING: row_add(torrentlist_count-1, md_downloading); break;
    			case STATE_INACTIVE:	row_add(torrentlist_count-1, md_inactive); break;
+   			case STATE_CREATING:    row_add(torrentlist_count-1, md_inactive); break;
    		}
     }
 }
@@ -296,6 +299,8 @@ void list_update(GtkListStore *ls)
     GtkTreeIter  iter;
     gboolean     nextitem_exist;
     int id;
+    double percent;
+    char* progress = malloc(FORMATSTRING_LEN);
     char netstat_down[FORMATSTRING_LEN];
 	char netstat_up[FORMATSTRING_LEN];
 
@@ -309,15 +314,25 @@ void list_update(GtkListStore *ls)
 
     	switch (torrentlist[id].state)
     	{
-    		case STATE_CREATING: ; break;		//get percent from function f1
-    		case STATE_DOWNLOADING: ; break;	//get percent from function f2
+    		case STATE_CREATING: 
+    							percent = 100 * create_file_status(torrentlist[id].tinfo); 
+    							if ((int)percent == 100) 
+    							{
+    								torrentlist[id].state = STATE_INACTIVE;
+    								strcpy(torrentlist[id].status, "Ready");
+    							}
+
+    		break;		//get percent from function f1
+    		case STATE_DOWNLOADING: percent = 0; break;	//get percent from function f2
     	}
+
+    	sprintf(progress, "%.2f%%", percent);
 
     	//todo: if percent = 100.0 set state to downloading, change status from creating -> downloading, or downloading -> seeding. (update torrent[id].status too)
 		netstat_formatbytes(INPUT, torrentlist[id].tinfo->_info_hash, netstat_down);
 		netstat_formatbytes(OUTPUT, torrentlist[id].tinfo->_info_hash, netstat_up);
    		gtk_list_store_set(ls, &iter,
-   						COL_DONE, "0.00%",		//todo: get this from fileman 
+   						COL_DONE, progress,		//todo: get this from fileman 
    						COL_STATUS, torrentlist[id].status, 
    						COL_DOWNRATE, netstat_down, 
    						COL_UPRATE,   netstat_up, 		//get up/downrate from netstat.c 
@@ -328,6 +343,7 @@ void list_update(GtkListStore *ls)
 
        nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}
+	free(progress);
 }
 
 
@@ -465,6 +481,9 @@ void torrent_start()
 	int id, tab = selected_tab();
 	if ((id = selected_id()) < 0)
 		return;
+	if (torrentlist[id].state == STATE_CREATING)
+		return;
+	//todo: show error message: "torrent is creating files"
 
 	switch(tab)
 	{
@@ -694,7 +713,7 @@ void add_torrent(){
 			// copy torrent file to working dir
 			system(tmp);
 			// get torrent info
-			if (decode_bencode(fileName, torrent) == 1)		//if decode_bencode returns with error, don't add to list. Display error dialog? ~RD
+			if (init_torrent(fileName, torrent) == 1)		//if decode_bencode returns with error, don't add to list. Display error dialog? ~RD
 			{
 				// convert filesize from long long int to char
 				fileSize = malloc(sizeof(torrent->_total_length));
@@ -702,7 +721,7 @@ void add_torrent(){
 				sprintf(fileSize, "%lld", torrent->_total_length);
 				// add torrent to list and initiate download
 				//list_add(torrent->_torrent_file_name, "Ready", fileSize, "0.00%", torrent->_info_hash, STATE_INACTIVE, torrent);
-				list_add("Ready", torrent, STATE_INACTIVE);
+				list_add("Checking Files..", torrent, STATE_CREATING);
 			}
 			else
 				free(torrent);
@@ -853,8 +872,9 @@ int main (int argc, char *argv[])
 	gtk_init (&argc, &argv);
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); // Creates main window
-	gtk_window_set_title(GTK_WINDOW(window), "Torrent"); // Title of main window
+	gtk_window_set_title(GTK_WINDOW(window), "ccTorrent v0.1"); // Title of main window
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); // Main window is centered on start
+	gtk_window_set_icon_from_file(GTK_WINDOW(window), "assets/icon.png", NULL);
 	gtk_container_border_width (GTK_CONTAINER (window), 10);// Inner border of window is set to 10
 	gtk_widget_set_app_paintable(window, TRUE);
 

@@ -1,7 +1,8 @@
 //TODO !!! Open file but do not overwrite 
 #include "createfile.h"
 double create_file_status(torrent_info *torrent){
-	static torrent_info *torrentptr;
+	torrent_info *torrentptr;
+
 	if(torrent != NULL){
 		torrentptr = torrent;
 	}
@@ -62,7 +63,7 @@ void *create_file(void *ptr){
 		strcat(tmp_path, "/");
 		strcat(tmp_path, filename);
 		//TODO Comment out foloowing line:
-		//fprintf(stderr, "%s\n", tmp_path);
+		fprintf(stderr, "%s\n", tmp_path);
 
 		fp = fopen(tmp_path, "r+");
 		if(fp == NULL){

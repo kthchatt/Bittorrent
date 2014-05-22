@@ -14,12 +14,14 @@ static void* tracking(void* arg)
 	swarm_t* swarm = (swarm_t*) arg;
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
-	scan_all(swarm->tinfo, swarm->bitfield);	//get bitfield.
+	printf("before_scan_all"); fflush(stdout);
+	//scan_all(swarm->tinfo, swarm->bitfield);	//get bitfield.
+	printf("after_scan_all");
 
 	//test print
-	int i;
-	for (i = 0; i < swarm->tinfo->_piece_length / 20; i++)
-		printf("[%d]", swarm->bitfield[i]);
+	//int i;
+	//for (i = 0; i < swarm->tinfo->_piece_length / 20; i++)
+	//	printf("[%d]", swarm->bitfield[i]);
 
 	sleep(1);				//2 seconds to bind.
 

@@ -16,14 +16,14 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 	memset(bitstring, 0, toalloc);
 	char *bit_field = bitstring;
 
-	unsigned char hash[21];
+	unsigned char hash[21]; printf("\ndbg1");fflush(stdout);
 
 	void *piece;
 	piece = malloc(piece_length);
 	void *copy_piece = piece;
 	memset(piece, 0, piece_length);
 
-	for(j = 0; j < number_of_pieces; j++){
+	for(j = 0; j < number_of_pieces; j++){printf("\ndbg2");fflush(stdout);
 		int bytes_to_read = piece_length;
 		int start_in_file = torrent->_piece_length * j;
 		i = 0;
@@ -31,12 +31,13 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 			start_in_file -= torrent->_file_length[i++];
 		}
 
-		first_file_to_open = i;
+		first_file_to_open = i;printf("\ndbg3");fflush(stdout);
 
 		while(bytes_to_read > 0 && first_file_to_open <= torrent->_number_of_files){
+			printf("\ndbg3.1"); fflush(stdout);
 			FILE *fp;
 			fp = fopen(torrent->_file_path[first_file_to_open], "rb+");
-			//fprintf(stderr, "File: %s\n", torrent->_file_path[first_file_to_open]);
+			//fprintf(stderr, "File: %s\n", torrent->_file_path[first_file_to_open]);printf("\ndbg1");fflush(stdout);
 			if (fp == NULL){
 				fprintf(stderr, "Error opening file\n");
 				return -1;
@@ -46,7 +47,7 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 			fseek(fp, start_in_file, SEEK_SET);
 			start_in_file = 0;
 
-			bytes_read = fread(piece, 1, bytes_to_read, fp);
+			bytes_read = fread(piece, 1, bytes_to_read, fp);printf("\ndbg4");fflush(stdout);
 			//fprintf(stderr, "Bytes Written: %d\n", bytes_read);
 			bytes_to_read -= bytes_read;
 			piece += bytes_read;
@@ -55,12 +56,14 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 			fclose(fp);
 		}
 
-		SHA1(piece, total_bytes_read, hash);
+		printf("\ndbg4.1: total_bytes_read = %d", total_bytes_read); fflush(stdout);
+		SHA1(piece, total_bytes_read, hash);printf("\ndbg5");fflush(stdout);
 		if (j%8 == 0 && j != 0){
 			bit_field++;
 		}
+		printf("\ndbg4.2"); fflush(stdout);
 		if (strncmp((const char*)hash, torrent->_pieces[j], 20) == 0){
-
+			printf("\ndbg6");fflush(stdout);
 			*bit_field |= (1<<(j%8));
 			if (found == -1){
 				found  = j;
@@ -68,6 +71,7 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 		}
 		
 	}
+	printf("\ndbg7");fflush(stdout);
 	free(copy_piece);
 	return found;
 }

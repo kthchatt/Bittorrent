@@ -197,13 +197,13 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
 
-	if (htonl(index) > 500 || htonl(index) < 0)
+	if (htonl(index) >= (peer->tinfo->_piece_length / 20) || htonl(index) < 0)
 	{
 		*num = 0;
 		return;
 	}
 
-	while (*num < BLOCK_SIZE + 4)
+	while (*num < *msglen + 4)
 	{
 		tmp = recv(peer->sockfd, buffer + *num, DOWNLOAD_BUFFER - (*msglen + 4), 0);
 		if (tmp < 1)
@@ -214,19 +214,21 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 		*num += tmp;
 	}
 
-	memcpy(piebuffer + htonl(offset), buffer + header, BLOCK_SIZE);
-	netstat_update(INPUT, BLOCK_SIZE, peer->info_hash);
+    char* output = malloc(BLOCK_SIZE); //replace with smh
+	memcpy(piebuffer + htonl(offset), buffer + header, *msglen - 4);
+	memcpy(output, buffer, BLOCK_SIZE); //todo - replace all BLOCK_SIZE with piece_size.
+	netstat_update(INPUT, *msglen - 4, peer->info_hash);
 	
 	/* todo: uncomment when write_piece is working */
-	//if (write_piece(peer->tinfo, (void*) piebuffer) == 0)
-	//{
+	if (write_piece(peer->tinfo, (void*) output) == 0)
+	{
 		printf("\n[%s:%s] - (Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), 
 									offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
 		fflush(stdout);
-	//}
-	//else
-	//	printf("\n[%s:%s] - (Error) Piece Failed Checksum! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), offset, 
-	//								(unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
+	}
+	else
+		printf("\n[%s:%s] - (Error) Piece Failed Checksum! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), offset, 
+									(unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
 }
 
 //BT - Listener.
@@ -330,11 +332,11 @@ void* peerwire_thread_tcp(void* arg)
 
 
 	int block, index, piecelen = peer->tinfo->_piece_length, blockcount;
-	while (peer->sockfd != 0) //&& index > -1, stop this thread when the peer is no longer interesting, close the socket but do not change sockfd value.
+	while (peer->sockfd != 0 && index < 17) //&& index > -1, stop this thread when the peer is no longer interesting, close the socket but do not change sockfd value.
 	{
 
 		//get not downloaded piece, request for every block in piece.
-		index = random()%8; //get piece index here.
+		index++; //get piece index here.
 		blockcount = piecelen / BLOCK_SIZE; //how many full blocks.
 		block = 0;
 		while (index > -1 && block < blockcount && peer->choked == false)

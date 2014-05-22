@@ -2,7 +2,7 @@
 inie_torrent runs decode_bencode ant after that is creates all the files. 
 Returns 1 if  success. 
 
-GN
+
 */
 #ifndef INIT_TORRENT_H
 #define INIT_TORRENT_H
@@ -13,4 +13,4 @@ GN
 
 int init_torrent (char *, torrent_info *);
 
-#endif
+#endif 

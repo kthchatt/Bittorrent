@@ -80,6 +80,7 @@ int swarm_select(torrent_info* tinfo)
 			generate_id(swarm[i].peer_id);
 			swarm[i].info_hash = tinfo->_info_hash;
 			swarm[i].tinfo = tinfo;
+			swarm[i].bitfield = malloc(((tinfo->_piece_length / 20) / 8) + 1);
 
 			for (j = 0; j < MAX_TRACKERS; j++)
 			{
