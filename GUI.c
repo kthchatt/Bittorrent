@@ -346,9 +346,6 @@ void* motd_timer_thread(void* arg)
 void* rss_timer_thread(void* arg)
 {
 	//global variables allows the changing of source. ~RD
-char* host = "showrss.info";
-char* uri = "/feeds/27.rss";
-
 	rssfeed.host = malloc(MAX_URL_LEN);
 	rssfeed.uri = malloc(MAX_URL_LEN);
 	strcpy(rssfeed.host, "showrss.info");
