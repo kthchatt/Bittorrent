@@ -514,12 +514,9 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf)
 {
 	static int current_deg[4]; 
 	int to_add;
-
 	GdkPixbuf *tmp;
-	//GtkWidget *meter;
-
+	
 	to_add = (percent - current_deg[m])*1.8;
-	tmp = pbuf;
 
 	while(to_add>0)
 	{
@@ -527,11 +524,7 @@ void set_meter(int m, int percent, GdkPixbuf *pbuf)
 		to_add -= 90;
 	}
 
-	g_object_unref(tmp);
-	//meter = gtk_image_new_from_pixbuf(pbuf);
 	pbuf = gdk_pixbuf_rotate_simple(pbuf, to_add);
-	g_object_unref(tmp);
-	//meter = gtk_image_new_from_pixbuf(pbuf);
 	current_deg[m] = percent;
 }
 
@@ -710,7 +703,7 @@ void static enum_list(GtkWidget **tree_view, GtkListStore **model, GtkTreeViewCo
 
 void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, GtkWidget **notebook) {
 	*label = gtk_label_new("Home"); // Tab name
-	*home_table = gtk_table_new(1,3,TRUE);
+	*home_table = gtk_table_new(1,4,TRUE);
 	*view = gtk_label_new("RSS Table"); // Content of "Home" tab
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
 	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of content
@@ -722,6 +715,11 @@ void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, G
 	gtk_misc_set_padding(GTK_MISC(*view), 10, 10); // Left/Right & Top/Bottom padding
 	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 0, 2, 0, 1);
 	gtk_notebook_insert_page(GTK_NOTEBOOK(*notebook), *home_table, *label, 0); // Position of tab, in this case it's first
+
+	GdkPixbuf 	*arrow;
+	GError		*err;
+	arrow = gdk_pixbuf_new_from_file("assets/testArrow.png", &err);
+//	gtk_table_attach_defaults(GTK_TABLE(home_table), arrow, 3, 4, 0, 1);
 }
 
 //create a new torrent-tab with name and pos specified. ~RD
@@ -742,7 +740,7 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	GtkToolItem	*down;
 	GtkToolItem *create;
 	GtkToolItem *add;
-
+	
 	*toolbar = gtk_toolbar_new(); // Creates new toolbar menu
   	gtk_toolbar_set_style(GTK_TOOLBAR(*toolbar), GTK_TOOLBAR_ICONS); 	// Sets style to display icons only
 	gtk_table_attach_defaults (GTK_TABLE (*table), *toolbar, 0,2,0,1);  // Sets beginning position of toolbar
