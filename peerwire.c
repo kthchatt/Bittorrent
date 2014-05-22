@@ -5,6 +5,15 @@
  */
 
 #include "peerwire.h"
+ /*
+	todo:
+		swarm keeps track of the actual bitfield
+		peers keep track of the last informed bitfield, broadcast changes with have message, then update the local bitfield.
+		keep track of the remote peers pieces with a bitfield, update on have.
+		invert local bitfield and AND with remote peer to find pieces to download,
+		when downloading a piece set flag in swarm to completed during download.
+		in swarm: protect bitfield by lock.
+ */
 
 
  //todo: keep track of pieces in flight.
@@ -345,21 +354,5 @@ void* peerwire_thread_tcp(void* arg)
 	//shutdown the listener, free the peer, close the sockfd.
 
 	return arg;
-}
-
-//while .. read.. dgram
-void* listener_udp(peer_t* peer)
-{
-	return peer;
-}
-
-//todo not yet implemented
-void* peerwire_thread_udp(peer_t* peer)
-{
-	//pthread_create(&thread, null, listener_udp, peer);
-	while (peer->sockfd != 0)
-		sleep(1);
-
-	return peer;
 }
                                                                          
