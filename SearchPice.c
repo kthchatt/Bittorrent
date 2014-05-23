@@ -58,12 +58,12 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 		piece = copy_piece;
 		SHA1(piece, total_bytes_read, hash);printf("\ndbg5");fflush(stdout);
 		if (j%8 == 0 && j != 0){
-			bit_field++;
+			bitstring++;
 		}
 		printf("\ndbg4.2"); fflush(stdout);
 		if (hashncmp(hash, torrent->_pieces[j], 20) == 0){
 			printf("\ndbg6");fflush(stdout);
-			*bit_field |= (1<<(j%8));
+			*bitstring |= (1<<(j%8));
 			if (found == -1){
 				found  = j;
 			}
