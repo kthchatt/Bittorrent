@@ -43,11 +43,11 @@ void *readpiece(torrent_info *torrent, int piece_index){
 		close((int)fp);
 	}
 
-	char hash[20];
+	unsigned char hash[20];
 	SHA1(copy_piece, total_bytes_read, (unsigned char *)hash);
 	
 	for (i = 0; i < number_of_pieces; i++){
-		if (strncpy(hash, torrent->_pieces[i], 20) == 0){
+		if (hashncmp(hash, torrent->_pieces[i], 20) == 0){
 			found_piece = i;
 			break;
 		}

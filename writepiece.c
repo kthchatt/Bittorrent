@@ -15,7 +15,7 @@ int write_piece (torrent_info *torrent, void *piece){
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){
-		if (strncmp((const char *)hash, torrent->_pieces[i], 20) == 0){
+		if (hashncmp(hash, torrent->_pieces[i], 20) == 0){
 			found_piece = i;
 			break;
 		}
@@ -49,12 +49,12 @@ void *write_piece_thread(void *torrent_piece){
 
 	fprintf(stderr, "Thread: This is a fifth test\n");
 
-	char hash[20];
+	unsigned char hash[20];
 	SHA1(piece, torrent->_piece_length, (unsigned char *) hash);
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){
-		if (strncmp(hash, torrent->_pieces[i], 20) == 0){
+		if (hashncmp(hash, torrent->_pieces[i], 20) == 0){
 			found_piece = i;
 			break;
 		}

@@ -21,8 +21,10 @@ int main (int argc, char *argv[]){
 
 
 	init_torrent(argv[1], torrents[0]);
-	//fprintf(stderr, "File path: %s\n", torrents[0]->_file_path[0]);
-
+	for (i = 0; i < 4; i++){
+		fprintf(stderr, "_announce_list: %s\n", torrents[0]->_announce_list[i]);
+	}
+	
 	/*void *ptr = malloc(torrents[0]->_piece_length);
 	memset(ptr, 'A', torrents[0]->_piece_length);
 	write_piece(torrents[0], ptr);
