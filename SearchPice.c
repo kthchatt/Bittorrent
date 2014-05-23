@@ -57,6 +57,7 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 		}
 
 		printf("\ndbg4.1: total_bytes_read = %d", total_bytes_read); fflush(stdout);
+		piece = copy_piece;
 		SHA1(piece, total_bytes_read, hash);printf("\ndbg5");fflush(stdout);
 		if (j%8 == 0 && j != 0){
 			bit_field++;
