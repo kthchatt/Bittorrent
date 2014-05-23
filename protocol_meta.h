@@ -104,7 +104,7 @@ typedef struct peer_t
  	peer_t peer 		[MAX_SWARM_SIZE];
  	char  peer_id   	[21];
  	char* info_hash;
- 	unsigned char* bitfield;	//bitfield, set bit to 1 when downloaded set bit to 1 when started download, clear bit if download failed.
+ 	char* bitfield;	//bitfield, set bit to 1 when downloaded set bit to 1 when started download, clear bit if download failed.
  	int listenport, peercount, sockfd, completed, incomplete;
  	torrent_info* tinfo;
  	pthread_t thread;
