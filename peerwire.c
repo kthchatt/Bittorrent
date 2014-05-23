@@ -334,12 +334,11 @@ void* peerwire_thread_tcp(void* arg)
 	printf("\n[%s:%s] - Handshake sequence finished.", peer->ip, peer->port); fflush(stdout);
 
 
-	int block, index, piecelen = peer->tinfo->_piece_length, blockcount;
+	int block, index = 0, piecelen = peer->tinfo->_piece_length, blockcount;
 	while (peer->sockfd != 0 && index < 156) //&& index > -1, stop this thread when the peer is no longer interesting, close the socket but do not change sockfd value.
 	{
 
 		//get not downloaded piece, request for every block in piece.
-		index++; //get piece index here.
 		blockcount = piecelen / BLOCK_SIZE; //how many full blocks.
 		block = 0;
 		while (index > -1 && block < blockcount && peer->choked == false)
@@ -349,7 +348,7 @@ void* peerwire_thread_tcp(void* arg)
 			block++;
 			//sleep(1); //issue /have on download complete. not implemented.
 		}
-
+		index++; //get piece index here.
 		usleep(30000);
 		//break;
 	}

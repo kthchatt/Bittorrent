@@ -84,7 +84,7 @@ void *write_piece_thread(void *torrent_piece){
 			fprintf(stderr, "Error opening file\n");
 			return torrent_piece;
 		} else {
-			//fprintf(stderr, "File %s is open\n", torrent->_file_path[first_file_to_open]);
+			fprintf(stderr, "File %s is open\n", torrent->_file_path[first_file_to_open]);
 		}
 		fseek(fp, start_in_file, SEEK_SET);
 		start_in_file = 0;

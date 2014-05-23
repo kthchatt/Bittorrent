@@ -65,9 +65,9 @@ void *create_file(void *ptr){
 		//TODO Comment out foloowing line:
 		fprintf(stderr, "%s\n", tmp_path);
 
-		fp = fopen(tmp_path, "r+");
+		fp = fopen(tmp_path, "rb+");
 		if(fp == NULL){
-			fp = fopen(tmp_path, "w+");
+			fp = fopen(tmp_path, "wb+");
 			if (fp == NULL){
 				fprintf(stderr, "ERROR CREATING FILE\n");
 				return ptr;
