@@ -15,7 +15,7 @@ static void* tracking(void* arg)
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
 	printf("before_scan_all"); fflush(stdout);
-	scan_all(swarm->tinfo, swarm->bitfield);	//get bitfield.
+	scan_all(swarm->tinfo, (unsigned char) swarm->bitfield);	//get bitfield.
 	printf("after_scan_all");
 
 	//test print
