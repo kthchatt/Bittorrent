@@ -49,9 +49,10 @@ typedef struct metainfodecode
 	char _file_path[4000][500];
 
 	long int _hash_length;
-	char _pieces [5000][20];
+	unsigned char _pieces [5000][20];
 } torrent_info;
 
+int hashncmp (unsigned char *, unsigned char *, int);
 void list_handler(FILE *, char *, torrent_info *);
 char read_one_char (FILE *);
 void read_specific_length (FILE *, int, char *);

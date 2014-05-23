@@ -33,7 +33,7 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 
 		first_file_to_open = i;printf("\ndbg3");fflush(stdout);
 
-		while(bytes_to_read > 0 && first_file_to_open <= torrent->_number_of_files){
+		while(bytes_to_read > 0 && first_file_to_open < torrent->_number_of_files){
 			printf("\ndbg3.1"); fflush(stdout);
 			FILE *fp;
 			fp = fopen(torrent->_file_path[first_file_to_open], "rb+");
@@ -62,13 +62,14 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 			bit_field++;
 		}
 		printf("\ndbg4.2"); fflush(stdout);
-		if (strncmp((const char*)hash, torrent->_pieces[j], 20) == 0){
+		if (hashncmp(hash, torrent->_pieces[j], 20) == 0){
 			printf("\ndbg6");fflush(stdout);
 			*bit_field |= (1<<(j%8));
 			if (found == -1){
 				found  = j;
 			}
 		}
+		total_bytes_read = 0;
 		
 	}
 	printf("\ndbg7");fflush(stdout);
@@ -80,7 +81,7 @@ int search_multi_file (torrent_info *torrent, char *original_hash){
 	FILE *sfp[250];
 	int found =0, i = 0, total_to_load = 0, loaded_files = 0, start_from = 0, stop_at = 0, bytes_read = 0, total_loaded_files = 0;
 	char *file_name;
-	unsigned char hash[21];
+	unsigned char hash[20];
     long long int piece_length = torrent->_piece_length;
 
     unsigned char *data;
@@ -117,7 +118,7 @@ int search_multi_file (torrent_info *torrent, char *original_hash){
 
 		SHA1((const unsigned char *)data, bytes_read, hash);
 
-		if (strncmp((const char *)hash, original_hash, 20) == 0){
+		if (hashncmp(hash, original_hash, 20) == 0){
 			found = 1;
 			return 1;
 			break;
@@ -129,7 +130,7 @@ int search_multi_file (torrent_info *torrent, char *original_hash){
 
 
 
-int search_single_file (char *file_name, char *original_hash, long long int piece_length){
+int search_single_file (char *file_name, unsigned char *original_hash, long long int piece_length){
 	int found = 0, pice_index = -1, i = 0, bytes_read;
 	char *data;
 	data = (char *) malloc(piece_length);
@@ -168,7 +169,7 @@ int search_single_file (char *file_name, char *original_hash, long long int piec
 		fprintf(stderr, "\n\n");
 
 
-		if (strncmp((const char*)hash, original_hash, 20) == 0){
+		if (hashncmp(hash, original_hash, 20) == 0){
 			found = 1;
 			break;
 		}

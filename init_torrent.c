@@ -9,9 +9,12 @@ int init_torrent (char *argv, torrent_info *torrent){
 	int success = 1;
 
 	if ((success = decode_bencode(argv, torrent)) == 1)
+	{
 		pthread_create(&pthread_init_torrent, NULL, create_file,torrent);
-	else
+	} else 
+	{
 		success = -1;
+	}
 	
 	return success;
 }

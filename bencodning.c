@@ -13,6 +13,22 @@ The sole purpuse of this lib is to decode bencodning.
 int place_announce_list = 0;
 int place_files = 0;
 
+int hashncmp (unsigned char *hash1, unsigned char *hash2, int n){
+	int i;
+	unsigned char *ptr1 = hash1;
+	unsigned char *ptr2 = hash2;
+
+	for (i = 0; i < n; i++){
+		if (*ptr1 != *ptr2){
+			return 1;
+		} else {
+			ptr1++;
+			ptr2++;
+		}
+	}
+	return 0;
+}
+
 int decode_bencode(char *file_name, torrent_info *data){
 	fprintf(stderr, "This is print from decode_bencode\n");
 	//torrent_info data;
@@ -123,7 +139,7 @@ void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 		read_specific_length(sfp, length_of_next_int, string_value);
 		if (strcmp(string_name, "path") == 0){
 			path_handler(string_value, 0, data);
-		} else {
+		} else { //TODO Den kör denna även när den inte skall, kolla string_value
 			complete_dictonarry(string_name, string_value, data);
 		}
 		if (length_of_next_int == 0){
@@ -276,7 +292,7 @@ void complete_dictonarry (char *string_name, char *string_value, torrent_info *d
 		strcpy(data->_file_path[place_files++], string_value);
 		data->_number_of_files = place_files;
 	}
-	//fprintf(stderr, "%s = %s\n", string_name, string_value);
+	fprintf(stderr, "%s = %s\n", string_name, string_value);
 	return;
 
 }
