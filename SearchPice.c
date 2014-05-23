@@ -78,7 +78,7 @@ int scan_all (torrent_info *torrent, char *bitstring) {
 	return found;
 }
 
-int search_multi_file (torrent_info *torrent, char *original_hash){
+int search_multi_file (torrent_info *torrent, unsigned char *original_hash){
 	FILE *sfp[250];
 	int found =0, i = 0, total_to_load = 0, loaded_files = 0, start_from = 0, stop_at = 0, bytes_read = 0, total_loaded_files = 0;
 	char *file_name;
