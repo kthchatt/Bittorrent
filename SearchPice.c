@@ -6,17 +6,15 @@
 
 }*/
 
-int scan_all (torrent_info *torrent, char *bitstring) {
+int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 	int number_of_pieces = (torrent->_hash_length / 20);
 	int found = -1, j = 0, bytes_read = 0, total_bytes_read = 0;
 	int i, first_file_to_open, toalloc = (number_of_pieces/8)+1;
 	int piece_length = torrent->_piece_length;
 
-	bitstring = malloc(toalloc);
 	memset(bitstring, 0, toalloc);
-	char *bit_field = bitstring;
 
-	unsigned char hash[21]; printf("\ndbg1");fflush(stdout);
+	unsigned char hash[20]; printf("\ndbg1");fflush(stdout);
 
 	void *piece;
 	piece = malloc(piece_length);
