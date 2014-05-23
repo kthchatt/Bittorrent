@@ -17,12 +17,12 @@ static void* tracking(void* arg)
 	printf("before_scan_all"); fflush(stdout);
 	scan_all(swarm->tinfo, (unsigned char*) swarm->bitfield);	//get bitfield.
 	printf("after_scan_all");
-
+	printf("\n# of pieces = %d", (int)(swarm->tinfo->_hash_length / 20));
 	//test print
 	int i, k;
-	for (i = 0; i < swarm->tinfo->_hash_length / 20; i++)
+	for (i = 0; i < (swarm->tinfo->_hash_length / 20) / 8; i++)
 		for (k = 0; k < 8; k++)
-			printf("[%d]", (unsigned char) bitfield_get(&swarm->bitfield[i], k));
+			printf("[%d]", (unsigned char) bitfield_get(swarm->bitfield + i, k));
 
 	sleep(1);				//2 seconds to bind.
 
