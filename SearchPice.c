@@ -12,7 +12,7 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 	int i, first_file_to_open, toalloc = (number_of_pieces/8)+1;
 	int piece_length = torrent->_piece_length;
 
-	memset(bitstring, 0, toalloc);
+	memset(bitstring, 0xFF, toalloc);
 
 	unsigned char hash[20]; printf("\ndbg1");fflush(stdout);
 
