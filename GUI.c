@@ -113,7 +113,7 @@ int torrentlist_count;
 pthread_t update_thread, motd_thread, rss_thread;
 
 //global required, multiple pointers to retain references. ~RD
-GtkWidget *tv_inactive, *tv_downloading, *tv_completed, *tv_seeding;
+GtkWidget *tv_inactive, *tv_downloading, *tv_completed, *tv_seeding, *tv_rss;
 GtkWidget *tlb_inactive, *tlb_downloading, *tlb_completed, *tlb_seeding;
 GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding, *md_rss;
 GtkWidget *lb_netstat, *lb_motd;
@@ -424,28 +424,29 @@ void* rss_timer_thread(void* arg)
 	return NULL;
 }
 
+
+
 void rss_table(GtkWidget *tbl){
 	GtkCellRenderer *renderer;
-	GtkWidget *tree_view;
 	GtkTreeViewColumn *column;
-	//GtkTreeIter iter;
 
 	md_rss = gtk_list_store_new(1, G_TYPE_STRING);
-	tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(md_rss));
+	tv_rss = gtk_tree_view_new_with_model(GTK_TREE_MODEL(md_rss));
 
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Rss Table", renderer, "text", 0, NULL);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tv_rss), column);
 
-	gtk_table_attach_defaults(GTK_TABLE(tbl), tree_view, 2, 3, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), tv_rss, 2, 3, 0, 1);
 
 	rssfeed.host = malloc(MAX_URL_LEN);
 	rssfeed.uri = malloc(MAX_URL_LEN);
 
-	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, tree_view)))
+	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, tv_rss)))
 			printf("\nWaiting for Feed in Thread.");
 
-   	g_object_unref(md_rss);
+	//g_signal_connect(tv_rss, "row-activated", G_CALLBACK(rss_clicked), NULL);
+   	
 }
 
 //create a list model by reference. ~RD
