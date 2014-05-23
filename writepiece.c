@@ -5,9 +5,9 @@
 
 int write_piece (torrent_info *torrent, void *piece){
 	pthread_t write_piece_pthread_t;
-	write_piece_struct torrent_piece;
-	torrent_piece.torrentptr = torrent;
-	torrent_piece.pieceptr = piece;
+	write_piece_struct* torrent_piece = malloc(sizeof(write_piece_struct));
+	torrent_piece->torrentptr = torrent;
+	torrent_piece->pieceptr = piece;
 
 	int i, number_of_pieces, found_piece = -1;
 	unsigned char hash[20];
@@ -25,7 +25,7 @@ int write_piece (torrent_info *torrent, void *piece){
 		free(piece);
 		return 1;
 	} else {
-		pthread_create(&write_piece_pthread_t, NULL, write_piece_thread,&torrent_piece);
+		pthread_create(&write_piece_pthread_t, NULL, write_piece_thread, torrent_piece);
 		return 0;
 	}
 }
@@ -96,6 +96,7 @@ void *write_piece_thread(void *torrent_piece){
 		first_file_to_open++;
 		fclose(fp);
 	}
-	free ( piece_copy );
+	free(torrent_piece);				//todo: free on failure
+	free ( piece_copy );  //todo: free on failure
 	return torrent_piece;
 }

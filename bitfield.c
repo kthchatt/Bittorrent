@@ -23,6 +23,18 @@ void bitfield_clear(char* bitfield, int index)
 		bitfield[index/8] = (~(1<<(index%8)) & bitfield[index/8]);
 }
 
+double bitfield_percent(char* bitfield, int length)
+{
+	int i;
+	double percent = 0.0;
+
+	for (i = 0; i < length; i++)
+		if (bitfield_get(bitfield, i) == 1)
+			percent += (100 / length);
+
+	return percent;
+}
+
 /*
 int main()
 {

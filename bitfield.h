@@ -15,5 +15,7 @@ bool bitfield_get(char* bitfield, int index);
 void bitfield_set(char* bitfield, int index);
 //sets bit to 0
 void bitfield_clear(char* bitfield, int index);
+//get percents of bits set to 1.
+double bitfield_percent(char* bitfield, int length);
 
 #endif

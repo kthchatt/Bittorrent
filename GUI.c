@@ -11,6 +11,7 @@
 #include "urlparse.h"
 #include "rss2.h"
 #include "createfile.h"
+#include "bitfield.h"
 
 /*
 	include swarm & netstat, the fileman should be included too. ~RD
@@ -315,15 +316,24 @@ void list_update(GtkListStore *ls)
     	switch (torrentlist[id].state)
     	{
     		case STATE_CREATING: 
-    							percent = 100 * create_file_status(torrentlist[id].tinfo); 
-    							if ((int)percent == 100) 
-    							{
-    								torrentlist[id].state = STATE_INACTIVE;
-    								strcpy(torrentlist[id].status, "Ready");
-    							}
+    					percent = 100 * create_file_status(torrentlist[id].tinfo); 
+    					if ((int)percent == 100) 
+    					{
+    						torrentlist[id].state = STATE_INACTIVE;
+    						strcpy(torrentlist[id].status, "Ready");
+    					}
 
-    		break;		//get percent from function f1
-    		case STATE_DOWNLOADING: percent = 0; break;	//get percent from function f2
+    		break;		
+    		case STATE_DOWNLOADING: 
+    				percent = bitfield_percent(swarm[torrentlist[id].swarm_id].bitfield, torrentlist[id].tinfo->_hash_length / 20); 
+
+
+    				if ((int) percent == 100)
+    				{
+    					torrentlist[id].state = STATE_SEEDING;
+    					strcpy(torrentlist[id].status, "Seeding");
+    				}
+    				break;	//get percent from function f2
     	}
 
     	sprintf(progress, "%.2f%%", percent);
@@ -494,7 +504,7 @@ void torrent_start()
 							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
 							 break;
 		case TAB_INACTIVE:  row_delete(id, md_inactive);
-							//todo add check if torrent is done or not, if done then seed, if not done then download.
+							strcpy(torrentlist[id].status, "Seeding");
 							row_add(id, md_downloading);
 							netstat_track(torrentlist[id].tinfo->_info_hash);
 							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);

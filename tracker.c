@@ -20,7 +20,7 @@ static void* tracking(void* arg)
 	printf("\n# of pieces = %d", (int)(swarm->tinfo->_hash_length / 20));
 	//test print
 	int i, k;
-	for (i = 0; i < (swarm->tinfo->_hash_length / 20) / 8; i++)
+	for (i = 0; i <= (swarm->tinfo->_hash_length / 20) / 8; i++)
 		for (k = 0; k < 8; k++)
 			printf("[%d]", (unsigned char) bitfield_get(swarm->bitfield + i, k));
 
