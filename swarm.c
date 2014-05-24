@@ -195,6 +195,7 @@ void swarm_scour(swarm_t* swarm)
     		swarm->peer[i].info_hash = swarm->info_hash;
     		swarm->peer[i].peer_id = swarm->peer_id;
     		swarm->peer[i].tinfo = swarm->tinfo;	//peers needs access to torrent_info for reading/writing to file.
+    		swarm->peer[i].swarm = swarm;
 
     		if ((pthread_create(&swarm->peer[i].thread, NULL, peerwire_thread_tcp, &swarm->peer[i])))
     			printf("\nStarting peerwire_thread_tcp.. Failed.");

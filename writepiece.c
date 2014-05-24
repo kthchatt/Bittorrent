@@ -11,7 +11,7 @@ int write_piece (torrent_info *torrent, void *piece){
 
 	int i, number_of_pieces, found_piece = -1;
 	unsigned char hash[20];
-	SHA1(piece, torrent->_piece_length, hash);
+	SHA1(piece, torrent->_piece_length, hash);				//todo: the last piece does not have _piece_length! ~RD
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){
@@ -30,6 +30,7 @@ int write_piece (torrent_info *torrent, void *piece){
 	}
 }
 
+//todo: checking for the hash a second time is redundant, remove from thread.  ~RD
 void *write_piece_thread(void *torrent_piece){
 	fprintf(stderr, "Test from thread\n");
 	write_piece_struct *local_struct;
@@ -50,7 +51,7 @@ void *write_piece_thread(void *torrent_piece){
 	fprintf(stderr, "Thread: This is a fifth test\n");
 
 	unsigned char hash[20];
-	SHA1(piece, torrent->_piece_length, (unsigned char *) hash);
+	SHA1(piece, torrent->_piece_length, (unsigned char *) hash); //todo: the last piece does not have _piece_length! ~RD
 	number_of_pieces = (int) torrent->_hash_length /20;
 
 	for (i = 0; i < number_of_pieces; i++){

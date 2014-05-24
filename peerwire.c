@@ -334,23 +334,29 @@ void* peerwire_thread_tcp(void* arg)
 	printf("\n[%s:%s] - Handshake sequence finished.", peer->ip, peer->port); fflush(stdout);
 
 
-	int block, index = 0, piecelen = peer->tinfo->_piece_length, blockcount;
+	int block, index = 0, piecelen = peer->tinfo->_piece_length, blockcount, size = BLOCK_SIZE;
 	while (peer->sockfd != 0 && index < 156) //&& index > -1, stop this thread when the peer is no longer interesting, close the socket but do not change sockfd value.
 	{
 
 		//get not downloaded piece, request for every block in piece.
 		blockcount = piecelen / BLOCK_SIZE; //how many full blocks.
 		block = 0;
-		while (index > -1 && block < blockcount && peer->choked == false)
+		while (index > -1 && block < blockcount && peer->choked == false && bitfield_get(peer->swarm->bitfield, index) == 0)
 		{
+			if (index == (peer->swarm->tinfo->_hash_length / 20) - 1)
+				size =  peer->tinfo->_total_length % BLOCK_SIZE;//get size of last piece.
+			else 
+				size = BLOCK_SIZE;
 			//printf("\n[%s:%s] - Requesting: block = %d, count = %d, pLen = %d, bLen = %d", peer->ip, peer->port, block, blockcount, piecelen, BLOCK_SIZE);
-			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(BLOCK_SIZE));	//request 16384 if not last piece
+			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(size));	//request 16384 if not last piece
 			block++;
 			//sleep(1); //issue /have on download complete. not implemented.
 		}
 		index++; //get piece index here.
 		usleep(30000);
-		//break;
+		
+		if (index > (swarm->tinfo->_hash_length / 20) - 1)
+			break;
 	}
 	printf("\n[%s:%s] - Peer disconnected while writing.", peer->ip, peer->port);
 	//shutdown the listener, free the peer, close the sockfd.
