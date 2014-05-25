@@ -80,21 +80,26 @@ void request(peer_t* peer, int piece_index, int offset_begin, int offset_length)
     free(request);
 }
 
+
+void peer_bitfield(char* recvbuf, int* num, int *msglen, peer_t* peer)
+{
+	printf("\nBITFIELD RECEIVED - NOW GO HANDLE IT!");
+}
+
 //get available pieces, get piece_count, bitfield id=5
 //<len=0001+X><id=5><bitfield>
 void bitfield(peer_t* peer)
 {
-	int piece_count = peer->tinfo->_piece_length / 20;	
-	int payload = 0, len = piece_count + 1;
+	int piece_count = peer->tinfo->_hash_length / 20;	
+	int payload = 0, len = htonl(piece_count + 1);
     unsigned char id = 5; 	
 
     printf("\n[%s:%s] - Length: %d Bitfield: %s", peer->ip, peer->port, ntohl(len), peer->swarm->bitfield);
-    //len = htons(piece_count + 1);
 
-    char* request = malloc(1 + 4 + len);
+    char* request = malloc(4 + 1 + len);
     memcpy(request, &len, 4);					payload += 4;
     memcpy(request + payload, &id, 1);			payload += 1;
-    memcpy(request + payload, peer->swarm->bitfield, piece_count); 	payload += piece_count/8+1;
+    memcpy(request + payload, peer->swarm->bitfield, piece_count); 	payload += piece_count;
 
     send(peer->sockfd, request, payload, 0);		
     free(request);	
@@ -197,7 +202,8 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
 
-	if (htonl(index) >= (peer->tinfo->_hash_length / 20) || htonl(index) < 0)
+	//critical to verify input data. if the index/length are out of index range, a client could write in our memory.
+	if (htonl(index) >= (peer->tinfo->_hash_length / 20) || htonl(index) < 0 || *msglen < 0 || *msglen > peer->tinfo->_piece_length + 9)
 	{
 		*num = 0;
 		return;
@@ -215,17 +221,17 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 	}
 
     char* output = malloc(peer->tinfo->_piece_length); //replace with smh
-	memcpy(piebuffer + htonl(offset), buffer + header, *msglen - 4);
+	memcpy(piebuffer + htonl(offset), buffer + header, *msglen - 9);
 	memcpy(output, piebuffer, peer->tinfo->_piece_length); //todo - replace all BLOCK_SIZE with piece_size.
-	netstat_update(INPUT, *msglen - 4, peer->info_hash);
-	
-	/* todo: uncomment when write_piece is working */
-	if (write_piece(peer->tinfo, (void*) output) == 0)
+	netstat_update(INPUT, *msglen - 9, peer->info_hash);
+
+	//if piece already exists, do not download.
+	if ((bitfield_get(peer->swarm->bitfield, htonl(index)) == 1) || write_piece(peer->tinfo, (void*) output, htonl(index), *msglen - 9) == 0)
 	{
 		printf("\n[%s:%s] - (Complete) Downloaded Piece! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), 
 									offset, (unsigned char) piebuffer[0], (unsigned char) piebuffer[16383]);
 		fflush(stdout);
-		//bitfield_set(peer->swarm->bitfield, htonl(index));
+		bitfield_set(peer->swarm->bitfield, htonl(index));
 	}
 	else
 		printf("\n[%s:%s] - (Error) Piece Failed Checksum! \tIndex: %d\tOffset: %d\tBF check: [%02x, %02x]", peer->ip, peer->port, htonl(index), offset, 
@@ -247,12 +253,12 @@ void* listener_tcp(void* arg)
 	{
 		if (num > 4 || (num = recv(peer->sockfd, recvbuf, DOWNLOAD_BUFFER, 0)) > 0) //if buffer less than header size, issue a read op.
 		{
-			printf("\n[%s:%s] - Incoming Data: TYPE = %d LEN = %d MSG = %d\n", peer->ip, peer->port, (unsigned char) recvbuf[4], msglen, num);
 			memcpy(&msglen, recvbuf, 4);
 			msglen = htonl(msglen);
+			printf("\n[%s:%s] - Incoming Data: TYPE = %d LEN = %d MSG = %d\n", peer->ip, peer->port, (unsigned char) recvbuf[4], msglen, num);
 			
-			if ((unsigned char) recvbuf[4] > 20)
-				printf_hexit(recvbuf, num);
+			//if ((unsigned char) recvbuf[4] > 20)
+			//	printf_hexit(recvbuf, num);
 
 			if (msglen > 0) //K-A has 9 bytes set to zero, if not msglen is checked K-A will trigger choke. [ID read as 0]
 			switch ((unsigned char) recvbuf[4])
@@ -264,6 +270,7 @@ void* listener_tcp(void* arg)
 				case CHOKE:			peer->choked = true;     printf("\nChoked!");				break;
 				case INTERESTED: 	peer->interested = true; printf("\nInterested!");			break;
 				case NOT_INTERESTED:peer->interested = false;printf("\nNot Interested!");	 	break;
+				case BITFIELD:      peer_bitfield(recvbuf, &num, &msglen, peer);				break;
 				case PORT:			printf("\nPort message received.");							break;
 				case 84: 			printf("\nHandshake!");			msglen = num - 4;/*num = 0;*/				break; 	//Bittorrent Protocol...
 				default: 			printf("\nUndefined!"); 		msglen = num - 4;/*num = 0;*/				break;
@@ -325,8 +332,8 @@ void* peerwire_thread_tcp(void* arg)
 	//printf("\n[sockfd = %d], piece length = %lld", peer->sockfd, peer->tinfo->_piece_length);
 	sleep(1);
 	handshake(peer, peer->info_hash, peer->peer_id);
-	//sleep(1);
-	//bitfield(peer);  //todo: uncomment when scan_all is working
+	sleep(1);
+	bitfield(peer);  //todo: uncomment when scan_all is working
 	sleep(2);
 	message(peer, INTERESTED);
 	sleep(2);
