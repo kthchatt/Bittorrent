@@ -333,7 +333,7 @@ void* peerwire_thread_tcp(void* arg)
 	sleep(1);
 	handshake(peer, peer->info_hash, peer->peer_id);
 	sleep(1);
-	bitfield(peer);  //todo: uncomment when scan_all is working
+	bitfield(peer);  
 	sleep(2);
 	message(peer, INTERESTED);
 	sleep(2);
