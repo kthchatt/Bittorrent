@@ -134,6 +134,8 @@ void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 		} else if (one_char == 'd') {
 			dictonarry_handler(sfp, data, "kakor");
 			continue;
+		} else if(one_char == 'i'){
+			int_handler(sfp, string_name, data);
 		} else {
 			fseek(sfp,-1, SEEK_CUR);
 		}
