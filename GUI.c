@@ -260,6 +260,7 @@ GtkListStore* tab_model(int tab_id)
 	return NULL;
 }
 
+//move objects between tabs when they change state.~RD
 void list_update_tabs(GtkListStore* ls)
 {
     GtkTreeIter  iter;
@@ -435,30 +436,6 @@ void* rss_timer_thread(void* arg)
 }
 
 
-
-void rss_table(GtkWidget *tbl){
-	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *column;
-
-	md_rss = gtk_list_store_new(1, G_TYPE_STRING);
-	tv_rss = gtk_tree_view_new_with_model(GTK_TREE_MODEL(md_rss));
-
-	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Rss Table", renderer, "text", 0, NULL);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(tv_rss), column);
-
-	gtk_table_attach_defaults(GTK_TABLE(tbl), tv_rss, 2, 3, 0, 1);
-
-	rssfeed.host = malloc(MAX_URL_LEN);
-	rssfeed.uri = malloc(MAX_URL_LEN);
-
-	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, tv_rss)))
-			printf("\nWaiting for Feed in Thread.");
-
-	//g_signal_connect(tv_rss, "row-activated", G_CALLBACK(rss_clicked), NULL);
-   	
-}
-
 //create a list model by reference. ~RD
 void list_create(GtkListStore **model)
 {
@@ -585,27 +562,6 @@ void torrent_deprioritize()
 
 	g_print ("You clicked on the arrow down button!\n");
 	fflush(stdout);
-}
-
-
-// set rotation of a meter
-void set_meter(int percent, GdkPixbuf *pbuf, GtkWidget* meter, GtkWidget* home_table)
-{
-	static int current_deg = 50;
-	int to_add = (percent - current_deg * 1.8);
-	GdkPixbufRotation rotation = GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE;
-
-	while (to_add > 90)
-	{
-		pbuf = gdk_pixbuf_rotate_simple(pbuf, rotation);
-		to_add -= 90;
-	}
-
-	current_deg = percent;
-	
-	g_object_unref(meter);
-	meter = gtk_image_new_from_pixbuf(pbuf);
-	gtk_table_attach_defaults(GTK_TABLE(home_table), meter, 0, 2, 0, 1);
 }
 
 void file_dialog(GtkWidget *junk, GtkTextBuffer *txtBuffer)
@@ -781,6 +737,26 @@ void static enum_list(GtkWidget **tree_view, GtkListStore **model, GtkTreeViewCo
 	g_object_unref(*model);
 }
 
+void rss_table(GtkWidget *tbl){
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *column;
+
+	md_rss = gtk_list_store_new(1, G_TYPE_STRING);
+	tv_rss = gtk_tree_view_new_with_model(GTK_TREE_MODEL(md_rss));
+
+	renderer = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes("Rss Table", renderer, "text", 0, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tv_rss), column);
+
+	gtk_table_attach_defaults(GTK_TABLE(tbl), tv_rss, 2, 3, 0, 5);
+
+	rssfeed.host = malloc(MAX_URL_LEN);
+	rssfeed.uri = malloc(MAX_URL_LEN);
+
+	//g_signal_connect(tv_rss, "row-activated", G_CALLBACK(rss_clicked), NULL);
+   	
+}
+
 void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, GtkWidget **notebook) {
 	*label = gtk_label_new("Home"); // Tab name
 	*home_table = gtk_table_new(2,3,TRUE); //4?
@@ -788,25 +764,24 @@ void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, G
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
 	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of content
 	gtk_misc_set_padding(GTK_MISC(*view), 10, 10); // Left/Right & Top/Bottom padding
-	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 2, 3, 0, 1);
+	
+	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 2, 3, 0, 5);
 
-		rss_table(*home_table);
+	rss_table(*home_table);
 
 	*view = gtk_label_new("Counters Table"); // Content of "Home" tab
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
-	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of content
+	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of conten
 	gtk_misc_set_padding(GTK_MISC(*view), 10, 10); // Left/Right & Top/Bottom padding
-	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 0, 2, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 0, 2, 0, 0);
 	gtk_notebook_insert_page(GTK_NOTEBOOK(*notebook), *home_table, *label, 0); // Position of tab, in this case it's first
 
-	GdkPixbuf* arrow_gpix;
-	//GtkImage* arrow_image = NULL;
+	GdkPixbuf* front_gpix;
  	GError** err = NULL;
- 	GtkWidget* arrow_widget;
- 	arrow_gpix = gdk_pixbuf_new_from_file("assets/testArrow.png", err);
- 	arrow_widget = gtk_image_new_from_pixbuf(arrow_gpix);
-  	gtk_table_attach_defaults(GTK_TABLE(*home_table), arrow_widget, 0, 2, 0, 1);
-  	set_meter(120, arrow_gpix, arrow_widget, *home_table);
+ 	GtkWidget* front_widget;
+ 	front_gpix = gdk_pixbuf_new_from_file("assets/front.png", err);
+ 	front_widget = gtk_image_new_from_pixbuf(front_gpix);
+  	gtk_table_attach_defaults(GTK_TABLE(*home_table), front_widget, 1, 2, 0, 5);
 }
 
 //create a new torrent-tab with name and pos specified. ~RD
@@ -925,7 +900,8 @@ int main (int argc, char *argv[])
 	if (!(pthread_create(&motd_thread, NULL, motd_timer_thread, NULL)))
 			printf("\nWaiting for MOTD in Thread.");
 
-	
+	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, tv_rss)))
+			printf("\nWaiting for Feed in Thread.");
 
 //---------------------------------------------------------------------------  ~RD
 
