@@ -428,7 +428,7 @@ void* rss_timer_thread(void* arg)
 	
 	//read rss feed here.
 	int i;
-	for (i = 0; i < rssfeed.item_count && i < 10; i++){
+	for (i = 0; i < rssfeed.item_count && i < 9; i++){
 	  	gtk_list_store_append(md_rss, &iter);
    		gtk_list_store_set(md_rss, &iter, 0, rssfeed.item[i].title, -1);
 	}
@@ -745,7 +745,7 @@ void rss_table(GtkWidget *tbl){
 	tv_rss = gtk_tree_view_new_with_model(GTK_TREE_MODEL(md_rss));
 
 	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Rss Table", renderer, "text", 0, NULL);
+	column = gtk_tree_view_column_new_with_attributes("Feed", renderer, "text", 0, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tv_rss), column);
 
 	gtk_table_attach_defaults(GTK_TABLE(tbl), tv_rss, 2, 3, 0, 5);
@@ -754,7 +754,6 @@ void rss_table(GtkWidget *tbl){
 	rssfeed.uri = malloc(MAX_URL_LEN);
 
 	//g_signal_connect(tv_rss, "row-activated", G_CALLBACK(rss_clicked), NULL);
-   	
 }
 
 void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, GtkWidget **notebook) {
