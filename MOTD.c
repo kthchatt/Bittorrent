@@ -12,7 +12,7 @@ pthread_t thread;
 void* fetch(void* arg)
 {
     char* response = (char*) arg;
-    char* request = malloc(125);
+    char* request = malloc(128);
     char recvbuf[MOTD_MAXLEN];
     sprintf(request, "GET /MOTD.php HTTP/1.1\r\nhost: 127.0.0.1\r\n\r\n");
     struct addrinfo hints, *res;
@@ -40,7 +40,7 @@ void* fetch(void* arg)
                 }
                 header++;
 
-                recvbuf[num-6] = '\0';
+                recvbuf[num-1] = '\0';
                 strcpy(response, recvbuf+header); //skip final rnrn.
             }
         } 

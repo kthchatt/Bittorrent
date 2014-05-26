@@ -366,6 +366,7 @@ void* motd_timer_thread(void* arg)
 	MOTD_fetch(response);
 	sleep(MOTD_TIMEOUT + 1);			//wait timeout.
 	gtk_label_set_text((GtkLabel*) lb_motd, response);	
+	printf("MOTD = %s", response); fflush(stdout);
 	return NULL;
 }
 
@@ -698,10 +699,10 @@ void add_torrent(){
 }
 
 void MOTD(GtkWidget **label, GtkWidget **table) {
-	gtk_label_set_width_chars(GTK_LABEL( (GtkLabel*) *label), 100);  //???
 	*label = gtk_label_new("Loading MOTD ..."); // Label content
   	gtk_misc_set_alignment(GTK_MISC(*label), 0, 1); // Sets alignment of label
   	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 4, 10, 11); 
+  	gtk_label_set_width_chars(GTK_LABEL(*label), 100);  //???
 }
 
 void netstat_label(GtkWidget **label, GtkWidget **table) {
@@ -772,7 +773,7 @@ void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, G
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
 	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of conten
 	gtk_misc_set_padding(GTK_MISC(*view), 10, 10); // Left/Right & Top/Bottom padding
-	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 0, 2, 0, 0);
+	gtk_table_attach_defaults(GTK_TABLE(*home_table), *view, 0, 2, 0, 5);
 	gtk_notebook_insert_page(GTK_NOTEBOOK(*notebook), *home_table, *label, 0); // Position of tab, in this case it's first
 
 	GdkPixbuf* front_gpix;
