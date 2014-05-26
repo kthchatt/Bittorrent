@@ -125,6 +125,7 @@ void path_handler(char *string_value, int ready_to_store, torrent_info *data){
 void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 	char one_char;
 	char string_value[500];
+	memset(string_value, 0, 500);
 	//char file_path[500];
 	int length_of_next_int = 0;	
 	while((one_char = read_one_char(sfp)) != 'e'){
@@ -143,7 +144,7 @@ void list_handler(FILE *sfp, char *string_name, torrent_info *data){
 		read_specific_length(sfp, length_of_next_int, string_value);
 		if (strcmp(string_name, "path") == 0){
 			path_handler(string_value, 0, data);
-		} else { //TODO Den kör denna även när den inte skall, kolla string_value
+		} else if (string_value[0] != '\0') { //TODO Den kör denna även när den inte skall, kolla string_value
 			complete_dictonarry(string_name, string_value, data);
 		}
 		if (length_of_next_int == 0){
