@@ -30,6 +30,8 @@ int hashncmp (unsigned char *hash1, unsigned char *hash2, int n){
 }
 
 int decode_bencode(char *file_name, torrent_info *data){
+	place_files = 0;
+	place_announce_list = 0;
 	fprintf(stderr, "This is print from decode_bencode\n");
 	//torrent_info data;
 	//char bencode[25000];
