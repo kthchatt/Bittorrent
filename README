@@ -45,7 +45,7 @@ Cookie-Crumb Bittorrent - v1.0b (First beta version)
 		- The software is developed to be efficient, simple and plain, however
 		  GTK is a resource HOG. Make sure your hardware is up to snuff.
 
-		- For the hashing algorithms, SHA-1 the library lcrypto is required.
+		- For the hashing algorithm SHA1, the library lcrypto is required.
 
 		- Should you find the software to be way too demanding, look into the 
 		  gui_update_thread() and more specifically the list_update() function.
