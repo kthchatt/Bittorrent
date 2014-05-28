@@ -1,0 +1,108 @@
+======================================================================================
+BitTorrent Client - This is the MAN file, you must read it.
+
+Development Started: 2014-04-16
+Development Ended:   2014-05-29
+
+Team:
+	Robin Duda
+	<insert name>...
+
+Developed For KTH-STH Haninge.
+
+
+[Don't use your favorite text editor to read this. Use 'more', it's super effective!]
+======================================================================================
+
+Cookie-Crumb Bittorrent - v1.0b (First beta version)
+
+
+    == Table of Contents ==
+      1. Known Issues.
+      2. System requirements.
+      3. Installing the Client..
+      4. Modifying the source code.
+    == == == == == == == == == ==
+
+	1. Known Issues
+
+		- Some clients seem to be rejecting our client. [KTorrent, Transmission]
+		  Possible reasons for this may be the lacking support of µTP on our end.
+			(Testing and developed against µTorrent and BitTorrent.)
+
+		- Does not compile with GTK3, use GTK2 when compiling!
+
+		- GTK Produces some warnings at runtime, needs to be addressed.
+
+		- The GTK file dialog will not find any files, relaunching or recompiling 
+		  will fix it.
+
+	2. System requirements
+
+		- For this software to be of use, an ethernet card with an active Internet
+		  connection is beneficial.
+
+		- The software is developed to be efficient, simple and plain, however
+		  GTK is a resource HOG. Make sure your hardware is up to snuff.
+
+		- For the hashing algorithms, SHA-1 the library lcrypto is required.
+
+		- Should you find the software to be way too demanding, look into the 
+		  gui_update_thread() and more specifically the list_update() function.
+		  Updating the values in the graphical user interface requires an expensive
+		  GTK API call. Reducing the FPS in GUI.c is another alternative.
+
+	3. Installing the client
+
+		3.1 Make sure you have the latest version available from our Git repo.
+			https://github.com/kthchatt/BitTorrent.git
+
+		3.2 Read the README file, you should be reading it right now.
+
+		3.3 Set your working directory to ccBitTorrent folder.
+
+		3.4 Run the make - file.
+
+		3.5 Download every torrent. Much download, many peer. very seed.
+
+
+	4. Modifying the source code.
+
+		* Are you tired of your bittorrent client?
+		* Are you in desperate need of an upgrade.. ?
+		* Did we not make the source code pretty enough!? 
+
+		Well, you are in luck my friend. This project is OPEN SOURCE.
+
+		4.1 Quick Overview
+
+			GUI.c
+			  Modding the user - interface.
+			
+			bencodning.c
+			   Metainfo & Bencoding.
+			
+			createfile.c
+			   File creation: current mode is allocate 
+			   pre-download, you might want on-demand allocations.
+			
+			peerwire.c
+			   Implementing the peerwire protocol, this is
+			   where you look if you want to implement PEX,
+			   streaming or µTP and anything else you can imagine.
+			
+			tracker.c
+			   Implement DHT here.
+
+			swarm.c
+			   Implement ZeroConf here.
+			   
+			scrape.c/announce.c
+			   Implement UDP trackers here.
+			
+
+Author: Robin Duda, 2014-05-28
+------------------------------ END OF MAN FILE ------------------------------------
+
+
+
