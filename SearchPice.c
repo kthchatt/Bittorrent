@@ -14,14 +14,14 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 
 	memset(bitstring, 0x00, toalloc);
 
-	unsigned char hash[20]; printf("\ndbg1");fflush(stdout);
+	unsigned char hash[20]; 
 
 	void *piece;
 	piece = malloc(piece_length);
 	void *copy_piece = piece;
 	memset(piece, 0, piece_length);
 
-	for(j = 0; j < number_of_pieces; j++){printf("\ndbg2");fflush(stdout);
+	for(j = 0; j < number_of_pieces; j++){
 		int bytes_to_read = piece_length;
 		int start_in_file = torrent->_piece_length * j;
 		i = 0;
@@ -29,10 +29,9 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 			start_in_file -= torrent->_file_length[i++];
 		}
 
-		first_file_to_open = i;printf("\ndbg3");fflush(stdout);
+		first_file_to_open = i;
 
 		while(bytes_to_read > 0 && first_file_to_open < torrent->_number_of_files){
-			printf("\ndbg3.1"); fflush(stdout);
 			FILE *fp;
 			fp = fopen(torrent->_file_path[first_file_to_open], "rb+");
 			//fprintf(stderr, "File: %s\n", torrent->_file_path[first_file_to_open]);printf("\ndbg1");fflush(stdout);
@@ -45,7 +44,7 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 			fseek(fp, start_in_file, SEEK_SET);
 			start_in_file = 0;
 
-			bytes_read = fread(piece, 1, bytes_to_read, fp);printf("\ndbg4");fflush(stdout);
+			bytes_read = fread(piece, 1, bytes_to_read, fp);
 			//fprintf(stderr, "Bytes Written: %d\n", bytes_read);
 			bytes_to_read -= bytes_read;
 			piece += bytes_read;
@@ -54,24 +53,19 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 			fclose(fp);
 		}
 
-		printf("\ndbg4.1: total_bytes_read = %d", total_bytes_read); fflush(stdout);
 		piece = copy_piece;
-		SHA1(piece, total_bytes_read, hash);printf("\ndbg5");fflush(stdout);
+		SHA1(piece, total_bytes_read, hash);
 		if (j%8 == 0 && j != 0){
 			bitstring++;
 		}
-		printf("\ndbg4.2"); fflush(stdout);
 		if (hashncmp(hash, torrent->_pieces[j], 20) == 0){
-			printf("\ndbg6");fflush(stdout);
-			*bitstring |= (1<<(j%8));
+			*bitstring |= (1<<(j%8)); 
 			if (found == -1){
 				found  = j;
 			}
 		}
 		total_bytes_read = 0;
-		
 	}
-	printf("\ndbg7");fflush(stdout);
 	free(copy_piece);
 	return found;
 }

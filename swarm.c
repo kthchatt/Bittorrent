@@ -81,6 +81,7 @@ int swarm_select(torrent_info* tinfo)
 			swarm[i].info_hash = tinfo->_info_hash;
 			swarm[i].tinfo = tinfo;
 			swarm[i].bitfield = malloc(((tinfo->_piece_length / 20) / 8) + 1);
+			memset(swarm[i].bitfield, 0, ((tinfo->_piece_length / 20) / 8) + 1);
 
 			for (j = 0; j < MAX_TRACKERS; j++)
 			{

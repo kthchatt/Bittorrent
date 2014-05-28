@@ -55,6 +55,8 @@
 #define U_MEGA 1000000
 #define U_GIGA 1000000000
 
+#define DOUBLE_PRECISION 1e-5
+
 //sizes
 #define S_BYTE " B"
 #define S_KILO " KB"

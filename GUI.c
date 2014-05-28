@@ -40,6 +40,7 @@
 #include "rss2.h"
 #include "createfile.h"
 #include "bitfield.h"
+#include "math.h"
 
 #define TORRENT_TABS 4
 #define TAB_DOWNLOADING 1
@@ -270,7 +271,7 @@ void list_update(GtkListStore *ls)
     	{
     		case STATE_CREATING: //get progress from createfile.c
     					percent = 100 * create_file_status(torrentlist[id].tinfo); 
-    					if ((int)percent == 100) 
+    					if (fabs(percent - 100.0) <= DOUBLE_PRECISION) 
     					{
     						torrentlist[id].state = STATE_INACTIVE;
     						strcpy(torrentlist[id].status, "Ready");
@@ -279,10 +280,13 @@ void list_update(GtkListStore *ls)
     		break;		
     		case STATE_DOWNLOADING: //get progress based off the bitfield, calculated in bitfield.c
     				percent = bitfield_percent(swarm[torrentlist[id].swarm_id].bitfield, torrentlist[id].tinfo->_hash_length / 20); 
-    				if ((int) percent == 100)
+    				if (fabs(percent - (double) 100.0) <= DOUBLE_PRECISION)
     				{
     					torrentlist[id].state = STATE_SEEDING;
+    					row_delete(id, md_downloading);
     					strcpy(torrentlist[id].status, "Seeding");
+						row_add(id, md_seeding);
+
     				}
     				break;	
     	}
@@ -410,15 +414,18 @@ void torrent_start()
 	switch(tab)
 	{
 		case TAB_COMPLETED: row_delete(id, md_completed);
+							strcpy(torrentlist[id].status, "Seeding");
 							row_add(id, md_seeding); 
 							netstat_track(torrentlist[id].tinfo->_info_hash);
 							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
+							torrentlist[id].state = STATE_SEEDING;
 							 break;
 		case TAB_INACTIVE:  row_delete(id, md_inactive);
-							strcpy(torrentlist[id].status, "Seeding");
+							strcpy(torrentlist[id].status, "Downloading");
 							row_add(id, md_downloading);
 							netstat_track(torrentlist[id].tinfo->_info_hash);
 							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
+							torrentlist[id].state = STATE_DOWNLOADING;
 							 break;
 	}
 

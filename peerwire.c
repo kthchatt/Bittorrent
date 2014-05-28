@@ -85,7 +85,7 @@ void bitfield(peer_t* peer)
 	int payload = 0, len = htonl(piece_count + 1);
     unsigned char id = 5; 	
 
-    char* request = malloc(4 + 1 + len);
+    char* request = malloc(4 + 1 + ntohl(len));
     memcpy(request, &len, 4);					payload += 4;
     memcpy(request + payload, &id, 1);			payload += 1;
     memcpy(request + payload, peer->swarm->bitfield, piece_count); 	payload += piece_count;
@@ -291,15 +291,16 @@ void* peerwire_thread_tcp(void* arg)
     if (pthread_create(&listen_thread, NULL, listener_tcp, peer))
 		printf("\n[%s:%s]\tStarting peer listener.. Failed!", peer->ip, peer->port);
 
-	handshake(peer, peer->info_hash, peer->peer_id); 	sleep(2);
-	bitfield(peer);  									sleep(2);		//the sleeps are not very pretty, but the peer is expecting some delay.
-	message(peer, INTERESTED);							sleep(2);
-	message(peer, UNCHOKE);								sleep(2);
+	sleep(1);
+	handshake(peer, peer->info_hash, peer->peer_id); 	sleep(0);
+	//bitfield(peer);  									sleep(1);		//the sleeps are not very pretty, but the peer is expecting some delay.
+	message(peer, INTERESTED);							sleep(4);
+	message(peer, UNCHOKE);								sleep(0);
 
 	//[todo: peer-piece selection is not done due to lack of time, the client will ask for them sequentially.
 	//will be implemented using the bitfield of the peer and the local swarm.]
 	int block, index = 0, piecelen = peer->tinfo->_piece_length, blockcount, size = BLOCK_SIZE;
-	while (peer->sockfd != 0 && index < 156)
+	while (peer->sockfd != 0 && index < (peer->tinfo->_hash_length / 20))
 	{
 		//get pieces not in posession, request for every block in piece.
 		blockcount = piecelen / BLOCK_SIZE; 

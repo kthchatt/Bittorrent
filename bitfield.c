@@ -30,7 +30,9 @@ double bitfield_percent(char* bitfield, int length)
 
 	for (i = 0; i < length; i++)
 		if (bitfield_get(bitfield, i) == 1)
-			percent += (100 / length);
+		{
+			percent += (100.0) / (double) length;
+		}
 
 	return percent;
 }
