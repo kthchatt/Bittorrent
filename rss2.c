@@ -1,24 +1,24 @@
-#include "rss2.h"
-
 /* rss2.c 
  * RSS Reader.
  * Author: Anton L.
  * 
  * Refactor: Robin D.
- * Fixed bugs; 
- *	Not fetching whole RSS document, 
- *  Cruft at titles, 
- *	Segmentation fault in extract_content, (was not error checking strstr)
- *  Fixed incorrect memory allocations.
+ * 	Fixed bugs; 
+ *		Not fetching whole RSS document, 
+ *  	Cruft at titles, 
+ *		Segmentation fault in extract_content, (was not error checking strstr)
+ *  	Fixed incorrect memory allocations.
  *
- * Additions/Modifications
- *  RSS Fething now threaded.
- *  Content extractor no longer public.
- *  Variable RSS sources.
- *  Source formatted as GNU, changed variable/method names.
- *  ReAdded item count.
- *  Rewrote socket code for clarity and error tolerance.
+ * 	Additions/Modifications
+ *  	RSS Fething now threaded.
+ *  	Content extractor no longer public.
+ *  	Variable RSS sources.
+ *  	Source formatted as Allman, changed variable/method names.
+ *  	ReAdded item count.
+ *  	Rewrote socket code for clarity and error tolerance.
  */
+
+#include "rss2.h"
 
 pthread_t rss_thread;
 
@@ -28,22 +28,22 @@ char* extract_content(char* object, char* open, char* close)
 	char* begin  = strstr(object, open);	//both methods are safe to call with NULL. ~RD
 	char* end    = strstr(object, close);
 
-	if (begin == NULL || end == NULL)	//if no start or endpoint is found, object/open/close is invalid. Segfault no more. ~RD
+	if (begin == NULL || end == NULL)		//if no start or endpoint is found, object/open/close is invalid. Segfault no more. ~RD
 		return "";
 
 	int i, length = strlen(begin) - strlen(end) - strlen(open);
-	char* data = malloc(length + 1);	//warning: last byte unused. Added nullchar. ~RD
+	char* data = malloc(length + 1);		//warning: last byte unused. Added nullchar. ~RD
 
 	for(i = 0; i < length; i++)
 		data[i] = begin[strlen(open) + i];
 
-	data[length] = '\0';				//nullchar ~RD
+	data[length] = '\0';					//nullchar ~RD
 	return data;
 }
 
 static void* get_feed(void* arg)
 {
-	item_t item;					// Removed unused variables ~RD
+	item_t item;							// Removed unused variables ~RD
 	rss_t* content = (rss_t*) arg;
 	int sockfd, counter = 0;
 	char* request, *buffer, *tmp;
@@ -69,7 +69,7 @@ static void* get_feed(void* arg)
         if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
         {
             send(sockfd, request, strlen(request), 0);	//non blocking read.  ~RD
-			buffer = malloc(BYTEBUFFER);				//27.rss equals 35.5K bytes at 20 items,  ~RD
+			buffer = malloc(BYTEBUFFER);				//27.rss equals 35.5K bytes at 20 items, reduced amount of bytes allocated.  ~RD
 			sleep(RSS_TIMEOUT);
 			recv(sockfd, buffer, BYTEBUFFER, MSG_DONTWAIT);
         } 
@@ -79,7 +79,7 @@ static void* get_feed(void* arg)
     else
     	return arg;
 
-	//fatal: if only a partial response is received tags will break, getBetweenTags will return a null pointer. 
+	//fatal: if only a partial response is received tags will break, getBetweenTags will return a null pointer.  ~RD
 	//See main for example. [fixed]  ~RD
 	counter = 0;
 
@@ -88,16 +88,16 @@ static void* get_feed(void* arg)
 		if(counter == 0) 
 			content->item = (item_t*) malloc(sizeof(item_t)); 
 		else												
-			content->item = (item_t*) realloc(content->item, sizeof(item_t) * (counter + 1));// stack fragmentation -> inefficient. ~RD
+			content->item = (item_t*) realloc(content->item, sizeof(item_t) * (counter + 1));// stack fragmentation. ~RD
 
-		tmp = extract_content(buffer, "<item>", "</item>");				// +1?, malloc for already allocated string? [Fixed by remove] ~RD
+		tmp = extract_content(buffer, "<item>", "</item>");									// +1?, malloc for already allocated string? [Fixed by remove] ~RD
 		tmp = extract_content(buffer, "<item>", "</item>");
-		item.title = extract_content(tmp, "<title>", "</title>");		//title contained cruft, fixed in extract_content ~RD
+		item.title = extract_content(tmp, "<title>", "</title>");							//title contained cruft, fixed in extract_content ~RD
 		item.link  = extract_content(tmp, "<link>", "</link>");
 		item.description = extract_content(tmp, "<description>", "</description>");
 		free(tmp);
 
-		strcpy(buffer, strstr(buffer, "</item>"));	//~RD
+		strcpy(buffer, strstr(buffer, "</item>"));	//fix ~RD
 		buffer[0] = 128;							//safer character (ascii), 0 leading tags would crash the RSS. ~RD
 		content->item[counter] = item; 
 		counter++;									//readded: update item counter. ~RD
@@ -109,7 +109,7 @@ static void* get_feed(void* arg)
 	return arg;
 }
 
-//public function, is threaded. call with: items_t xxx; rss_feed(&test);
+//public function, is threaded. call with: items_t x; rss_feed(&x); wait for RSS_TIMEOUT before reading.
 void rss_fetch(rss_t* items)
 {
 	pthread_create(&rss_thread, NULL, get_feed, items);

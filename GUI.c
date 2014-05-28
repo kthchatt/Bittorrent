@@ -1,3 +1,31 @@
+/*  GUI.c
+ *	Author: insert name.
+ *	
+ *  Refactor: Robin Duda. ~RD
+ *	
+ *  	Merged duplicate functions and extended usability.
+ *		Now able to use torrent data in tables.
+ *  	Sorts torrents based on state at additions.
+ *  	Identifies selected torrents with tab id and list id.
+ *  	Updates displayed torrent data in separate thread.
+ *  	Compressed column creating function.
+ *  	Removed static addition of rows, added runtime addition and deletion. (used for full delete, and state moves)
+ *  	Added more columns and made it easier to manage them.
+ *  	Turned tab 'all' into tab 'inactive', to avoid redundancy and increase readability and simplicity.
+ *  	Rows are moved between tabs on user interaction. (start/stop/remove)
+ *		Fetching the RSS and MOTD from servers. Displayed in the GUI.
+ *
+ *  Todo: sorting on column click.
+ *  Todo: adding torrent from path/patch checking for new files?
+ *  Todo: add drag and drop? insert with path reference. (HOT)
+ *  Todo: move rows between tabs on completion/queue-process.
+ *  Todo: add queue handling.
+ *  Todo: separate more code from the core GUI. (data loaders, anything not reliant on GTK)
+ *  Todo: queue handling should work from the incomplete when there are slots in downloading. 
+ */
+
+//[todo: add tabs: peers, trackers, torrentinfo, logs.] ~RD
+
 #include <gtk/gtk.h>
 #include <string.h>
 #include <stdlib.h>
@@ -13,41 +41,6 @@
 #include "createfile.h"
 #include "bitfield.h"
 
-/*
-	include swarm & netstat, the fileman should be included too. ~RD
-*/
-
-/*  GUI.c
- *	Author: insert name.
- *	
- *  Refactor: Robin Duda. ~RD
- *	
- *  Merged duplicate functions and extended usability.
- *	Now able to use torrent data in tables.
- *  Sorts torrents based on state at additions.
- *  Identifies selected torrents with tab id and list id.
- *  Updates displayed torrent data in separate thread.
- *  Compressed column creating function.
- *  Removed static addition of rows, added runtime addition and deletion. (used for full delete, and state moves)
- *  Added more columns and made it easier to manage them.
- *  Turned tab 'all' into tab 'inactive', to avoid redundancy and increase readability and simplicity.
- *  Rows are moved between tabs on user interaction. (start/stop/remove)
- *  Todo: sorting on column click.
- *  Todo: adding torrent from path/patch checking for new files?
- *  Todo: add drag and drop? insert with path reference. (HOT)
- *  Todo: move rows between tabs on completion/queue-process.
- *  Todo: add queue handling.
- *  Todo: separate more code from the core GUI. (data loaders, anything not reliant on GTK)
- *  Todo: queue handling should work from the incomplete when there are slots in downloading. 
- */
-
- //developer note, gtk get requests for integers takes a integer reference, not a pointer.
-
-//todo: decrease redundancy, turn all tab into inactive tab.
-//todo: add more tabs? log, peers, trackers? ~RD
-//todo: 
-
-//add tab: seeding, peers, trackers, torrentinfo, logs? ~RD
 #define TORRENT_TABS 4
 #define TAB_DOWNLOADING 1
 #define TAB_SEEDING 2
@@ -57,7 +50,7 @@
 #define false 0
 #define FPS 5
 
- //following values is a part of the prioritizer. ~RD
+ //following values is a part of the queue. ~RD
  #define MAX_DOWNLOADING 3
  #define MAX_SEEDING 20
 
@@ -73,8 +66,6 @@
  	STATE_INACTIVE,
  	STATE_CREATING,
  };
-
- //todo: if torrentlist is CREATING and tinfo.created == true, set as downloading and track.
 
 enum {
 	COL_ID = 0,
@@ -93,9 +84,9 @@ enum {
 //torrent data to display, load from includes. ~RD
 typedef struct
 {
-	int id;				//used to identify actions on a torrent.
-	int state; 			//used to identify the current operation, when starting torrents check how many torrents have the state already, if there are slots free.
-	int swarm_id;		//used to identify the swarm serving the torrent. used for getting peer/seed/swarm size from swarm.c.
+	int id;				//identifies a list item with this torrent.
+	int state; 			//identifies the state of the torrent, 'downloading', 'seeding', 'completed', 'inactive', 'creating'
+	int swarm_id;		//required for getting peer/seed/swarm size from swarm.c.
 	char* filesize;
 	char* status;
 	torrent_info* tinfo;
@@ -113,14 +104,12 @@ torrentlist_t* torrentlist;
 int torrentlist_count;
 pthread_t update_thread, motd_thread, rss_thread;
 
-//global required, multiple pointers to retain references. ~RD
 GtkWidget *tv_inactive, *tv_downloading, *tv_completed, *tv_seeding, *tv_rss;
 GtkWidget *tlb_inactive, *tlb_downloading, *tlb_completed, *tlb_seeding;
 GtkListStore *md_inactive, *md_downloading, *md_completed, *md_seeding, *md_rss;
 GtkWidget *lb_netstat, *lb_motd;
 GtkWidget *notebook;
 rss_t rssfeed;
-
 
 //calculate the filesize from bencodning.c .. ~RD
 void torrent_size(torrent_info* tinfo, char* filesize)
@@ -131,13 +120,9 @@ void torrent_size(torrent_info* tinfo, char* filesize)
 	memset(filesize, '\0', FORMATSTRING_LEN);
 
 	for (i = 0; i < tinfo->_number_of_files; i++)
-	{
 		size += tinfo->_file_length[i];
-		url_filesize(filesize, size);
-		//printf("\nGetting Filesize (%d/%d), this: %lld, total: %lld, format: %s", i+1, tinfo->_number_of_files, tinfo->_file_length[i], size, filesize);fflush(stdout);
-	}
 
-	url_filesize(filesize, size);
+	url_filesize(filesize, size);		//format units, from: urlparse.c. ~RD
 }
 
 //add a row when the torrent-info already exists. ~RD
@@ -169,6 +154,7 @@ void row_delete(int id, GtkListStore* ls)
 
 	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
 
+	//iterate the linked list until we reach the last item. 
     while (nextitem_exist)
  	{
      	gtk_tree_model_get(GTK_TREE_MODEL(ls), &iter, COL_ID, &item_id, -1);
@@ -247,6 +233,7 @@ int selected_id(void)
     return -1;
 }
 
+//get gtk-model from id. ~RD
 GtkListStore* tab_model(int tab_id)
 {
 	switch (tab_id)
@@ -260,42 +247,8 @@ GtkListStore* tab_model(int tab_id)
 	return NULL;
 }
 
-//move objects between tabs when they change state.~RD
-void list_update_tabs(GtkListStore* ls)
-{
-    GtkTreeIter  iter;
-    gboolean     nextitem_exist;
-    int id;
 
-	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
-
-	//todo: 
-    while (nextitem_exist)
- 	{
-    	gtk_tree_model_get(GTK_TREE_MODEL(ls), &iter, COL_ID, &id, -1);	//get torrentlist id.
- 		//check if state and tab matches, if not move to desired tab.
-
-    	//todo: update state, move to target tab.
- 		/*if (torrentlist[id].state != selected_tab())
- 			switch (torrentlist[id].state)
- 			{
- 				case STATE_DOWNLOADING: 
- 						if (selected_tab() != TAB_DOWNLOADING); break;
- 				case STATE_SEEDING: ; break;
- 				case STATE_COMPLETED: ; break;
- 				case STATE_CREATING: 
- 						if (selected_tab() != TAB_DOWNLOADING)
- 							strcpy(torrentlist[id].status, "Creating Files..");
- 							row_delete(id, tab_model(selected_tab()));
- 							row_add(id, tab_model(TAB_DOWNLOADING)); 
- 						  break;			
- 			}*/
-
-       nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
-	}
-}
-
-//update torrent item in liststore tab. This functions is EXTREMELY expensive. ~RD
+//update torrent items in liststore tab. This function (gtk_list_store_set) is EXTREMELY expensive. ~RD
 void list_update(GtkListStore *ls)
 {
     GtkTreeIter  iter;
@@ -308,15 +261,14 @@ void list_update(GtkListStore *ls)
 
 	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
 
+	//iterate the linked list until the last item is reached.
     while (nextitem_exist)
  	{
-    	//todo: fetch actual values, percent, peercount, swarm-size, leeches, seeders.
-    	//todo: if state_creating get percent from fileman function f1, else f2.
 		gtk_tree_model_get(GTK_TREE_MODEL(ls), &iter, COL_ID, &id, -1);	//get torrentlist id.
 
     	switch (torrentlist[id].state)
     	{
-    		case STATE_CREATING: 
+    		case STATE_CREATING: //get progress from createfile.c
     					percent = 100 * create_file_status(torrentlist[id].tinfo); 
     					if ((int)percent == 100) 
     					{
@@ -325,21 +277,19 @@ void list_update(GtkListStore *ls)
     					}
 
     		break;		
-    		case STATE_DOWNLOADING: 
+    		case STATE_DOWNLOADING: //get progress based off the bitfield, calculated in bitfield.c
     				percent = bitfield_percent(swarm[torrentlist[id].swarm_id].bitfield, torrentlist[id].tinfo->_hash_length / 20); 
-
-
     				if ((int) percent == 100)
     				{
     					torrentlist[id].state = STATE_SEEDING;
     					strcpy(torrentlist[id].status, "Seeding");
     				}
-    				break;	//get percent from function f2
+    				break;	
     	}
 
     	sprintf(progress, "%.2f%%", percent);
-
-    	//todo: if percent = 100.0 set state to downloading, change status from creating -> downloading, or downloading -> seeding. (update torrent[id].status too)
+    	//[todo: implement logic from list_update_tabs here.]
+    	
 		netstat_formatbytes(INPUT, torrentlist[id].tinfo->_info_hash, netstat_down);
 		netstat_formatbytes(OUTPUT, torrentlist[id].tinfo->_info_hash, netstat_up);
    		gtk_list_store_set(ls, &iter,
@@ -358,7 +308,7 @@ void list_update(GtkListStore *ls)
 }
 
 
-//a timer for updating the MOTD after the retrieval timeout has passed. ~RD
+//timer for updating the MOTD after the retrieval timeout has passed. ~RD
 void* motd_timer_thread(void* arg)
 {
 	char* response = (char*) malloc(MOTD_MAXLEN+1);
@@ -366,14 +316,31 @@ void* motd_timer_thread(void* arg)
 	MOTD_fetch(response);
 	sleep(MOTD_TIMEOUT + 1);			//wait timeout.
 	gtk_label_set_text((GtkLabel*) lb_motd, response);	
-	printf("MOTD = %s", response); fflush(stdout);
+	return NULL;
+}
+
+//timer for updating the MOTD after the retrieval timeout has passed. ~RD
+void* rss_timer_thread(void* arg)
+{
+	int i;
+	GtkTreeIter iter;
+	strcpy(rssfeed.host, "showrss.info"); 	//[todo: read host from configuration file.]
+	strcpy(rssfeed.uri, "/feeds/27.rss");
+
+	rss_fetch(&rssfeed);
+	sleep(RSS_TIMEOUT + 1);			//wait for rss_fetch to timeout.
+	
+	for (i = 0; i < rssfeed.item_count && i < 9; i++){
+	  	gtk_list_store_append(md_rss, &iter);
+   		gtk_list_store_set(md_rss, &iter, 0, rssfeed.item[i].title, -1);
+	}
 	return NULL;
 }
 
 //update the torrents with data from modules at defined FPS. ~RD
 void* gui_update_thread(void* arg)
 {
-	int pgnum, delay = 0;
+	int pgnum;
 	char* throughput_in = (char*) malloc(FORMATSTRING_LEN); 
 	char* throughput_out = (char*) malloc(FORMATSTRING_LEN);
 	char* throughput = (char*) malloc(75);
@@ -382,21 +349,7 @@ void* gui_update_thread(void* arg)
 	{
 		usleep((1000 / FPS) * 1000);
 
-		//netstat_update(INPUT, 300, torrentlist[0].info_hash);
-
-		delay++;
-		if (delay > 10)
-		{
-			list_update_tabs(md_inactive);
-			list_update_tabs(md_completed);
-			list_update_tabs(md_downloading);
-			list_update_tabs(md_seeding);
-			delay = 0;
-		}
-
-		//todo: fetch actual values.
-		//optimization: only update the active tab.
-		pgnum = (int) gtk_notebook_get_current_page((GtkNotebook*) notebook);
+		pgnum = (int) gtk_notebook_get_current_page((GtkNotebook*) notebook);	//only update the active tab.
 		switch (pgnum)
 		{
 			case TAB_INACTIVE: 		list_update(md_inactive);		break;
@@ -408,32 +361,12 @@ void* gui_update_thread(void* arg)
 		netstat_throughput(INPUT, throughput_in);
 		netstat_throughput(OUTPUT, throughput_out);
 		sprintf(throughput, "D: %s, U: %s", throughput_in, throughput_out);
-		gtk_label_set_text((GtkLabel*) lb_netstat, throughput);		//todo: get speeds from netstat.c
+		gtk_label_set_text((GtkLabel*) lb_netstat, throughput);
 	}
 
 	free(throughput_in);
 	free(throughput_out);
 	free(throughput);
-}
-
-//a timer for updating the MOTD after the retrieval timeout has passed. ~RD
-void* rss_timer_thread(void* arg)
-{
-	GtkTreeIter iter;
-	//global variables allows the changing of source. ~RD
-	strcpy(rssfeed.host, "showrss.info");
-	strcpy(rssfeed.uri, "/feeds/27.rss");
-
-	rss_fetch(&rssfeed);
-	sleep(RSS_TIMEOUT + 1);			//wait timeout.
-	
-	//read rss feed here.
-	int i;
-	for (i = 0; i < rssfeed.item_count && i < 9; i++){
-	  	gtk_list_store_append(md_rss, &iter);
-   		gtk_list_store_set(md_rss, &iter, 0, rssfeed.item[i].title, -1);
-	}
-	return NULL;
 }
 
 
@@ -458,8 +391,8 @@ void list_doubleclick(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *c
 		gtk_tree_model_get(model, &iter, COL_ID, &id, -1);
 		printf("\nDouble clicking [%s].", torrentlist[id].tinfo->_info_hash);
 		fflush(stdout);
-		//fork and spawn nautilus with directory from top level file.
-		//the directory should be found in the file-manager. bencodning.c?
+		//[todo: fork and spawn nautilus with directory from top level file.
+		//the directory should be found in the file-manager. bencodning.c?]
 	}
 }
 
@@ -489,7 +422,7 @@ void torrent_start()
 							 break;
 	}
 
-	printf("\nStarted torrent %s with swarm #%d.", torrentlist[id].tinfo->_info_hash, torrentlist[id].swarm_id);
+	printf("\nStarted torrent #%d with swarm #%d.", id, torrentlist[id].swarm_id);
 	fflush(stdout);
 }
 
@@ -515,7 +448,7 @@ void torrent_stop()
 							  	break;
 	}
 	
-	printf("\nStopped torrent %s.", torrentlist[id].tinfo->_info_hash);
+	printf("\nStopped torrent #%d", id);
 	fflush(stdout);
 }
 
@@ -539,29 +472,29 @@ void torrent_delete()
 	//todo: delete torrent files && delete torrentinfo record?
 	netstat_untrack(torrentlist[id].tinfo->_info_hash);
 
-	printf("\nDeleted torrent %s.", torrentlist[id].tinfo->_info_hash);
+	printf("\nDeleted torrent %d.", id);
 	fflush(stdout);
 }
 
-//keep id intact, reorder list. ~RD
+//keep id intact, reorder list. [todo: implement queue] ~RD
 void torrent_prioritize()
 {
 	int id;
 	if ((id = selected_id()) < 0)
 		return;
 
-	g_print ("You clicked on the arrow up button!\n");
+	printf("Prioritized torrent #%d\n", id);
 	fflush(stdout);
 }
 
-//keep id intact, reorder list. ~RD
+//keep id intact, reorder list. [todo: implement queue] ~RD
 void torrent_deprioritize()
 {
 	int id;
 	if ((id = selected_id()) < 0)
 		return;
 
-	g_print ("You clicked on the arrow down button!\n");
+	printf("DePrioritized torrent #%d\n", id);
 	fflush(stdout);
 }
 
@@ -662,24 +595,21 @@ void add_torrent(){
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
 		filePath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
-		if (strcmp(strrchr(filePath, '.'), ".torrent") == 0){ 		//Fixed:  (strrchr(filePath, '.')=="torent"): comparing pointer to "." in filePath with pointer to string "(t)orent". Fixed ~RD
+		if (strcmp(strrchr(filePath, '.'), ".torrent") == 0){ 	//Fixed:  (strrchr(filePath, '.')=="torent"): comparing pointer to "." in filePath with pointer to string "(t)orent". Fixed ~RD
 			tmp = malloc(strlen(filePath));
 			strcpy(tmp, filePath);
 			tmp = strtok(tmp, "/");
 			fileName = malloc(strlen(tmp));
 			memset(fileName, '\0', strlen(tmp));
 			while(tmp!=NULL){
-				// extract filename from filepath
 				fileName = realloc(fileName, strlen(tmp));
 				strcpy(fileName, tmp);
 				tmp = strtok(NULL, "/");
 			}
 			tmp = realloc(tmp, strlen(filePath)+strlen(fileName)+6);
-			// build copy string
-			sprintf(tmp, "cp %s %s", filePath, fileName); //use cp, not copy. ~RD
+			sprintf(tmp, "cp %s %s", filePath, fileName); 	//use cp, not copy. ~RD
 			fprintf(stderr, "%s\n", tmp);
-			// copy torrent file to working dir
-			system(tmp);
+			system(tmp);									//don't use system here, unsecure. ~RD
 			// get torrent info
 			if (init_torrent(fileName, torrent) == 1)		//if decode_bencode returns with error, don't add to list. Display error dialog? ~RD
 			{
@@ -688,7 +618,6 @@ void add_torrent(){
 				memset(fileSize, '\0', sizeof(torrent->_total_length));
 				sprintf(fileSize, "%lld", torrent->_total_length);
 				// add torrent to list and initiate download
-				//list_add(torrent->_torrent_file_name, "Ready", fileSize, "0.00%", torrent->_info_hash, STATE_INACTIVE, torrent);
 				list_add("Checking Files..", torrent, STATE_CREATING);
 			}
 			else
@@ -698,31 +627,36 @@ void add_torrent(){
 	gtk_widget_destroy(dialog); //some torrents will cause a segmentation fault here ~RD
 }
 
+//create MOTD display.
 void MOTD(GtkWidget **label, GtkWidget **table) {
 	*label = gtk_label_new("Loading MOTD ..."); // Label content
   	gtk_misc_set_alignment(GTK_MISC(*label), 0, 1); // Sets alignment of label
   	gtk_table_attach_defaults(GTK_TABLE(*table), *label, 0, 4, 10, 11); 
-  	gtk_label_set_width_chars(GTK_LABEL(*label), 100);  //???
+  	gtk_label_set_width_chars(GTK_LABEL(*label), 100);
 }
 
+//create total up/download - rates.
 void netstat_label(GtkWidget **label, GtkWidget **table) {
 	*label = gtk_label_new("Upload/Download speed");
   	gtk_misc_set_alignment(GTK_MISC (*label), 1, 1);
-  	gtk_table_attach_defaults(GTK_TABLE (*table), *label, 4, 6, 10, 11);//???
+  	gtk_table_attach_defaults(GTK_TABLE (*table), *label, 4, 6, 10, 11);
 }
 
+//create a set of tabs.
 void create_notebook (GtkWidget **table, GtkWidget **notebook) {
 	*notebook = gtk_notebook_new(); // Creates new notebook
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(*notebook), GTK_POS_TOP); // Sets tab position
 	gtk_table_attach_defaults(GTK_TABLE(*table), *notebook, 0,6,1,10); // Sets row and columns for notebook
 }
 
+//create a table to fill with widgets.
 void create_table (GtkWidget **window, GtkWidget **table) {
 	*table = gtk_table_new(11,6,TRUE); // Creates rows and columns for table
 	gtk_container_add(GTK_CONTAINER(*window), *table); // Adds table to main window
 	gtk_table_set_row_spacing(GTK_TABLE(*table),0,5); // Sets row space on row 5
 }
 
+//create a new renderer for cells.
 void static enum_list(GtkWidget **tree_view, GtkListStore **model, GtkTreeViewColumn **column) {
 	GtkCellRenderer   *renderer;
 
@@ -738,6 +672,7 @@ void static enum_list(GtkWidget **tree_view, GtkListStore **model, GtkTreeViewCo
 	g_object_unref(*model);
 }
 
+//create an RSS table.
 void rss_table(GtkWidget *tbl){
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
@@ -754,9 +689,11 @@ void rss_table(GtkWidget *tbl){
 	rssfeed.host = malloc(MAX_URL_LEN);
 	rssfeed.uri = malloc(MAX_URL_LEN);
 
+	//[todo: implement double-click event.]
 	//g_signal_connect(tv_rss, "row-activated", G_CALLBACK(rss_clicked), NULL);
 }
 
+//create the homescreen, with rss-feed and penguin.
 void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, GtkWidget **notebook) {
 	*label = gtk_label_new("Home"); // Tab name
 	*home_table = gtk_table_new(2,3,TRUE); //4?
@@ -769,7 +706,7 @@ void create_home (GtkWidget **label, GtkWidget **home_table, GtkWidget **view, G
 
 	rss_table(*home_table);
 
-	*view = gtk_label_new("Counters Table"); // Content of "Home" tab
+	*view = gtk_label_new(""); // Content of "Home" tab
 	gtk_widget_set_usize(*view, 300, 30); // Max WIDTH x HEIGHT of content in tab
 	gtk_misc_set_alignment(GTK_MISC(*view), 0, 0); // X & Y alignment of conten
 	gtk_misc_set_padding(GTK_MISC(*view), 10, 10); // Left/Right & Top/Bottom padding
@@ -794,6 +731,7 @@ void create_torrent_tab(GtkWidget **label, GtkWidget **scrolled_window, GtkWidge
 	gtk_notebook_insert_page (GTK_NOTEBOOK (*notebook), *scrolled_window, *label, pos); // Adds scrolled window to tab and positions it
 }
 
+//create the menu buttons and set up action listeners.
 void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	GtkToolItem	*play;
 	GtkToolItem	*stop;
@@ -844,6 +782,7 @@ void create_menu (GtkWidget **toolbar, GtkWidget **table) {
 	g_signal_connect(tv_seeding, "row-activated", G_CALLBACK(list_doubleclick), NULL);
 }
 
+//main. It's main.
 int main (int argc, char *argv[])
 {
 	GtkWidget		*window;
@@ -857,11 +796,11 @@ int main (int argc, char *argv[])
 
 	gtk_init (&argc, &argv);
 
-	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); // Creates main window
-	gtk_window_set_title(GTK_WINDOW(window), "ccTorrent v0.1"); // Title of main window
-	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); // Main window is centered on start
+	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); 								//creates main window.
+	gtk_window_set_title(GTK_WINDOW(window), "ccTorrent v0.1"); 				//title of main window.
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); 			//main window is centered on start.
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), "assets/icon.png", NULL);
-	gtk_container_border_width (GTK_CONTAINER (window), 10);// Inner border of window is set to 10
+	gtk_container_border_width (GTK_CONTAINER (window), 10);					//inner border of window is set to 10.
 	gtk_widget_set_app_paintable(window, TRUE);
 
 	create_table(&window, &table);
@@ -893,15 +832,17 @@ int main (int argc, char *argv[])
 	netstat_initialize();
 	swarm_initialize();
 
+	//thread for updating the gui with new data.
+	if (pthread_create(&update_thread, NULL, gui_update_thread, NULL))
+			printf("\nUpdating your values in Thread. Failed.");
 
-	if (!(pthread_create(&update_thread, NULL, gui_update_thread, NULL)))
-			printf("\nUpdating your values in Thread.");
+	//thread for fetching the motd.
+	if (pthread_create(&motd_thread, NULL, motd_timer_thread, NULL))
+			printf("\nWaiting for MOTD in Thread. Failed.");
 
-	if (!(pthread_create(&motd_thread, NULL, motd_timer_thread, NULL)))
-			printf("\nWaiting for MOTD in Thread.");
-
-	if (!(pthread_create(&rss_thread, NULL, rss_timer_thread, tv_rss)))
-			printf("\nWaiting for Feed in Thread.");
+	//thread for retrieving the rss-feed.
+	if (pthread_create(&rss_thread, NULL, rss_timer_thread, tv_rss))
+			printf("\nWaiting for Feed in Thread. Failed.");
 
 //---------------------------------------------------------------------------  ~RD
 
@@ -909,7 +850,6 @@ int main (int argc, char *argv[])
 	netstat_label(&lb_netstat, &table);
 	create_menu(&toolbar, &table);
 
-// Show window widget and it's child widgets
 	gtk_widget_show_all(window);
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 

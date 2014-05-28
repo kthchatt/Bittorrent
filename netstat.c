@@ -1,16 +1,15 @@
-#include "netstat.h"
-
 /* netstat.c
  * 2014-05-08
  * Robin Duda
- *  Tracks network rates per info_hash.
- *  Todo: add total transfer rate.
- *  Todo: add total bytes transferred, store in stats?
+ *
+ *  Tracks network rates per info_hash, only valid data (hash-verified) should be tracked.
+ *  	Todo: add total bytes transferred, store in stats?
+ *
  * calculates the average byte rates over the last DELTA_TIME and waits for another DELTA_TIME
- * until refreshing. This could be improved to be more responsive and less fluctuative, by using the latest
- * values which occured the last Xs and update every X/10s.
+ * until refreshing. This could be improved to be less fluctuative, sacrificing precision.
  */
 
+#include "netstat.h"
 
 typedef struct 
 {
@@ -26,11 +25,10 @@ int tracking_count;
 static bool netstat_initialized = false;
 
 
+//recalculate averages.
 void* timer_thread(void* arg)
 {
 	int i;
-
-	char* damoss = (char*) malloc(FORMATSTRING_LEN); //remove
 
 	while (true)
 	{
@@ -53,7 +51,6 @@ void* timer_thread(void* arg)
 		totalstat.out_delta = 0;
 		unlock(&totalstat.lock);
 	}
-	free(damoss);
 }
 
 //calling init will start the timer thread.
@@ -71,14 +68,14 @@ void netstat_initialize()
 		netstat = (netstat_t*) malloc(sizeof(netstat_t));	//get a pointer to any block of memory, for realloc. lol.
 		memset(netstat, 0, sizeof(netstat_t));
 
-		if (!(pthread_create(&timer, NULL, timer_thread, NULL)))
-			printf("\nTracking your network statistics.");
+		if (pthread_create(&timer, NULL, timer_thread, NULL))
+			printf("\nNetstat initialization failed.");
 
 		netstat_initialized = true;
 	}
 }
 
-//not safe. safe enough?
+//set up tracking for a specific info_hash.
 void netstat_track(char* info_hash)
 {
 	int i;
@@ -108,15 +105,14 @@ void netstat_track(char* info_hash)
 	}
 }
 
-//remove an object from the dynamic array. todo: does not work :p
+//stop tracking a torrent.
 void netstat_untrack(char* info_hash)
 {
 	int i;
 
-	for (i = 0; i < tracking_count; i++)
+	for (i = 0; i < tracking_count; i++)	//moving the memory, we must lock everything! (could be improved to only lock items which needs to move)
 		lock(&netstat[i].lock);
 
-	//todo: make it work.
 	for (i = 0; i < tracking_count; i++)
 	{
 		if (netstat[i].info_hash == info_hash)
@@ -133,6 +129,7 @@ void netstat_untrack(char* info_hash)
 	return;
 }
 
+//format download rate of bytes into something nice. like B/s, KB/s, MB/s, GB/s
 char* format_string(char* format_string, float rate)
 {
 	int unit;
@@ -161,7 +158,7 @@ char* format_string(char* format_string, float rate)
 	return format_string;
 }
 
-//update the total throughput.
+//update the total goodput.
 void throughput_update(int direction, int amount)
 {
 	lock(&totalstat.lock);
@@ -173,7 +170,7 @@ void throughput_update(int direction, int amount)
 	unlock(&totalstat.lock);
 }
 
-//update throughput per torrent.
+//update goodput per torrent.
 void netstat_update(int direction, int amount, char* info_hash)
 {
 	int i;
@@ -193,7 +190,7 @@ void netstat_update(int direction, int amount, char* info_hash)
 	throughput_update(direction, amount);
 }
 
-//retrieve the current throughput.
+//retrieve the current goodput.
 char* netstat_throughput(int direction, char* format)
 {
 	int rate = 0;
@@ -209,6 +206,7 @@ char* netstat_throughput(int direction, char* format)
 	return format_string(format, rate);
 }
 
+//update the down/up- rates.
 int netstat_bytes(int direction, char* info_hash)
 {
 	int i, amount = -1;
@@ -229,8 +227,7 @@ int netstat_bytes(int direction, char* info_hash)
 	return amount;
 }
 
-//passing a pointer as argument removes the need for freeing and mallocing every call.
-//returning the same pointer allows for function inline.
+//format bytes.
 char* netstat_formatbytes(int direction, char* info_hash, char* format)
 {
 	return format_string(format, netstat_bytes(direction, info_hash));

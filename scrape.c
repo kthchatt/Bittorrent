@@ -15,7 +15,7 @@ typedef struct
 } scrape_t;
 
 //construct a http query
-static int build(char request[200], char* info_hash, char* tracker) 
+static int build(char request[256], char* info_hash, char* tracker) 
 {
     char* path =     (char*) malloc(MAX_URL_LEN);
     char* hostname = (char*) malloc(MAX_URL_LEN);
@@ -25,7 +25,6 @@ static int build(char request[200], char* info_hash, char* tracker)
     url_path(tracker, path);
     url_encode(info_hash, hash_escape);
 
-                                //todo: add string replace, /announce from url_announce needs to be replaced by /scrape, this won't work on other than PHP servers.
     sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, hash_escape, hostname);
     
     free(path);
@@ -62,8 +61,8 @@ static void response(int* sockfd, scrape_t* scrape)
 static void* query(void* arg)
 {
     scrape_t* scrape = (scrape_t*) arg;
-    int port = 80, url_len = 200, sockfd;
-    char request[200] = {0};
+    int port = 80, url_len = 256, sockfd;
+    char request[256] = {0};
     char* hostname = malloc(url_len); 
     char* protocol = malloc(url_len);
     struct addrinfo hints, *res;
@@ -79,6 +78,8 @@ static void* query(void* arg)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
+
+    //if protocol is http do socket stuff, else pass a DGRAM.
 
     if (getaddrinfo(hostname, protocol, &hints, &res) == 0)
     {
@@ -101,13 +102,14 @@ static void* query(void* arg)
     return arg;
 }
 
-//todo: scrape if interval has passed and is alive.
+//[todo: use the interval stored in tracker for scraping individual peers.]
  void tracker_scrape(swarm_t* swarm)
  {
     scrape_t* scrape;
     int i = 1;
 
-    strcpy(swarm->tracker[1].url, "http://127.0.0.1:80/tracker/announce.php");  //every other entry in trackers is empty? added local tracker temporary for testing.
+    //inject localhost tracker, useful during development.
+    strcpy(swarm->tracker[MAX_TRACKERS - 1].url, "http://127.0.0.1:80/tracker/announce.php"); 
 
     for (i = 0; i < MAX_TRACKERS; i++)
     {
@@ -121,8 +123,8 @@ static void* query(void* arg)
             scrape->swarm->completed = 0;
             scrape->swarm->incomplete = 0;
 
-            if(!(pthread_create(&scrape->thread, NULL, query, scrape)))
-                printf("\nScraping: %s.", scrape->tracker->url);
+            if (pthread_create(&scrape->thread, NULL, query, scrape))
+                printf("\nScraping: %s Failed. Failed Terribly.", scrape->tracker->url);
             else
                 swarm->tracker[i].alive = false;
         }

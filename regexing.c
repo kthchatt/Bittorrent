@@ -5,7 +5,7 @@
  * Takes a string and regex type, returns regex match.
  */
 
- //TODO: REPURPOSE.
+ //TODO: no longer in use? remove from project.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -54,11 +54,6 @@ void execute_regex (regex_t* reg, char* source, char* dest)
             start = result[i].rm_so + (mpos - source);
             finish = result[i].rm_eo + (mpos - source);
 
-            /*
-                printf("$& is ");
-            else
-                printf("$%d is ", i);*/
-
             k = 0;
             for(j = result[i].rm_so; j < result[i].rm_eo; ++j) 
             {
@@ -68,7 +63,6 @@ void execute_regex (regex_t* reg, char* source, char* dest)
             }
 
             dest[k] = '\0';
-           // printf("-%s-", dest);
         }
         mpos += result[0].rm_eo;
     }
@@ -81,8 +75,6 @@ int regex_string(char* source, char* dest, int type)
 {
     regex_t reg;
     char* query;
-
-    //printf("source: %s, dest: %s\n", source, dest);
 
     switch(type)
     {

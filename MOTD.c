@@ -9,21 +9,23 @@
 
 pthread_t thread;
 
+//downloads the MOTD from server specified in header file.
 void* fetch(void* arg)
 {
     char* response = (char*) arg;
     char* request = malloc(128);
     char recvbuf[MOTD_MAXLEN];
-    sprintf(request, "GET /MOTD.php HTTP/1.1\r\nhost: 127.0.0.1\r\n\r\n");
+    sprintf(request, "GET /MOTD.php HTTP/1.1\r\nhost: %s\r\n\r\n", MOTD_HOST);
     struct addrinfo hints, *res;
     int sockfd, num, header = 0;
 
+    //if the server times out, 'MOTD Not Available' - will be printed.
     strcpy(response, "MOTD Not Available.");
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    getaddrinfo("localhost", "80", &hints, &res);
+    getaddrinfo(MOTD_HOST, "80", &hints, &res);
 
      if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1)
     { 
@@ -51,10 +53,9 @@ void* fetch(void* arg)
     return NULL;
 }
 
-//construct a http query
+//retrieve the MOTD through a http query.
 void MOTD_fetch(char* response)
 {
-    //create thread
-    if (!(pthread_create(&thread, NULL, fetch, (void*) response)))
-        printf("\nFetching the MOTD!..");
+    if (pthread_create(&thread, NULL, fetch, (void*) response))
+        printf("\nFetching the MOTD.. Failed.");
 }

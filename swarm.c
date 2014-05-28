@@ -8,7 +8,7 @@
 
  static bool initialized = false;
 
-//generates 20bytes long swarm-unique peer identifier. (one id per swarm)
+//generates 20-bytes long swarm-unique (most likely) peer identifier. (one id per swarm)
 void generate_id(char peer_id[21])
 {
 	int i, len;
@@ -25,19 +25,17 @@ void generate_id(char peer_id[21])
 	peer_id[20] = '\0';
 }
 
+//initialize the swarm!
 void swarm_initialize()
 {
-	printf("\nInitializing swarm."); fflush(stdout);
-
 	if (initialized == true)
 		return;
 
 	memset(&swarm, 0, sizeof(swarm_t) * MAX_SWARMS);
-	printf("\nInitialized swarms."); fflush(stdout);
-
 	initialized = true;
 }
 
+//get the amount of incomplete peers in swarm. (if swarm is valid)
 int swarm_incomplete(int swarm_id)
 {
 	if (swarm_id >= MAX_SWARM_SIZE || swarm_id < 0)
@@ -46,6 +44,7 @@ int swarm_incomplete(int swarm_id)
 	return swarm[swarm_id].incomplete;
 }
 
+//return the amount of completed peers in swarm.  (if swarm is valid)
 int swarm_completed(int swarm_id)
 {
 	if (swarm_id >= MAX_SWARM_SIZE || swarm_id < 0)
@@ -54,6 +53,7 @@ int swarm_completed(int swarm_id)
 	return swarm[swarm_id].completed;
 }
 
+//return the total amount of peers in the swarm.  (if swarm is valid)
 int swarm_peercount(int swarm_id)
 {
 	if (swarm_id >= MAX_SWARM_SIZE || swarm_id < 0)
@@ -62,7 +62,7 @@ int swarm_peercount(int swarm_id)
 	return swarm[swarm_id].peercount;
 }
 
-//return a free swarm
+//select a swarm, if there are any not busy, return its id.
 int swarm_select(torrent_info* tinfo)
 {
 	int  swarm_id = -1, i, j;
@@ -94,22 +94,17 @@ int swarm_select(torrent_info* tinfo)
   	return swarm_id;
 }
 
-//clear stale peers.
+//clear stale peers. [todo: implementation.]
 void swarm_reset(swarm_t* swarm)
 {
 	int i;
 
 	for (i = 0; i < MAX_SWARM_SIZE; i++)
 	{
-		//set sockfd to 0 !!
-		/*if (swarm->peer[i].sockfd != 0)
-			close(&swarm->peer[i].sockfd);
-		swarm->peer[i].sockfd = 0;*/
-
-		//memset(swarm->peer[i].ip, '\0', 21);
-		//memset(swarm->peer[i].port, '\0', 6); 
+		//lock swarm
+		//memmove for dyn-array...
+		//unlock swarm
 	}
-
 	swarm->peercount = 0;
 }
 
@@ -130,8 +125,7 @@ void swarm_release(swarm_t* swarm)
 	swarm->taken = 0;	
 }
 
-//find a port and listen to it. 
-//for every connection create a new thread. with &peer
+//find a port and listen to it, for every connection create a new peerwire-thread. with &peer
 void* peerlisten(void* arg)
 {
 	swarm_t* swarm = (swarm_t*) arg;
@@ -161,20 +155,27 @@ void* peerlisten(void* arg)
 
     getsockname(sock, (struct sockaddr *)&addr, &sin_size);
     swarm->listenport = addr.sin_port;
-	printf("Listening for peers, port = %d, %d", swarm->listenport, addr.sin_port);
 
 	while (swarm->taken == true)
 	{
 		sin_size = sizeof(struct sockaddr_in);
         new_sock = accept(sock, (struct sockaddr *)&their_addr, &sin_size);
-        printf("\n------------ INCOMING CONNECTION ON: %d --------------------", new_sock);
-        //on accept send sockfd to peer.
-        //spawn peerwire thread.
-            /*swarm->peer[i].info_hash = swarm->info_hash;
-    		swarm->peer[i].peer_id = swarm->peer_id;
-    		swarm->peer[i].tinfo = swarm->tinfo;	//peers needs access to torrent_info for reading/writing to file.*/
-		//swarm->peercount++;
-		sleep(1);
+
+        //if the swarm is full, don't connect to it. just drop it. 
+        if (swarm->peercount < MAX_SWARM_SIZE)
+        {
+        	swarm->peer[swarm->peercount].info_hash = swarm->info_hash;
+    		swarm->peer[swarm->peercount].peer_id = swarm->peer_id;
+    		swarm->peer[swarm->peercount].tinfo = swarm->tinfo;
+    		swarm->peer[swarm->peercount].swarm = swarm;
+    		swarm->peer[swarm->peercount].sockfd = new_sock;
+			swarm->peercount++;
+
+    		if ((pthread_create(&swarm->peer[swarm->peercount].thread, NULL, peerwire_thread_tcp, &swarm->peer[swarm->peercount])))
+    			printf("\nStarting peerwire_thread_tcp.. Failed.");
+    	}
+    	else
+    		close(new_sock);
 	}		
 
 	return arg;
@@ -205,6 +206,6 @@ void swarm_scour(swarm_t* swarm)
 
 void swarm_listen(swarm_t* swarm)
 {
-	if(!(pthread_create(&swarm->thread, NULL, peerlisten, swarm)))
-			printf("\nAdding swarm listener..");
+	if (pthread_create(&swarm->thread, NULL, peerlisten, swarm))
+			printf("\nAdding swarm listener.. Failed.");
 }

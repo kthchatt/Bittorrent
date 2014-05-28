@@ -1,14 +1,14 @@
+ /*  protocol_meta.h
+ *	Author: Robin Duda
+ *
+ *	Defines the protocol & its settings.
+ */
+
  #ifndef _protocol_meta_h
  #define _protocol_meta_h
 
 #include <pthread.h>
 #include "bencodning.h"
-
-/*  protocol_meta.h
- *	Author: Robin Duda
- *
- *	
- */
 
 //sys-global
 #define true 1
@@ -68,9 +68,6 @@
 
 #define FORMATSTRING_LEN 24
 
-//typedef struct peer_t;
-//typedef struct swarm_t;
-
 typedef struct
 {
 	char* url;
@@ -86,7 +83,7 @@ typedef struct peer_t
 	int interested, interesting;
 	char ip[21];
 	char port[6];
-	char* peer_id;		//pointers to swarm_t data. (required for threading.)
+	char* peer_id;			//pointers to swarm_t data. (required for threading.)
 	char* info_hash;
 	char* remote_bitfield;	//bits the remote peer is in posession of.
 	char* local_bitfield;	//local bits that have been announced, diff this to swarm and then 'have'-, then update.
@@ -104,7 +101,7 @@ typedef struct peer_t
  	peer_t peer 		[MAX_SWARM_SIZE];
  	char  peer_id   	[21];
  	char* info_hash;
- 	char* bitfield;	//bitfield, set bit to 1 when downloaded set bit to 1 when started download, clear bit if download failed.
+ 	char* bitfield;						//bitfield, set bit to 1 when downloaded set bit to 1 when started download, clear bit if download failed.
  	int listenport, peercount, sockfd, completed, incomplete;
  	torrent_info* tinfo;
  	pthread_t thread;

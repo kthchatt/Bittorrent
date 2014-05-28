@@ -1,3 +1,10 @@
+/* announce.c 
+ * 2014-04-16
+ * Robin Duda
+ * Reference URL: http://beej.us/guide/bgnet/output/html/multipage/syscalls.html
+ * Announces presence to tracker and fetches peers in the swarm.
+ */
+
 #ifndef _announce_h
 #define _announce_h
 
@@ -17,8 +24,7 @@
  #include "swarm.h"
  #include "netstat.h"
 
-//announce all trackers in trackerlist, algorithm for announcing only on trackers with
-//enough peers not added yet.
+//announce on trackers associated with the swarm, using the swarm's infohash.
 void tracker_announce(swarm_t* swarm);
 
 #endif

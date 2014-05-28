@@ -1,4 +1,4 @@
-/* bitwise.c
+/* bitfield.c
  * 2014-05-22
  * Robin Duda
  *  Manipulating and finding differencies in bitfield.
@@ -35,7 +35,8 @@ double bitfield_percent(char* bitfield, int length)
 	return percent;
 }
 
-/*
+//main left for testing, like usual.
+/* 
 int main()
 {
 	char* bitfield = malloc(8);

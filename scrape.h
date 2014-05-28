@@ -1,3 +1,9 @@
+/* scrape.c 
+ * 2014-04-21
+ * Robin Duda
+ * Get tracker state.
+ */
+
 #ifndef _scrape_h
 #define _scrape_h
 

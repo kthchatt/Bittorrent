@@ -1,3 +1,12 @@
+/* urlparse.c
+ * 2014-04-17
+ * Author: Robin Duda
+ *
+ *   Read data from URL.
+ *      All methods are thread safe. 
+ *      The caller must allocate memory.
+ */
+
 #ifndef _urlparse_h
 #define _urlparse_h
 

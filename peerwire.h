@@ -1,3 +1,9 @@
+/* peerwire.c
+ * 2014-05-06
+ * Robin Duda
+ *  Peer-wire protocol implementation.
+ */
+
  #ifndef _peerwire_h
  #define _peerwire_h
 
@@ -19,10 +25,8 @@
  #include "bitfield.h"
 //require readpiece.
 
-//create a peerwire connection using tcp.
-void* peerwire_thread_tcp(void* arg);
-//create a peerwire connection usind udp.
-void* peerwire_thread_udp(peer_t* peer);
+void* peerwire_thread_tcp(void* arg);		//create a peerwire connection using tcp.
+void* peerwire_thread_udp(peer_t* peer);	//create a peerwire connection usind udp.
 
 
 #endif

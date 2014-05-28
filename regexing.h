@@ -1,3 +1,10 @@
+/* regexing.c
+ * 2014-04-17
+ * Robin Duda
+ * Reference URL: http://www.lemoda.net/c/unix-regex/index.html
+ * Takes a string and regex type, returns regex match.
+ */
+
 #ifndef _regexing_h
 #define _regexing_h
 
