@@ -37,13 +37,15 @@ Cookie-Crumb Bittorrent - v1.0b (First beta version)
 		- The GTK file dialog will not find any files, relaunching the
 		  client will fix this.
 
-		- GTK sometimes fails to scale the columns to their correct size.
+		- GTK sometimes fails to scale the columns to their correct 
+		  size.
 
 	2. System requirements
 
 		Hardware
 		  - An ethernet card and some other hardware which you already
-		    should have installed in your system if you are reading this.
+		    should have installed in your system if you are reading
+		    this.
 		
 		Dependencies
 		  - Library pthread is used for threading.

@@ -424,12 +424,18 @@ void torrent_start()
 							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
 							torrentlist[id].state = STATE_SEEDING;
 							 break;
-		case TAB_INACTIVE:  row_delete(id, md_inactive);
-							strcpy(torrentlist[id].status, "Downloading");
-							row_add(id, md_downloading);
-							netstat_track(torrentlist[id].tinfo->_info_hash);
-							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
-							torrentlist[id].state = STATE_DOWNLOADING;
+		case TAB_INACTIVE:  
+							if ((torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo)) != -1)
+							{
+								netstat_track(torrentlist[id].tinfo->_info_hash);
+								row_delete(id, md_inactive);
+								strcpy(torrentlist[id].status, "Downloading");
+								row_add(id, md_downloading);
+								torrentlist[id].state = STATE_DOWNLOADING;	
+							}
+							else
+								strcpy(torrentlist[id].status, "Queued"); //[todo: implement queue]
+							
 							 break;
 	}
 
@@ -595,6 +601,24 @@ void add_torrent(){
 	char *filePath, *fileName, *fileSize, *tmp;
 
 	torrent = malloc(sizeof(torrent_info));
+
+/*-------------------------------- DEBUG ----------------------------------------*/
+	fileName = malloc(50);
+	strcpy(fileName, "charselect.png.torrent");
+	if (init_torrent(fileName, torrent) == 1)		//if decode_bencode returns with error, don't add to list. Display error dialog? ~RD
+			{
+				// convert filesize from long long int to char
+				fileSize = malloc(sizeof(torrent->_total_length));
+				memset(fileSize, '\0', sizeof(torrent->_total_length));
+				sprintf(fileSize, "%lld", torrent->_total_length);
+				// add torrent to list and initiate download
+				list_add("Checking Files..", torrent, STATE_CREATING);
+			}
+			else
+				free(torrent);
+
+	return;
+//------------------------------ END DEBUG ------------------------------------------
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	dialog = gtk_file_chooser_dialog_new ("Open File",

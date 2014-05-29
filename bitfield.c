@@ -37,6 +37,15 @@ double bitfield_percent(char* bitfield, int length)
 	return percent;
 }
 
+//changes the order of bits in a byte.
+char bitfield_reverse(char x)
+{
+	x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;	//swap nibbles.
+	x = (x & 0xCC) >> 2 | (x & 0x33) << 2;	//swap pairs.
+	x = (x & 0xAA) >> 1 | (x & 0x55) << 1;  //swap neighbours.
+	return x;
+}
+
 //main left for testing, like usual.
 /* 
 int main()

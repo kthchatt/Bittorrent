@@ -83,15 +83,21 @@ void bitfield(peer_t* peer)
 {
 	int piece_count = peer->tinfo->_hash_length / 20;	
 	int payload = 0, len = htonl(piece_count / 8 + 2);
-    unsigned char id = 5; 	
+    unsigned char id = 5; 
+	char* revfield = malloc(len - 1);
+	int i;
+
+	for (i = 0; i < piece_count / 8 + 1; i++)
+	  revfield[i] = bitfield_reverse(peer->swarm->bitfield[i]);    	
 
     char* request = malloc(4 + ntohl(len));
     memcpy(request, &len, 4);					payload += 4;
     memcpy(request + payload, &id, 1);			payload += 1;
-    memcpy(request + payload, peer->swarm->bitfield, piece_count / 8 + 1); 	payload += piece_count / 8 + 1;
+    memcpy(request + payload, revfield, piece_count / 8 + 1); 	payload += piece_count / 8 + 1;
 
     send(peer->sockfd, request, payload, 0);		
-    free(request);	
+    free(request);
+    free(revfield);	
 }
 
 //messages: choke, unchoke, interested, not interested]
@@ -222,7 +228,9 @@ void* listener_tcp(void* arg)
 		if (num > 4 || (num = recv(peer->sockfd, recvbuf, DOWNLOAD_BUFFER, 0)) > 0) //if buffer less than header size, issue a read op.
 		{
 			memcpy(&msglen, recvbuf, 4);
-			msglen = htonl(msglen);
+			msglen = ntohl(msglen);
+
+			printf("\nPACKET HEADER\ttype = %d\tlen = %d\tnum = %d", (unsigned char) recvbuf[4], msglen, num);
 
 			if (msglen > 0) //if message length is 0 the message is a Keep-Alive, ignore it.
 			switch ((unsigned char) recvbuf[4])
@@ -236,8 +244,9 @@ void* listener_tcp(void* arg)
 				case NOT_INTERESTED:peer->interested = false;								 	break;
 				case BITFIELD:      peer_bitfield(recvbuf, &num, &msglen, peer);				break;
 				case PORT:			/*port message not implemented, used for mainline DHT*/		break;
-				case 84: 			msglen = num - 4;  /*handshake, we already sent it.*/		break; 	
-				default: 			printf("\nid: %d", (unsigned char) recvbuf[4]); msglen = num - 4;  /*undefined message received*/			break;
+				case HANDSHAKE: 	msglen = 1 + (unsigned char) recvbuf[0] + 8 + 20 + 20 - 4;  printf("\nhandshake is %d bytes.", msglen + 4); 	break; 	
+				case EXTENDED:      /*extended messages not supported*/							printf("\nextended is %d bytes.", msglen); 	break;
+				default: 			printf("\nid: %d", (unsigned char) recvbuf[4]);   			break;
 			}
 
 			if (num - (msglen + 4) > 0 && msglen > 0 && msglen + 4 < DOWNLOAD_BUFFER)

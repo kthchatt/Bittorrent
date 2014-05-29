@@ -45,6 +45,8 @@
 #define PIECE       7
 #define CANCEL      8
 #define PORT        9   
+#define HANDSHAKE   84
+#define EXTENDED    20
 #define DOWNLOAD_BUFFER 2388608
 #define BLOCK_SIZE	16384
 

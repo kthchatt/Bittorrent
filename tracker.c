@@ -45,7 +45,6 @@ int tracker_track(torrent_info* tinfo)
 		if (pthread_create(&torrents[swarm_id], NULL, tracking, &swarm[swarm_id]))
 			printf("\nTracking as [%s] .. Failed.\n", swarm[swarm_id].peer_id);
 	}
-	else printf("\nSwarms are busy! Increase MAX_SWARMS or fix a memory leak!\n");
 
 	return swarm_id;
 }
