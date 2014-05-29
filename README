@@ -10,12 +10,10 @@ Team:
 
 Developed For KTH-STH Haninge.
 
-
    [Don't use your favorite text editor. Use 'more', it's super effective!]
 ================================================================================
 
 Cookie-Crumb Bittorrent - v1.0b (First beta version)
-
 
     == Table of Contents ==
       1. Known Issues.
@@ -30,46 +28,44 @@ Cookie-Crumb Bittorrent - v1.0b (First beta version)
 		  [KTorrent, Transmission]
 		  Possible reasons for this may be the lacking support 
 		  of µTP on our end.
-		  (Testing and developed against µTorrent and BitTorrent.)
+		  (Tested and developed against µTorrent and BitTorrent.)
 
 		- Does not compile with GTK3, use GTK2 when compiling!
 
 		- GTK Produces some warnings at runtime, needs to be addressed.
 
-		- The GTK file dialog will not find any files, relaunching or
-		  recompiling will fix it.
+		- The GTK file dialog will not find any files, relaunching the
+		  client will fix this.
+
+		- GTK sometimes fails to scale the columns to their correct size.
 
 	2. System requirements
 
-		- An ethernet card with an active Internet connection is 
-		  beneficial.
+		Hardware
+		  - An ethernet card and some other hardware which you already
+		    should have installed in your system if you are reading this.
+		
+		Dependencies
+		  - Library pthread is used for threading.
+		  - GTK2 is required for the graphical user interface.
+		  - For the hashing algorithm SHA1, the library lcrypto is
+		    required.
 
-		- The software is developed to be efficient, simple and plain,
-		  however GTK is a resource HOG. Make sure your hardware is 
-		  up to snuff.
-
-		- For the hashing algorithm SHA1, the library lcrypto is
-		  required.
-
-		- Should you find the software to be way too demanding, look
-		  into the gui_update_thread() and more specifically the 
-		  list_update() function. Updating the values in the graphical
-		  user interface requires an expensive GTK API call. Reducing 
-		  the FPS-define in GUI.c is another alternative.
+		Note on resource usage
+		  - Should you find the software to be hogging your system, look
+		    into the gui_update_thread() and more specifically the 
+		    list_update() function. Updating the values in the graphical
+		    user interface requires an expensive GTK API call. Reducing 
+		    the FPS-define in GUI.c is another alternative.
 
 	3. Installing the client
 
 		3.1 Make sure you have the latest version from our Git repo.
 			https://github.com/kthchatt/BitTorrent.git
-
 		3.2 Read the README file, you should be reading it right now.
-
 		3.3 Set your working directory to ccBitTorrent folder.
-
 		3.4 Run the make - file.
-
 		3.5 Download every torrent. Much download, many peer. very seed.
-
 
 	4. Modifying the source code.
 
@@ -83,7 +79,7 @@ Cookie-Crumb Bittorrent - v1.0b (First beta version)
 
 			GUI.c
 			  Modding the user - interface.
-			
+		
 			bencodning.c
 			   Metainfo & Bencoding.
 			

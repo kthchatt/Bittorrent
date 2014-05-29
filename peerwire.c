@@ -82,13 +82,13 @@ void peer_bitfield(char* recvbuf, int* num, int *msglen, peer_t* peer)
 void bitfield(peer_t* peer)
 {
 	int piece_count = peer->tinfo->_hash_length / 20;	
-	int payload = 0, len = htonl(piece_count + 1);
+	int payload = 0, len = htonl(piece_count / 8 + 2);
     unsigned char id = 5; 	
 
-    char* request = malloc(4 + 1 + ntohl(len));
+    char* request = malloc(4 + ntohl(len));
     memcpy(request, &len, 4);					payload += 4;
     memcpy(request + payload, &id, 1);			payload += 1;
-    memcpy(request + payload, peer->swarm->bitfield, piece_count); 	payload += piece_count;
+    memcpy(request + payload, peer->swarm->bitfield, piece_count / 8 + 1); 	payload += piece_count / 8 + 1;
 
     send(peer->sockfd, request, payload, 0);		
     free(request);	
@@ -237,7 +237,7 @@ void* listener_tcp(void* arg)
 				case BITFIELD:      peer_bitfield(recvbuf, &num, &msglen, peer);				break;
 				case PORT:			/*port message not implemented, used for mainline DHT*/		break;
 				case 84: 			msglen = num - 4;  /*handshake, we already sent it.*/		break; 	
-				default: 			msglen = num - 4;  /*undefined message received*/			break;
+				default: 			printf("\nid: %d", (unsigned char) recvbuf[4]); msglen = num - 4;  /*undefined message received*/			break;
 			}
 
 			if (num - (msglen + 4) > 0 && msglen > 0 && msglen + 4 < DOWNLOAD_BUFFER)
@@ -293,7 +293,7 @@ void* peerwire_thread_tcp(void* arg)
 
 	sleep(1);
 	handshake(peer, peer->info_hash, peer->peer_id); 	sleep(0);
-	//bitfield(peer);  									sleep(1);		//the sleeps are not very pretty, but the peer is expecting some delay.
+	bitfield(peer);  									sleep(1);		//the sleeps are not very pretty, but the peer is expecting some delay.
 	message(peer, INTERESTED);							sleep(4);
 	message(peer, UNCHOKE);								sleep(0);
 
@@ -302,6 +302,9 @@ void* peerwire_thread_tcp(void* arg)
 	int block, index = 0, piecelen = peer->tinfo->_piece_length, blockcount, size = BLOCK_SIZE;
 	while (peer->sockfd != 0 && index < (peer->tinfo->_hash_length / 20))
 	{
+		request(peer, htonl(0), htonl(0), htonl(16384));
+		break;
+
 		//get pieces not in posession, request for every block in piece.
 		blockcount = piecelen / BLOCK_SIZE; 
 		block = 0;

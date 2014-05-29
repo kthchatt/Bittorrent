@@ -118,5 +118,6 @@ void *write_piece_thread(void *torrent_piece){
 	}
 	free(local_struct->pieceptr);
 	free(torrent_piece);  
+	printf("\nWrite piece completed.");
 	return torrent_piece;
 }

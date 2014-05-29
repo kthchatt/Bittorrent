@@ -42,6 +42,8 @@
 #include "bitfield.h"
 #include "math.h"
 
+#define WINDOW_TITLE "ccTorrent v1.0b"
+
 #define TORRENT_TABS 4
 #define TAB_DOWNLOADING 1
 #define TAB_SEEDING 2
@@ -288,7 +290,9 @@ void list_update(GtkListStore *ls)
 						row_add(id, md_seeding);
 
     				}
-    				break;	
+    				break;
+    		case STATE_SEEDING: 
+    				percent = (double) 100.0;	//[todo: get percent from ratio vs target ratio.]	
     	}
 
     	sprintf(progress, "%.2f%%", percent);
@@ -804,7 +808,7 @@ int main (int argc, char *argv[])
 	gtk_init (&argc, &argv);
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL); 								//creates main window.
-	gtk_window_set_title(GTK_WINDOW(window), "ccTorrent v0.1"); 				//title of main window.
+	gtk_window_set_title(GTK_WINDOW(window), WINDOW_TITLE); 				//title of main window.
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); 			//main window is centered on start.
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), "assets/icon.png", NULL);
 	gtk_container_border_width (GTK_CONTAINER (window), 10);					//inner border of window is set to 10.
