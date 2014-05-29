@@ -4,7 +4,7 @@
 
 													//index is already known when calling write_piece, piece_length is less for the last piece. ~RD
 int write_piece (torrent_info *torrent, void *piece, int index, int piece_length){
-	printf("\ntest from write_piece index: %d length: %d", index, piece_length); fflush(stdout);
+	//printf("\ntest from write_piece index: %d length: %d", index, piece_length); fflush(stdout);
 	pthread_t write_piece_pthread_t;
 	write_piece_struct* torrent_piece = malloc(sizeof(write_piece_struct));
 	torrent_piece->torrentptr = torrent;
@@ -23,6 +23,7 @@ int write_piece (torrent_info *torrent, void *piece, int index, int piece_length
 	else {
 		fprintf(stderr, "The hash is not found (PRINT FROM PROCESS)");
 		free(piece);
+		free(torrent_piece);
 		return -1;	//hash not found, failure.
 	}
 	//--------
@@ -48,23 +49,23 @@ int write_piece (torrent_info *torrent, void *piece, int index, int piece_length
 
 //todo: checking for the hash a second time is redundant, remove from thread.  ~RD
 void *write_piece_thread(void *torrent_piece){
-	fprintf(stderr, "Test from thread\n");
+	//fprintf(stderr, "Test from thread\n");
 	write_piece_struct *local_struct = (write_piece_struct *) torrent_piece;
 	torrent_info *torrent = local_struct->torrentptr;
 	char* piece_copy = local_struct->pieceptr;
 	/*void *piece = local_struct->pieceptr;*/
 
-	fprintf(stderr, "Thread: This is a second test\n");
+	//fprintf(stderr, "Thread: This is a second test\n");
 
 	//void *piece_copy;
 	//piece_copy = piece;
-	fprintf(stderr, "Thread: This is a third test\n");
+	//fprintf(stderr, "Thread: This is a third test\n");
 	int i, /*number_of_pieces, found_piece = -1,*/ first_file_to_open = 0,  bytes_written = 0, start_in_file = 0;
-	fprintf(stderr, "Thread: This is a fourth test\n");
-	fprintf(stderr, "Thread: Piece length is %lld\n", torrent->_piece_length);
+	//fprintf(stderr, "Thread: This is a fourth test\n");
+	//fprintf(stderr, "Thread: Piece length is %lld\n", torrent->_piece_length);
 	long long int bytes_to_write = local_struct->length;	//length of the piece, accounts for the last piece which is shorter. ~RD
 
-	fprintf(stderr, "Thread: This is a fifth test\n");
+	//fprintf(stderr, "Thread: This is a fifth test\n");
 
 
 	//removed redundant code. (same thing has already been done in write_piece) ~RD
@@ -104,20 +105,20 @@ void *write_piece_thread(void *torrent_piece){
 			fprintf(stderr, "Error opening file\n");
 			return torrent_piece;
 		} else {
-			fprintf(stderr, "File %s is open\n", torrent->_file_path[first_file_to_open]);
+			//fprintf(stderr, "File %s is open\n", torrent->_file_path[first_file_to_open]);
 		}
-		fseek(fp, start_in_file, SEEK_SET);
-		start_in_file = 0;
+
+		fseek(fp, start_in_file, SEEK_SET);			
+		start_in_file = 0;			
 
 		bytes_written = fwrite(piece_copy, 1, bytes_to_write, fp);
 		//fprintf(stderr, "Bytes Written: %d\n", bytes_written);
 		bytes_to_write -= bytes_written;
 		piece_copy += bytes_written;
-		first_file_to_open++;
-		fclose(fp);
+		first_file_to_open++;			
+		fclose(fp);			
 	}
 	free(local_struct->pieceptr);
 	free(torrent_piece);  
-	printf("\nWrite piece completed.");
 	return torrent_piece;
 }

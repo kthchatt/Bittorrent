@@ -39,9 +39,9 @@
 #define UNCHOKE 	1
 #define INTERESTED 	2
 #define NOT_INTERESTED 3
+#define HAVE 		4
 #define BITFIELD	5
 #define REQUEST		6
-#define HAVE 		4
 #define PIECE       7
 #define CANCEL      8
 #define PORT        9   
@@ -49,6 +49,8 @@
 #define EXTENDED    20
 #define DOWNLOAD_BUFFER 2388608
 #define BLOCK_SIZE	16384
+#define CHOKE_BACKOFF 30
+#define PIECE_WAIT    5
 
 //units and rates.
 #define U_NONE 0
@@ -89,8 +91,8 @@ typedef struct peer_t
 	char port[6];
 	char* peer_id;			//pointers to swarm_t data. (required for threading.)
 	char* info_hash;
-	char* remote_bitfield;	//bits the remote peer is in posession of.
-	char* local_bitfield;	//local bits that have been announced, diff this to swarm and then 'have'-, then update.
+	char* bitfield_peer;	//bits the remote peer is in posession of.
+	char* bitfield_sync;	//local bits that have been announced, diff this to swarm and then 'have'-, then update.
 	torrent_info* tinfo;
 	struct swarm_t* swarm;
 	pthread_t thread;

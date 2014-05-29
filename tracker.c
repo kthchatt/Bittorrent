@@ -15,9 +15,8 @@ static void* tracking(void* arg)
 
 	swarm_listen(swarm);	//set the swarm to listen for peers.
 	scan_all(swarm->tinfo, (unsigned char*) swarm->bitfield);	//get bitfield.
-	sleep(1);				//1 second to bind.
 
-	//[todo: scrape, announce and scour could be done in different threads rather than here.]
+	//[todo: keep scrape and announce threads active, let them manage their own intervals]
 	while (swarm->taken == true)
 	{
 		if (swarm->taken == true)

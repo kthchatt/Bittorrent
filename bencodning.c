@@ -32,7 +32,7 @@ int hashncmp (unsigned char *hash1, unsigned char *hash2, int n){
 int decode_bencode(char *file_name, torrent_info *data){
 	place_files = 0;
 	place_announce_list = 0;
-	fprintf(stderr, "This is print from decode_bencode\n");
+	//fprintf(stderr, "This is print from decode_bencode\n");
 	//torrent_info data;
 	//char bencode[25000];
 	char string_name[250];
@@ -40,7 +40,7 @@ int decode_bencode(char *file_name, torrent_info *data){
 	char test_dictonary_list;
 	char *to_null;
 	int j = 0;
-	fprintf(stderr, "decode_bencode got file: %s \n", file_name);
+	//fprintf(stderr, "decode_bencode got file: %s \n", file_name);
 
 	FILE *fp;
 	fp = fopen(file_name, "r");
@@ -76,10 +76,10 @@ int decode_bencode(char *file_name, torrent_info *data){
 	//fprintf(stderr, "The info hash is:");
 	for (j = 0; j < 20; ++j)
 		{
-			fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
+			//fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
 			//dataptr++;
 		}
-	fprintf(stderr, "\n");
+	//fprintf(stderr, "\n");
 	return 1;
 
 }
@@ -297,7 +297,7 @@ void complete_dictonarry (char *string_name, char *string_value, torrent_info *d
 		strcpy(data->_file_path[place_files++], string_value);
 		data->_number_of_files = place_files;
 	}
-	fprintf(stderr, "%s = %s\n", string_name, string_value);
+	//fprintf(stderr, "%s = %s\n", string_name, string_value);
 	return;
 
 }

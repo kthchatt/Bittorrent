@@ -106,6 +106,7 @@ static char* COLUMN_NAME[] = {"#", "Name", "Size", "Done", "Status", "Download",
 torrentlist_t* torrentlist; 
 int torrentlist_count;
 pthread_t update_thread, motd_thread, rss_thread;
+pthread_mutex_t list_lock;
 
 GtkWidget *tv_inactive, *tv_downloading, *tv_completed, *tv_seeding, *tv_rss;
 GtkWidget *tlb_inactive, *tlb_downloading, *tlb_completed, *tlb_seeding;
@@ -132,7 +133,7 @@ void torrent_size(torrent_info* tinfo, char* filesize)
 void row_add(int id, GtkListStore* ls)
 {
 	GtkTreeIter iter;
-
+	lock(&list_lock);
    	gtk_list_store_append(ls, &iter);
    	gtk_list_store_set(ls, &iter,
    						COL_ID, id, 
@@ -146,6 +147,7 @@ void row_add(int id, GtkListStore* ls)
    						COL_SEEDER, 0, 
    						COL_SWARM, 0, 			
    						COL_RATIO, 0.0000, -1);
+   	unlock(&list_lock);
 }
 
 //remove a row when the torrent-info already exists. ~RD
@@ -155,6 +157,7 @@ void row_delete(int id, GtkListStore* ls)
     gboolean     nextitem_exist;
     int item_id;
 
+    lock(&list_lock);
 	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
 
 	//iterate the linked list until we reach the last item. 
@@ -167,6 +170,7 @@ void row_delete(int id, GtkListStore* ls)
 
         nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}   
+	unlock(&list_lock);
 }
 
 //add an info-item to list. ~RD
@@ -262,6 +266,7 @@ void list_update(GtkListStore *ls)
     char netstat_down[FORMATSTRING_LEN];
 	char netstat_up[FORMATSTRING_LEN];
 
+	lock(&list_lock);
 	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
 
 	//iterate the linked list until the last item is reached.
@@ -277,6 +282,7 @@ void list_update(GtkListStore *ls)
     					{
     						torrentlist[id].state = STATE_INACTIVE;
     						strcpy(torrentlist[id].status, "Ready");
+
     					}
 
     		break;		
@@ -284,11 +290,12 @@ void list_update(GtkListStore *ls)
     				percent = bitfield_percent(swarm[torrentlist[id].swarm_id].bitfield, torrentlist[id].tinfo->_hash_length / 20); 
     				if (fabs(percent - (double) 100.0) <= DOUBLE_PRECISION)
     				{
+    					unlock(&list_lock);
     					torrentlist[id].state = STATE_SEEDING;
     					row_delete(id, md_downloading);
     					strcpy(torrentlist[id].status, "Seeding");
 						row_add(id, md_seeding);
-
+						lock(&list_lock);
     				}
     				break;
     		case STATE_SEEDING: 
@@ -310,8 +317,9 @@ void list_update(GtkListStore *ls)
    						COL_SWARM, swarm_peercount(torrentlist[id].swarm_id), 			//get these values from swarm.c 
    						COL_RATIO, 0.0000, -1);
 
-       nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
+       	nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}
+    unlock(&list_lock);
 	free(progress);
 }
 
@@ -390,6 +398,7 @@ void list_doubleclick(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *c
 {
 	GtkTreeIter   iter;
 	GtkTreeModel *model;
+	char* folder = malloc(75);
 	int id;
 
 	model = gtk_tree_view_get_model(view);
@@ -397,11 +406,11 @@ void list_doubleclick(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *c
 	if (gtk_tree_model_get_iter(model, &iter, path))
 	{
 		gtk_tree_model_get(model, &iter, COL_ID, &id, -1);
-		printf("\nDouble clicking [%s].", torrentlist[id].tinfo->_info_hash);
 		fflush(stdout);
-		//[todo: fork and spawn nautilus with directory from top level file.
-		//the directory should be found in the file-manager. bencodning.c?]
+		sprintf(folder, "xdg-open ./%s", torrentlist[id].tinfo->_file_name);
+		system(folder);	//[todo: don't use system call, it's not secure.]
 	}
+	free(folder);
 }
 
 
@@ -439,7 +448,6 @@ void torrent_start()
 							 break;
 	}
 
-	printf("\nStarted torrent #%d with swarm #%d.", id, torrentlist[id].swarm_id);
 	fflush(stdout);
 }
 
@@ -465,7 +473,6 @@ void torrent_stop()
 							  	break;
 	}
 	
-	printf("\nStopped torrent #%d", id);
 	fflush(stdout);
 }
 
@@ -489,7 +496,6 @@ void torrent_delete()
 	//todo: delete torrent files && delete torrentinfo record?
 	netstat_untrack(torrentlist[id].tinfo->_info_hash);
 
-	printf("\nDeleted torrent %d.", id);
 	fflush(stdout);
 }
 
@@ -500,7 +506,6 @@ void torrent_prioritize()
 	if ((id = selected_id()) < 0)
 		return;
 
-	printf("Prioritized torrent #%d\n", id);
 	fflush(stdout);
 }
 
@@ -511,7 +516,6 @@ void torrent_deprioritize()
 	if ((id = selected_id()) < 0)
 		return;
 
-	printf("DePrioritized torrent #%d\n", id);
 	fflush(stdout);
 }
 
@@ -617,6 +621,8 @@ void add_torrent(){
 			else
 				free(torrent);
 
+	free(fileName);
+
 	return;
 //------------------------------ END DEBUG ------------------------------------------
 
@@ -643,7 +649,7 @@ void add_torrent(){
 			}
 			tmp = realloc(tmp, strlen(filePath)+strlen(fileName)+6);
 			sprintf(tmp, "cp %s %s", filePath, fileName); 	//use cp, not copy. ~RD
-			fprintf(stderr, "%s\n", tmp);
+			//fprintf(stderr, "%s\n", tmp);
 			system(tmp);									//don't use system here, unsecure. ~RD
 			// get torrent info
 			if (init_torrent(fileName, torrent) == 1)		//if decode_bencode returns with error, don't add to list. Display error dialog? ~RD

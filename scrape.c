@@ -49,9 +49,6 @@ static void response(int* sockfd, scrape_t* scrape)
         scrape->tracker->completed  = bdecode_value(recvbuf, "complete");
         scrape->tracker->downloaded = bdecode_value(recvbuf, "downloaded");
         scrape->tracker->incomplete = bdecode_value(recvbuf, "incomplete");
-        printf("\n[Scrape]\t%s\t[completed = %d, downloaded = %d, incomplete = %d]", 
-            scrape->tracker->url, scrape->tracker->completed, 
-            scrape->tracker->downloaded, scrape->tracker->incomplete);
 
         scrape->swarm->completed += scrape->tracker->completed;
         scrape->swarm->incomplete += scrape->tracker->incomplete;

@@ -179,6 +179,7 @@ void* peerlisten(void* arg)
     		close(new_sock);
 	}		
 
+	free(swarm->bitfield);
 	return arg;
 }
 
@@ -189,9 +190,6 @@ void swarm_scour(swarm_t* swarm)
 
     for (i = 0; i < swarm->peercount; i++)
     {
-
-    	printf("\nPeer [#%d/%d] in Swarm: %s:%s", i, swarm->peercount, swarm->peer[i].ip, swarm->peer[i].port);
-
     	if (swarm->peer[i].sockfd == 0)
     	{
     		swarm->peer[i].info_hash = swarm->info_hash;

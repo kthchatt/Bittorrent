@@ -63,7 +63,7 @@ void *create_file(void *ptr){
 		strcat(tmp_path, "/");
 		strcat(tmp_path, filename);
 		//TODO Comment out foloowing line:
-		fprintf(stderr, "%s\n", tmp_path);
+		//fprintf(stderr, "%s\n", tmp_path);
 
 		fp = fopen(tmp_path, "rb+");
 		if(fp == NULL){
