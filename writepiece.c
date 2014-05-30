@@ -21,7 +21,7 @@ int write_piece (torrent_info *torrent, void *piece, int index, int piece_length
 		return 0;	//hash found, success.
 	}
 	else {
-		fprintf(stderr, "The hash is not found (PRINT FROM PROCESS)");
+		//fprintf(stderr, "The hash is not found (PRINT FROM PROCESS)");
 		free(piece);
 		free(torrent_piece);
 		return -1;	//hash not found, failure.

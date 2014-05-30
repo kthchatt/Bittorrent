@@ -215,14 +215,14 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 	memcpy(output, piebuffer, peer->tinfo->_piece_length);
 	netstat_update(INPUT, *msglen - 9, peer->info_hash);
 
-	printf("\nWriting piece!"); fflush(stdout);
-	//if piece already exists, do not download.
-	if ((bitfield_get(peer->swarm->bitfield, htonl(index)) == 0) && write_piece(peer->tinfo, (void*) output, htonl(index), *msglen - 9) == 0)
+	//printf("\nWriting piece!"); fflush(stdout);
+	//if piece already exists, do not download.																		//*msglen - 9
+	if ((bitfield_get(peer->swarm->bitfield, htonl(index)) == 0) && write_piece(peer->tinfo, (void*) output, htonl(index), peer->tinfo->_piece_length) == 0)
 	{
 		bitfield_set(peer->swarm->bitfield, htonl(index));
 		bitfield_set(peer->bitfield_peer, htonl(index));
+		printf("\nDownloaded Piece #%d!", htonl(index)); fflush(stdout);
 	}
-	printf("\nDownloaded Piece!"); fflush(stdout);;
 }
 
 //BT - Listener.
