@@ -53,7 +53,7 @@
 #define CHOKE_BACKOFF 30
 #define PIECE_WAIT    300
 #define PIECE_QUEUE   1
-#define CONNECTION_LIMIT 50     
+#define CONNECTION_LIMIT 50    
 
 //units and rates.
 #define U_NONE 0

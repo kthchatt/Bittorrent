@@ -185,7 +185,7 @@ static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 //receive an incoming piece, direct it to the file manager.
 static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* msglen, peer_t* peer)
 {
-	int index, offset, header = 13, tmp;
+	int index, offset, header = 13, tmp, size;
 
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
@@ -216,13 +216,23 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 	netstat_update(INPUT, *msglen - 9, peer->info_hash);
 
 	//printf("\nWriting piece!"); fflush(stdout);
-	//if piece already exists, do not download.																		//*msglen - 9
-	if ((bitfield_get(peer->swarm->bitfield, htonl(index)) == 0) && write_piece(peer->tinfo, (void*) output, htonl(index), peer->tinfo->_piece_length) == 0)
+	//if piece already exists, do not download.																		
+	if (bitfield_get(peer->swarm->bitfield, htonl(index)) == 0)
 	{
-		bitfield_set(peer->swarm->bitfield, htonl(index));
-		bitfield_set(peer->bitfield_peer, htonl(index));
-		printf("\nDownloaded Piece #%d!", htonl(index)); fflush(stdout);
+			if (htonl(index) == (peer->swarm->tinfo->_hash_length / 20) - 1)
+				size =  (peer->tinfo->_total_length % peer->tinfo->_piece_length);
+			else 
+				size = peer->tinfo->_piece_length;
+
+		if (write_piece(peer->tinfo, (void*) output, htonl(index), size) == 0)
+		{
+			bitfield_set(peer->swarm->bitfield, htonl(index));
+			bitfield_set(peer->bitfield_peer, htonl(index));
+		}
 	}
+	else
+		free(output);
+
 }
 
 //BT - Listener.
@@ -383,13 +393,17 @@ void* peerwire_thread_tcp(void* arg)
 			usleep(PIECE_WAIT * 1000);
 			continue;
 		}
-	
-		while (block < blockcount && peer->choked == false && bitfield_get(peer->swarm->bitfield, index) == 0)
-		{
-			if (index == (peer->swarm->tinfo->_hash_length / 20) - 1)
-				size =  peer->tinfo->_total_length % BLOCK_SIZE;
+
+		while (block < blockcount && peer->choked == false && bitfield_get(peer->swarm->bitfield, index) == 0) 
+		{ 
+			if (index == (peer->swarm->tinfo->_hash_length / 20) - 1 && ((peer->tinfo->_total_length % peer->tinfo->_piece_length) / BLOCK_SIZE) == block)
+			{
+				size =  ((peer->tinfo->_total_length % peer->tinfo->_piece_length) % BLOCK_SIZE);
+				blockcount = -1;
+			}
 			else 
 				size = BLOCK_SIZE;
+
 			peer->queued_pieces++;
 			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(size));
 			block++;
