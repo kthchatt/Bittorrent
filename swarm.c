@@ -83,7 +83,7 @@ int swarm_select(torrent_info* tinfo)
 			swarm[i].bitfield = malloc(((tinfo->_piece_length / 20) / 8) + 1);
 			memset(swarm[i].bitfield, 0, ((tinfo->_piece_length / 20) / 8) + 1);
 
-			for (j = 0; j < MAX_TRACKERS; j++)
+			for (j = 0; j < tinfo->_announce_list_count; j++)
 			{
 				swarm[i].tracker[j].url = tinfo->_announce_list[j];
 				swarm[i].tracker[j].alive = true;
@@ -183,15 +183,17 @@ void* peerlisten(void* arg)
 	return arg;
 }
 
-//find new peers and create pwp-thread.
+//find new peers and create pwp-thread, may only connect to CONNECT_LIMIT amount of peers every time
+//announce-scour is ran.
 void swarm_scour(swarm_t* swarm)
 {
-    int i;
+    int i, connections = 0;
 
     for (i = 0; i < swarm->peercount; i++)
     {
-    	if (swarm->peer[i].sockfd == 0)
+    	if (swarm->peer[i].sockfd == 0 && connections < CONNECTION_LIMIT)
     	{
+    		connections++;
     		swarm->peer[i].info_hash = swarm->info_hash;
     		swarm->peer[i].peer_id = swarm->peer_id;
     		swarm->peer[i].tinfo = swarm->tinfo;	//peers needs access to torrent_info for reading/writing to file.

@@ -166,7 +166,10 @@ void row_delete(int id, GtkListStore* ls)
      	gtk_tree_model_get(GTK_TREE_MODEL(ls), &iter, COL_ID, &item_id, -1);
 
      	if (id == item_id)
+     	{
      		gtk_list_store_remove(ls, &iter);
+     		break;
+     	}
 
         nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}   
@@ -261,7 +264,7 @@ void list_update(GtkListStore *ls)
     GtkTreeIter  iter;
     gboolean     nextitem_exist;
     int id;
-    double percent;
+    double percent = 0.0;
     char* progress = malloc(FORMATSTRING_LEN);
     char netstat_down[FORMATSTRING_LEN];
 	char netstat_up[FORMATSTRING_LEN];
@@ -295,11 +298,11 @@ void list_update(GtkListStore *ls)
     					row_delete(id, md_downloading);
     					strcpy(torrentlist[id].status, "Seeding");
 						row_add(id, md_seeding);
-						lock(&list_lock);
+						return; //we have modified the linked list, no more iteration! [verify: (lock(&list_lock))]
     				}
     				break;
     		case STATE_SEEDING: 
-    				percent = (double) 100.0;	//[todo: get percent from ratio vs target ratio.]	
+    				percent = (double) 100.0; break;	//[todo: get percent from ratio vs target ratio.]	
     	}
 
     	sprintf(progress, "%.2f%%", percent);
@@ -607,8 +610,8 @@ void add_torrent(){
 	torrent = malloc(sizeof(torrent_info));
 
 /*-------------------------------- DEBUG ----------------------------------------*/
-	fileName = malloc(50);
-	strcpy(fileName, "charselect.png.torrent");
+	/*fileName = malloc(50);
+	strcpy(fileName, "tpb-afk.torrent");
 	if (init_torrent(fileName, torrent) == 1)		//if decode_bencode returns with error, don't add to list. Display error dialog? ~RD
 			{
 				// convert filesize from long long int to char
@@ -623,7 +626,7 @@ void add_torrent(){
 
 	free(fileName);
 
-	return;
+	return;*/
 //------------------------------ END DEBUG ------------------------------------------
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);

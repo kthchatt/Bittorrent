@@ -155,7 +155,7 @@ void url_announce(char* url, char* announce)
     int i, intlen = 0, value = 0;
     int source_len = strlen(source);
     int search_len = strlen(search);
-    char* seek = (char*) malloc(search_len);
+    char* seek = (char*) malloc(search_len + 1);
     char tmp[5];
 
     memset(tmp, '\0', sizeof(tmp));

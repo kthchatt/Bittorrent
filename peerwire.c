@@ -78,7 +78,7 @@ void peer_bitfield(char* recvbuf, int* num, int *msglen, peer_t* peer)
 	int piece_count = peer->tinfo->_hash_length / 20;
 	int i, header = 5;
 
-	for (i = 0; i < piece_count; i++)
+	for (i = 0; i < piece_count / 8 + 1; i++)
 		peer->bitfield_peer[i] = bitfield_reverse(recvbuf[header + i]);
 }
 
@@ -108,7 +108,7 @@ void bitfield(peer_t* peer)
 void message(peer_t* peer, unsigned char message)
 {
 	int payload = 0, len = htonl(1);
-    char* request = malloc(1 + 1);
+    char* request = malloc(4 + 1);
 
     switch (message)
     {
@@ -189,6 +189,7 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
+	peer->queued_pieces--;
 
 	//critical to verify input data. if the index/length are out of index range, a client could write in our memory.
 	if (htonl(index) >= (peer->tinfo->_hash_length / 20) || htonl(index) < 0 || *msglen < 0 || 
@@ -214,12 +215,14 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 	memcpy(output, piebuffer, peer->tinfo->_piece_length);
 	netstat_update(INPUT, *msglen - 9, peer->info_hash);
 
+	printf("\nWriting piece!"); fflush(stdout);
 	//if piece already exists, do not download.
 	if ((bitfield_get(peer->swarm->bitfield, htonl(index)) == 0) && write_piece(peer->tinfo, (void*) output, htonl(index), *msglen - 9) == 0)
 	{
 		bitfield_set(peer->swarm->bitfield, htonl(index));
 		bitfield_set(peer->bitfield_peer, htonl(index));
 	}
+	printf("\nDownloaded Piece!"); fflush(stdout);;
 }
 
 //BT - Listener.
@@ -312,11 +315,12 @@ bool missing_piece(peer_t* peer, int* index)
 
 			if (bitfield_get(peer->bitfield_peer, *index) == 1)
 			{
-				bitfield_clear(peer->bitfield_peer, *index); //if the piece fails to download, don't retry from the same peer.
-				return missing;
+				//bitfield_clear(peer->bitfield_peer, *index); //[todo: prevent asking for the same piece multiple times from the same peer. - 
+				return missing;									// - uncommenting this line will cause a stall if theres only one peer.]
 			}
 		}
 	}
+	*index = -1;
 	return missing;
 }
 
@@ -324,7 +328,6 @@ bool missing_piece(peer_t* peer, int* index)
 void* peerwire_thread_tcp(void* arg)
 {
     struct addrinfo hints, *res;
-    bool downloaded = false;
     int piece_count = swarm->tinfo->_hash_length / 20;
     pthread_t listen_thread;
     peer_t* peer = (peer_t*) arg;
@@ -334,6 +337,7 @@ void* peerwire_thread_tcp(void* arg)
     peer->choked = 1;
     peer->interested = 0;
     peer->interesting = 0;
+    peer->queued_pieces = 0;
 
     //sync field is peer specific, diff with swarm->bitfield to issue have messages. peer is remote.
     peer->bitfield_peer = malloc((piece_count / 8) + 1);
@@ -362,13 +366,11 @@ void* peerwire_thread_tcp(void* arg)
 
 	handshake(peer, peer->info_hash, peer->peer_id); 	
 	bitfield(peer);  									
-	message(peer, INTERESTED);							sleep(1);
-	message(peer, UNCHOKE);								sleep(1);
+	message(peer, INTERESTED);							sleep(1); //[todo: add logic for interested message]
+	message(peer, UNCHOKE);								sleep(1); //[todo: add logic for unchoke message]
 
-	//[todo: peer-piece selection is not done due to lack of time, the client will ask for them sequentially.
-	//will be implemented using the bitfield of the peer and the local swarm.]
 	int block, index = 0, piecelen = peer->tinfo->_piece_length, blockcount, size = BLOCK_SIZE;
-	while (peer->sockfd != 0 && downloaded == false)
+	while (peer->sockfd != 0)
 	{
 		blockcount = piecelen / BLOCK_SIZE; 
 		block = 0;
@@ -376,26 +378,25 @@ void* peerwire_thread_tcp(void* arg)
 		if (missing_piece(peer, &index) == false)
 			break;
 
-		if (index == -1)
+		if (index == -1 || peer->queued_pieces >= PIECE_QUEUE)
 		{
-			sleep(PIECE_WAIT);
+			usleep(PIECE_WAIT * 1000);
 			continue;
 		}
 	
-		while (block < blockcount && peer->choked == false && bitfield_get(peer->swarm->bitfield, index) == 0 && downloaded == false)
+		while (block < blockcount && peer->choked == false && bitfield_get(peer->swarm->bitfield, index) == 0)
 		{
 			if (index == (peer->swarm->tinfo->_hash_length / 20) - 1)
 				size =  peer->tinfo->_total_length % BLOCK_SIZE;
 			else 
 				size = BLOCK_SIZE;
+			peer->queued_pieces++;
 			request(peer, htonl(index), htonl(block * BLOCK_SIZE), htonl(size));
 			block++;
 		}
 
 		if (peer->choked == true)
 			sleep(CHOKE_BACKOFF);
-
-		usleep(30000);	//[todo: implement piece queue!!!]
 	}
 	return arg;
 }

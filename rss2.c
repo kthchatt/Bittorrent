@@ -91,14 +91,14 @@ static void* get_feed(void* arg)
 			content->item = (item_t*) realloc(content->item, sizeof(item_t) * (counter + 1));// stack fragmentation. ~RD
 
 		tmp = extract_content(buffer, "<item>", "</item>");									// +1?, malloc for already allocated string? [Fixed by remove] ~RD
-		tmp = extract_content(buffer, "<item>", "</item>");
+		//tmp = extract_content(buffer, "<item>", "</item>");
 		item.title = extract_content(tmp, "<title>", "</title>");							//title contained cruft, fixed in extract_content ~RD
 		item.link  = extract_content(tmp, "<link>", "</link>");
 		item.description = extract_content(tmp, "<description>", "</description>");
 		free(tmp);
 
-		strcpy(buffer, strstr(buffer, "</item>"));	//fix ~RD
-		buffer[0] = 128;							//safer character (ascii), 0 leading tags would crash the RSS. ~RD
+		strcpy(buffer, strstr(buffer, "</item>"));	//source and destination overlaps ~RD
+		buffer[0] = 128;							
 		content->item[counter] = item; 
 		counter++;									//readded: update item counter. ~RD
 	}

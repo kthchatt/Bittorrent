@@ -21,7 +21,8 @@ Feel fre to use this code as you want.
 typedef struct metainfodecode
 {
 	char _announce[250];
-	char _announce_list [15][250];
+	char _announce_list [16][250];
+	int _announce_list_count;
 	long long int _creation_date;
 	char _comment [250];
 	char _created_by[250];

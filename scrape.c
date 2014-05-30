@@ -7,93 +7,21 @@
  #include "scrape.h"
 
 
-typedef struct 
-{
-    tracker_t* tracker;
-    swarm_t* swarm;
-    pthread_t thread;
-} scrape_t;
-
-//construct a http query
-static int build(char request[256], char* info_hash, char* tracker) 
-{
-    char* path =     (char*) malloc(MAX_URL_LEN);
-    char* hostname = (char*) malloc(MAX_URL_LEN);
-    char* hash_escape = (char*) malloc(61);
-
-    url_hostname(tracker, hostname);
-    url_path(tracker, path);
-    url_encode(info_hash, hash_escape);
-
-    sprintf(request, "GET %s/scrape.php?info_hash=%s HTTP/1.1\r\nhost: %s\r\n\r\n", path, hash_escape, hostname);
-    
-    free(path);
-    free(hostname);
-    free(hash_escape);
-    return strlen(request);
-}
-
-static void response(int* sockfd, scrape_t* scrape)
-{
-    int num = 0;
-    char recvbuf[2048];
-
-    memset(recvbuf, '\0', sizeof(recvbuf));
-    sleep(SCRAPE_TIME);
-
-    if ((num = recv(*sockfd, recvbuf, sizeof(recvbuf)-1, MSG_DONTWAIT)) > 0)
-    {
-        recvbuf[num] = '\0';
-        netstat_update(INPUT, strlen(recvbuf), swarm->info_hash);
-
-        scrape->tracker->completed  = bdecode_value(recvbuf, "complete");
-        scrape->tracker->downloaded = bdecode_value(recvbuf, "downloaded");
-        scrape->tracker->incomplete = bdecode_value(recvbuf, "incomplete");
-
-        scrape->swarm->completed += scrape->tracker->completed;
-        scrape->swarm->incomplete += scrape->tracker->incomplete;
-     }    
-}
-
+// determine protocol, launch udp_scrape or tcp_scrape
 static void* query(void* arg)
 {
     scrape_t* scrape = (scrape_t*) arg;
-    int port = 80, url_len = 256, sockfd;
-    char request[256] = {0};
-    char* hostname = malloc(url_len); 
-    char* protocol = malloc(url_len);
-    struct addrinfo hints, *res;
-    scrape->tracker->alive = false;
-
-    build(request, scrape->swarm->info_hash, scrape->tracker->url);
-    url_hostname(scrape->tracker->url, hostname);
+    char* protocol = malloc(MAX_URL_LEN);
+    
     url_protocol(scrape->tracker->url, protocol);
-    url_port(scrape->tracker->url, &port);
-    sprintf(protocol, "%d", (unsigned int) port);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    //if protocol is http do socket stuff, else pass a DGRAM.
-
-    if (getaddrinfo(hostname, protocol, &hints, &res) == 0)
-    {
-        if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) > -1)
-        {
-            if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
-            {
-                send(sockfd, request, strlen(request), 0);
-                netstat_update(OUTPUT, strlen(request), scrape->swarm->info_hash);
-                response(&sockfd, scrape);
-            } 
-            close(sockfd);
-        }
-    }
+    if (strcmp(protocol, "udp") == 0)
+        udp_scrape(scrape);
+    else
+        if (strcmp(protocol, "http") == 0)
+        tcp_scrape(scrape);
 
     scrape->tracker->alive = true;
-    free(hostname);
     free(protocol);
     free(scrape);
     return arg;
@@ -105,23 +33,21 @@ static void* query(void* arg)
     scrape_t* scrape;
     int i = 1;
 
-    //inject localhost tracker, useful during development.
-    strcpy(swarm->tracker[MAX_TRACKERS - 1].url, "http://127.0.0.1:80/tracker/announce.php"); 
+    swarm->completed = 0;
+    swarm->incomplete = 0; 
 
-    for (i = 0; i < MAX_TRACKERS; i++)
+    for (i = 0; i < swarm->tinfo->_announce_list_count; i++)
     {
-
-        if (swarm->tracker[i].alive == true && strlen(swarm->tracker[i].url) > 5)
+        if (swarm->tracker[i].alive == true)
         {
             scrape = (scrape_t*) malloc(sizeof(scrape_t));
             scrape->tracker = &swarm->tracker[i];
+            printf("\nScraping: %s", scrape->tracker->url);
             scrape->swarm = swarm;
-
-            scrape->swarm->completed = 0;
-            scrape->swarm->incomplete = 0;
+            scrape->tracker->alive = false;
 
             if (pthread_create(&scrape->thread, NULL, query, scrape))
-                printf("\nScraping: %s Failed. Failed Terribly.", scrape->tracker->url);
+                printf("\nScraping: %s Failed.", scrape->tracker->url);
             else
                 swarm->tracker[i].alive = false;
         }

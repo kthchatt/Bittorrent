@@ -27,11 +27,12 @@
 #define SIGNATURE "BT-CookieCrumb-"
 #define BACKLOG 8
 #define MAX_SWARMS 8
-#define MAX_SWARM_SIZE 256
-#define MAX_URL_LEN 250
-#define MAX_TRACKERS 15
+#define MAX_SWARM_SIZE 1024
+#define MAX_URL_LEN 256
+#define MAX_TRACKERS 16     //bencodning.c does not respect MAX_TRACKERS.
 #define SCRAPE_TIME 2
 #define ANNOUNCE_TIME 2
+#define UDP_CONNECTION_ID  0x8019102717040000
 
 //peerwire
 #define PROTOCOL    "BitTorrent protocol"
@@ -50,7 +51,9 @@
 #define DOWNLOAD_BUFFER 2388608
 #define BLOCK_SIZE	16384
 #define CHOKE_BACKOFF 30
-#define PIECE_WAIT    5
+#define PIECE_WAIT    300
+#define PIECE_QUEUE   10 
+#define CONNECTION_LIMIT 50      
 
 //units and rates.
 #define U_NONE 0
@@ -58,7 +61,6 @@
 #define U_KILO 1000
 #define U_MEGA 1000000
 #define U_GIGA 1000000000
-
 #define DOUBLE_PRECISION 1e-5
 
 //sizes
@@ -71,6 +73,7 @@
 #define R_BYTE "B/s"
 #define R_KILO "KB/s"
 #define R_MEGA "MB/s"
+#define R_GIGA "GB/s"
 
 #define FORMATSTRING_LEN 24
 
@@ -87,6 +90,7 @@ typedef struct peer_t
 	int sockfd;
 	int choked, choking; 
 	int interested, interesting;
+	int queued_pieces;
 	char ip[21];
 	char port[6];
 	char* peer_id;			//pointers to swarm_t data. (required for threading.)
@@ -113,6 +117,20 @@ typedef struct peer_t
  	pthread_t thread;
  	pthread_mutex_t peerlock, bitlock;	//lock the peerlist, lock the bitfield.
  } swarm_t;
+
+ typedef struct 
+{
+    tracker_t* tracker;
+    swarm_t* swarm;
+    pthread_t thread;
+} scrape_t;
+
+ typedef struct 
+{
+    tracker_t* tracker;
+    swarm_t* swarm;
+    pthread_t thread;
+} announce_t;
 
  swarm_t swarm[MAX_SWARMS];
 

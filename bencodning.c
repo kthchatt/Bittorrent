@@ -76,10 +76,14 @@ int decode_bencode(char *file_name, torrent_info *data){
 	//fprintf(stderr, "The info hash is:");
 	for (j = 0; j < 20; ++j)
 		{
-			//fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
+			fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
 			//dataptr++;
 		}
 	//fprintf(stderr, "\n");
+	if (place_announce_list < 16)
+	    data->_announce_list_count = place_announce_list;
+	else
+		data->_announce_list_count = 16;
 	return 1;
 
 }

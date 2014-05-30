@@ -13,8 +13,8 @@ static void* tracking(void* arg)
 {
 	swarm_t* swarm = (swarm_t*) arg;
 
-	swarm_listen(swarm);	//set the swarm to listen for peers.
-	scan_all(swarm->tinfo, (unsigned char*) swarm->bitfield);	//get bitfield.
+	//swarm_listen(swarm);	//set the swarm to listen for peers.
+	//scan_all(swarm->tinfo, (unsigned char*) swarm->bitfield);	//get bitfield.
 
 	//[todo: keep scrape and announce threads active, let them manage their own intervals]
 	while (swarm->taken == true)
