@@ -22,11 +22,13 @@
  #include "protocol_meta.h"
  #include "netstat.h"
  #include "writepiece.h"
+ #include "readpiece.h"
  #include "bitfield.h"
-//require readpiece.
+ #include "ratiostat.h"
+
 
 void* peerwire_thread_tcp(void* arg);		//create a peerwire connection using tcp.
-void* peerwire_thread_udp(peer_t* peer);	//create a peerwire connection usind udp.
+//void* peerwire_thread_udp(peer_t* peer);	//create a peerwire connection usind udp.
 
 
 #endif

@@ -1,4 +1,4 @@
-#include "SearchPice.h"
+#include "searchpiece.h"
 //gcc SearchPice.c -c -o SearchPice.o -lssl -lcrypto
 /*void main (){
 
@@ -21,6 +21,7 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 	void *copy_piece = piece;
 	memset(piece, 0, piece_length);
 
+	//[todo: faster] ~RD
 	for(j = 0; j < number_of_pieces; j++){
 		int bytes_to_read = piece_length;
 		int start_in_file = torrent->_piece_length * j;
@@ -37,6 +38,7 @@ int scan_all (torrent_info *torrent, unsigned char *bitstring) {
 			//fprintf(stderr, "File: %s\n", torrent->_file_path[first_file_to_open]);printf("\ndbg1");fflush(stdout);
 			if (fp == NULL){
 				fprintf(stderr, "Error opening file\n");
+				free(copy_piece);
 				return -1;
 			} else {
 				//fprintf(stderr, "File %s is open\n", torrent->_file_path[first_file_to_open]);

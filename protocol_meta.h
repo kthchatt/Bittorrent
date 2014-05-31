@@ -51,9 +51,14 @@
 #define DOWNLOAD_BUFFER 2388608
 #define BLOCK_SIZE	16384
 #define CHOKE_BACKOFF 30
-#define PIECE_WAIT    300
+#define PIECE_WAIT    100
 #define PIECE_QUEUE   1
 #define CONNECTION_LIMIT 50    
+
+ //current implementation of peerwire requires PIECE_QUEUE to be 1 per peer,
+ //combined with the required PIECE_WAIT this introduces additional latency.
+ //this will be solved in the future by implementing a piece buffer that is
+ //larger than one piece.
 
 //units and rates.
 #define U_NONE 0

@@ -25,5 +25,4 @@
 void udp_announce(announce_t* announce);  	//announce to tcp tracker.
 void udp_scrape(scrape_t* scrape);			//scrape tcp tracker.
 
-
 #endif

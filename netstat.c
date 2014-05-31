@@ -14,6 +14,8 @@
 typedef struct 
 {
 	unsigned int in_delta, out_delta, in, out;
+	unsigned long filesize;
+	double ratio;
 	char* info_hash;
 	pthread_mutex_t lock;
 } netstat_t;
@@ -23,7 +25,6 @@ netstat_t totalstat;
 pthread_t timer;
 int tracking_count;
 static bool netstat_initialized = false;
-
 
 //recalculate averages.
 void* timer_thread(void* arg)
@@ -76,7 +77,7 @@ void netstat_initialize()
 }
 
 //set up tracking for a specific info_hash.
-void netstat_track(char* info_hash)
+void netstat_track(char* info_hash, unsigned long int filesize)
 {
 	int i;
 	bool tracked = false;
@@ -95,6 +96,8 @@ void netstat_track(char* info_hash)
 			memset(&netstat[tracking_count], 0, sizeof(netstat_t));
 			pthread_mutex_init(&netstat[tracking_count].lock, NULL); 
 			netstat[tracking_count].info_hash = info_hash;
+			netstat[tracking_count].ratio = 0.0;
+			netstat[tracking_count].filesize = filesize;
 			tracking_count++;
 		}
 		else
@@ -171,7 +174,7 @@ void throughput_update(int direction, int amount)
 }
 
 //update goodput per torrent.
-void netstat_update(int direction, int amount, char* info_hash)
+void netstat_update(char* info_hash, int direction, int amount)
 {
 	int i;
 	for (i = 0; i < tracking_count; i++)
@@ -207,7 +210,7 @@ char* netstat_throughput(int direction, char* format)
 }
 
 //update the down/up- rates.
-int netstat_bytes(int direction, char* info_hash)
+int netstat_bytes(char* info_hash, int direction)
 {
 	int i, amount = -1;
 
@@ -227,8 +230,34 @@ int netstat_bytes(int direction, char* info_hash)
 	return amount;
 }
 
-//format bytes.
-char* netstat_formatbytes(int direction, char* info_hash, char* format)
+//returns a formated ratio.
+char*  netstat_formatratio(char* info_hash, char* format)						
 {
-	return format_string(format, netstat_bytes(direction, info_hash));
+	int i;
+
+	for (i = 0; i < tracking_count; i++)
+	{
+		if (netstat[i].info_hash == info_hash)
+		{
+			snprintf(format, FORMATSTRING_LEN, RATIO_PRECISION, netstat[i].ratio);
+			return format;
+		}
+	}
+	return format;
+}
+
+//update the ratio.
+void  netstat_ratio(char* info_hash, int amount)								
+{
+	int i;
+
+	for (i = 0; i < tracking_count; i++)
+		if (netstat[i].info_hash == info_hash)
+			netstat[i].ratio += ((double) amount / (double) netstat[i].filesize);
+}
+
+//format bytes.
+char* netstat_formatbytes(char* info_hash, int direction, char* format)
+{
+	return format_string(format, netstat_bytes(info_hash, direction));
 }

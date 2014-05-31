@@ -138,7 +138,7 @@ void peer_have(char* recvbuf, peer_t* peer)
 void have(peer_t* peer, int piece_index)
 {
 	int payload = 0, len = htonl(5);
-	unsigned char id = 4;
+	unsigned char id = HAVE;
 	char* request = malloc(4 + 1 + 4);
 	piece_index = htonl(piece_index);
 
@@ -152,16 +152,16 @@ void have(peer_t* peer, int piece_index)
 //upload a piece to the peer!
 static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer) 
 {
-	unsigned int index = 0, offset = 0, length = 0, header = 13, headerlen;
+	unsigned int index = 0, offset = 0, length = 0, header = 13, headerlen, sent;
 	unsigned char id = PIECE;
 	memcpy(&index, buffer + 5, 4);
 	memcpy(&offset, buffer + 9, 4);
 	memcpy(&length, buffer + 13, 4);
-	char* piece = malloc(ntohl(length));	
+	char* piece = (char*) readpiece(peer->tinfo, ntohl(index));	
 	char* packet = malloc(ntohl(length) + header);
 
 	//critical to verify input data. if the index/length are out of index range, a client could read our memory.
-	if ((*msglen > BLOCK_SIZE + header + 4) || ntohl(length) > BLOCK_SIZE)
+	if (ntohl(length) > BLOCK_SIZE || piece == NULL || (ntohl(offset) + ntohl(length)) > peer->tinfo->_piece_length)
 	{
 		free(piece);
 		free(packet);
@@ -169,15 +169,17 @@ static void inline seed_piece(char* buffer, int* num, int* msglen, peer_t* peer)
 	}
 
 	headerlen = header + ntohl(length) - 4;
-	//printf("[%s:%s] - Seeding Piece  [index: %d, offset: %d, length: %d]", peer->ip, peer->port, ntohl(index), ntohl(offset), ntohl(length)); [WIP]
-	headerlen = htonl(headerlen);							//length might be smaller on last piece!
+	headerlen = htonl(headerlen);							
 
 	memcpy(packet, &headerlen, 4); 
 	memcpy(packet + 4, &id, 1);
 	memcpy(packet + 5, &index, 4);
 	memcpy(packet + 9, &offset, 4);
+	memcpy(packet + 13, piece + ntohl(offset), ntohl(length));
 
-	send(peer->sockfd, packet, ntohl(length) + header, 0);
+	sent = send(peer->sockfd, packet, ntohl(length) + header, 0);
+	netstat_update(peer->swarm->info_hash, OUTPUT, sent);
+	netstat_ratio(peer->swarm->info_hash, sent);
 	free(piece);
 	free(packet);
 }
@@ -213,9 +215,8 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
     char* output = malloc(peer->tinfo->_piece_length); 
 	memcpy(piebuffer + htonl(offset), buffer + header, *msglen - 9);
 	memcpy(output, piebuffer, peer->tinfo->_piece_length);
-	netstat_update(INPUT, *msglen - 9, peer->info_hash);
+	netstat_update(peer->info_hash, INPUT, *msglen - 9);
 
-	//printf("\nWriting piece!"); fflush(stdout);
 	//if piece already exists, do not download.																		
 	if (bitfield_get(peer->swarm->bitfield, htonl(index)) == 0)
 	{
@@ -226,8 +227,9 @@ static void inline receive_piece(char* buffer, char* piebuffer, int* num, int* m
 
 		if (write_piece(peer->tinfo, (void*) output, htonl(index), size) == 0)
 		{
-			bitfield_set(peer->swarm->bitfield, htonl(index));
-			bitfield_set(peer->bitfield_peer, htonl(index));
+			bitfield_set(peer->swarm->bitfield, htonl(index));//update the swarm-global bitfield.
+			bitfield_set(peer->bitfield_peer, htonl(index));  //the piece was seeded from peer, he must have it.
+			bitfield_set(peer->bitfield_sync, htonl(index));  //remote peer is aware that he has seeded a piece to us.
 		}
 	}
 	else
@@ -259,8 +261,8 @@ void* listener_tcp(void* arg)
 			if (msglen > 0) //if message length is 0 the message is a Keep-Alive, ignore it.
 			switch ((unsigned char) recvbuf[4])
 			{						
-				case REQUEST: 		if (num < 17) { num = 0; continue; } seed_piece(recvbuf, &num, &msglen, peer);					break;		
-				case PIECE: 		if (num < 17) { num = 0; continue; } receive_piece(recvbuf, piebuffer, &num, &msglen, peer); 	break;
+				case REQUEST: 		/*if (num < 17) { num = 0; continue; }*/ seed_piece(recvbuf, &num, &msglen, peer);					break;		
+				case PIECE: 		/*if (num < 17) { num = 0; continue; }*/ receive_piece(recvbuf, piebuffer, &num, &msglen, peer); 	break;
 				case HAVE: 			peer_have(recvbuf, peer);									break; 
 				case UNCHOKE: 		peer->choked = false; 										break;		
 				case CHOKE:			peer->choked = true;     									break;
@@ -284,10 +286,9 @@ void* listener_tcp(void* arg)
 
 			memcpy(&msglen, recvbuf, 4);
 			msglen = ntohl(msglen);
+
 			if (msglen + 4 <= num)
-			{
 				packet_queued = true;
-			}
 			 else
 			 	packet_queued = false;
 		} 
@@ -299,6 +300,25 @@ void* listener_tcp(void* arg)
 	free(peer->bitfield_peer);
 	peer->sockfd = 0;
 	return arg;
+}
+
+//used to synchronize available pieces between peers. (improved: does not update to peers that already have the piece)
+void sync_pieces(peer_t* peer)
+{
+	int pieces = peer->tinfo->_hash_length / 20;
+	int i;
+
+	for (i = 0; i < pieces; i++)
+	{
+		if (bitfield_get(peer->bitfield_peer, i) == 0)
+		{
+			if (bitfield_get(peer->swarm->bitfield, i) != bitfield_get(peer->bitfield_sync, i))
+			{
+				have(peer, i);
+				bitfield_set(peer->bitfield_sync, i);
+			}
+		}
+	}
 }
 
 //get a piece not downloaded non linearly to utilize multiple peers. 
@@ -385,6 +405,7 @@ void* peerwire_thread_tcp(void* arg)
 		blockcount = piecelen / BLOCK_SIZE; 
 		block = 0;
 
+		sync_pieces(peer);
 		if (missing_piece(peer, &index) == false)
 			break;
 

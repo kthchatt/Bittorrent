@@ -42,7 +42,6 @@ static void* query(void* arg)
         {
             scrape = (scrape_t*) malloc(sizeof(scrape_t));
             scrape->tracker = &swarm->tracker[i];
-            printf("\nScraping: %s", scrape->tracker->url);
             scrape->swarm = swarm;
             scrape->tracker->alive = false;
 

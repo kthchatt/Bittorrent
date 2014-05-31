@@ -40,6 +40,7 @@
 #include "rss2.h"
 #include "createfile.h"
 #include "bitfield.h"
+#include "ratiostat.h"
 #include "math.h"
 
 #define WINDOW_TITLE "ccTorrent v1.0b"
@@ -146,7 +147,7 @@ void row_add(int id, GtkListStore* ls)
    						COL_LEECHER, 0, 
    						COL_SEEDER, 0, 
    						COL_SWARM, 0, 			
-   						COL_RATIO, 0.0000, -1);
+   						COL_RATIO, "", -1);
    	unlock(&list_lock);
 }
 
@@ -179,24 +180,25 @@ void row_delete(int id, GtkListStore* ls)
 //add an info-item to list. ~RD
 void list_add(char* status, torrent_info* tinfo, int state)
 {
-	if ((torrentlist = realloc(torrentlist, sizeof(torrentlist_t) * (torrentlist_count + 1))) != NULL )
+	int pos = torrentlist_count;
+	if ((torrentlist = realloc(torrentlist, sizeof(torrentlist_t) * (pos + 1))) != NULL )
 	{
-		torrentlist[torrentlist_count].status = malloc(60);
-		torrentlist[torrentlist_count].filesize = malloc(FORMATSTRING_LEN); 
-		strcpy(torrentlist[torrentlist_count].status, status);
-		torrentlist[torrentlist_count].swarm_id = -1;
-		torrentlist[torrentlist_count].tinfo = tinfo;
-		torrentlist[torrentlist_count].state = state;
-		torrent_size(tinfo, torrentlist[torrentlist_count].filesize);
+		torrentlist[pos].status = malloc(60);
+		torrentlist[pos].filesize = malloc(FORMATSTRING_LEN); 
+		strcpy(torrentlist[pos].status, status);
+		torrentlist[pos].swarm_id = -1;
+		torrentlist[pos].tinfo = tinfo;
+		torrentlist[pos].state = state;
+		torrent_size(tinfo, torrentlist[pos].filesize);
 		torrentlist_count++;
 
    		switch (state)
    		{
-   			case STATE_COMPLETED: 	row_add(torrentlist_count-1, md_completed); break;
-   			case STATE_SEEDING: 	row_add(torrentlist_count-1, md_seeding); break;
-   			case STATE_DOWNLOADING: row_add(torrentlist_count-1, md_downloading); break;
-   			case STATE_INACTIVE:	row_add(torrentlist_count-1, md_inactive); break;
-   			case STATE_CREATING:    row_add(torrentlist_count-1, md_inactive); break;
+   			case STATE_COMPLETED: 	row_add(pos, md_completed); break;
+   			case STATE_SEEDING: 	row_add(pos, md_seeding); break;
+   			case STATE_DOWNLOADING: row_add(pos, md_downloading); break;
+   			case STATE_INACTIVE:	row_add(pos, md_inactive); break;
+   			case STATE_CREATING:    row_add(pos, md_inactive); break;
    		}
     }
 }
@@ -266,8 +268,11 @@ void list_update(GtkListStore *ls)
     int id;
     double percent = 0.0;
     char* progress = malloc(FORMATSTRING_LEN);
+    char* ratio = malloc(FORMATSTRING_LEN);
     char netstat_down[FORMATSTRING_LEN];
 	char netstat_up[FORMATSTRING_LEN];
+
+	memset(ratio, '\0', FORMATSTRING_LEN);
 
 	lock(&list_lock);
 	nextitem_exist = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ls), &iter);
@@ -308,8 +313,8 @@ void list_update(GtkListStore *ls)
     	sprintf(progress, "%.2f%%", percent);
     	//[todo: implement logic from list_update_tabs here.]
     	
-		netstat_formatbytes(INPUT, torrentlist[id].tinfo->_info_hash, netstat_down);
-		netstat_formatbytes(OUTPUT, torrentlist[id].tinfo->_info_hash, netstat_up);
+		netstat_formatbytes(torrentlist[id].tinfo->_info_hash, INPUT, netstat_down);
+		netstat_formatbytes(torrentlist[id].tinfo->_info_hash, OUTPUT, netstat_up);
    		gtk_list_store_set(ls, &iter,
    						COL_DONE, progress,		//todo: get this from fileman 
    						COL_STATUS, torrentlist[id].status, 
@@ -318,12 +323,13 @@ void list_update(GtkListStore *ls)
    						COL_LEECHER, swarm_incomplete(torrentlist[id].swarm_id), 
    						COL_SEEDER, swarm_completed(torrentlist[id].swarm_id), 
    						COL_SWARM, swarm_peercount(torrentlist[id].swarm_id), 			//get these values from swarm.c 
-   						COL_RATIO, 0.0000, -1);
+   						COL_RATIO, netstat_formatratio(torrentlist[id].tinfo->_info_hash, ratio), -1);
 
        	nextitem_exist = gtk_tree_model_iter_next(GTK_TREE_MODEL(ls), &iter);
 	}
     unlock(&list_lock);
 	free(progress);
+	free(ratio);
 }
 
 
@@ -393,7 +399,7 @@ void* gui_update_thread(void* arg)
 void list_create(GtkListStore **model)
 {
 	*model = gtk_list_store_new(COLUMN_COUNT, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 
-								G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_DOUBLE); 
+								G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_STRING); 
 }
 
 //handle doubleclick event on torrent. ~RD
@@ -432,17 +438,17 @@ void torrent_start()
 		case TAB_COMPLETED: row_delete(id, md_completed);
 							strcpy(torrentlist[id].status, "Seeding");
 							row_add(id, md_seeding); 
-							netstat_track(torrentlist[id].tinfo->_info_hash);
+							netstat_track(torrentlist[id].tinfo->_info_hash, torrentlist[id].tinfo->_total_length);
 							torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo);
 							torrentlist[id].state = STATE_SEEDING;
 							 break;
 		case TAB_INACTIVE:  
 							if ((torrentlist[id].swarm_id = tracker_track(torrentlist[id].tinfo)) != -1)
 							{
-								netstat_track(torrentlist[id].tinfo->_info_hash);
 								row_delete(id, md_inactive);
 								strcpy(torrentlist[id].status, "Downloading");
 								row_add(id, md_downloading);
+								netstat_track(torrentlist[id].tinfo->_info_hash, torrentlist[id].tinfo->_total_length);
 								torrentlist[id].state = STATE_DOWNLOADING;	
 							}
 							else
@@ -496,8 +502,11 @@ void torrent_delete()
 		case TAB_INACTIVE:	 	row_delete(id, md_inactive); break;
 	}
 
-	//todo: delete torrent files && delete torrentinfo record?
 	netstat_untrack(torrentlist[id].tinfo->_info_hash);
+
+	free(torrentlist[id].status);
+	free(torrentlist[id].filesize);
+	//free self [todo:]
 
 	fflush(stdout);
 }

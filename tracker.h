@@ -18,7 +18,7 @@
 #include "netstat.h"
 #include "bencodning.h"
 #include "protocol_meta.h"
-#include "SearchPice.h"
+#include "searchpiece.h"
 
 int tracker_track(torrent_info* tinfo);		//adds a info_hash to be tracked, specify trackers in char* name[MAX_TRACKERS] format.
 void tracker_untrack(torrent_info* tinfo);	//stops tracking of info_hash, freeing memory, swarm slot and notifies the tracker.

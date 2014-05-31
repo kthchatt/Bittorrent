@@ -85,10 +85,10 @@ void *create_file(void *ptr){
 			total_created += TO_CREATE;
 		}
 		create = torrent->_file_length[i] -total_created;
-		fseek(fp, create -1, SEEK_CUR);		//file size not one byte too large anymore. ~RD
+		fseek(fp, create , SEEK_CUR);		//file size not one byte too large anymore. ~RD
 		torrent->_total_created += create;
-		fputc('\n', fp);					//critical error: file size will be one byte too, fputc writes past "create" fixed L@89 ~RD
-		fclose(fp);
+		//fputc('\n', fp);					//critical error: file size will be one byte too, fputc writes past "create" fixed L@89 ~RD
+		fclose(fp);							//removed \n, this will break the files last byte every time the torrent is added. ~RD
 
 		//fprintf(stderr, "File is set to size\n");
 		strcpy(torrent->_file_path[i], tmp_path);

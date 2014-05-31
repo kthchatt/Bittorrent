@@ -30,7 +30,7 @@ static int connect_tracker(int* sockfd, long int* connection_id)
     return htonl(action);
 }
 
-//send query
+//send scrape query and read the reply.
 static void send_scrape(scrape_t* scrape, int* sockfd, long int connection_id)
 {
     int action = htonl(2), num;
@@ -44,7 +44,7 @@ static void send_scrape(scrape_t* scrape, int* sockfd, long int connection_id)
     memcpy(packet + 8, &action, 4);
     memcpy(packet + 12, &transaction_id, 4);
     memcpy(packet + 16, scrape->swarm->info_hash, 20);
-    netstat_update(OUTPUT, 36, scrape->swarm->info_hash);
+    netstat_update(scrape->swarm->info_hash, OUTPUT, 36);
 
     if ((send(*sockfd, packet, 36, 0)) == 36)
     {
@@ -55,8 +55,6 @@ static void send_scrape(scrape_t* scrape, int* sockfd, long int connection_id)
             memcpy(&seeders, response + 8, 4);
             memcpy(&completed, response + 12, 4);
             memcpy(&leechers, response + 16, 4);
-
-            printf("\nReceived \tAction : %d, transaction : %d, seeders %d", ntohl(action_reply), ntohl(transaction_reply), ntohl(seeders)); fflush(stdout);
         
             if (transaction_id == transaction_reply && action == action_reply)
             {
@@ -71,13 +69,14 @@ static void send_scrape(scrape_t* scrape, int* sockfd, long int connection_id)
                     scrape->swarm->incomplete = scrape->tracker->incomplete;
             }
         }
-        netstat_update(INPUT, num, scrape->swarm->info_hash);
+        netstat_update(scrape->swarm->info_hash, INPUT, num);
     }
 
     free(packet);
     free(response);
 }
 
+//[todo: check if the peer already exists, use swarm_newpeer() to add peer if it does not exist already]
 static void receive_announce(announce_t* announce, int* sockfd, long int connection_id, int transaction_id)
 {
     int num, action, i = 0, j;
@@ -89,8 +88,7 @@ static void receive_announce(announce_t* announce, int* sockfd, long int connect
 
     if ((num = recv(*sockfd, packet, 2048, 0)) > 0)
     {
-        netstat_update(INPUT, num, announce->swarm->info_hash);
-        printf("\nReading announce reply of %d bytes!", num);
+        netstat_update(announce->swarm->info_hash, INPUT, num);
 
         memcpy(&action, packet, 4);
         memcpy(&transaction_reply, packet + 4, 4);
@@ -118,7 +116,6 @@ static void receive_announce(announce_t* announce, int* sockfd, long int connect
 
             sprintf(announce->swarm->peer[announce->swarm->peercount].port, "%d", (unsigned) port);
 
-            printf("\nPeer = [%s:%s]", announce->swarm->peer[announce->swarm->peercount].ip, announce->swarm->peer[announce->swarm->peercount].port);
             announce->swarm->peercount++;
         }
         unlock(&announce->swarm->peerlock);
@@ -127,6 +124,7 @@ static void receive_announce(announce_t* announce, int* sockfd, long int connect
     free(packet);
 }
 
+//send announce request to tracker
 static void send_announce(announce_t* announce, int* sockfd, long int connection_id)
 {
     char* packet = malloc(98);
@@ -151,11 +149,12 @@ static void send_announce(announce_t* announce, int* sockfd, long int connection
     memcpy(packet + 96, &port, 2);
 
     send(*sockfd, packet, 98, 0);
-    netstat_update(INPUT, 98, announce->swarm->info_hash);
+    netstat_update(announce->swarm->info_hash, INPUT, 98);
     free(packet);
     receive_announce(announce, sockfd, connection_id, transaction_id);
 }
 
+//announce over udp.
 void udp_announce(announce_t* announce)
 {
     int sockfd = -1, port;
@@ -167,8 +166,6 @@ void udp_announce(announce_t* announce)
     url_hostname(announce->tracker->url, hostname);
     url_port(announce->tracker->url, &port);
     sprintf(portname, "%d", (unsigned int) port);
-
-    printf("\nDNS: hostname = %s, portname = %s", hostname, portname);
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -211,8 +208,6 @@ void udp_scrape(scrape_t* scrape)
     url_hostname(scrape->tracker->url, hostname);
     url_port(scrape->tracker->url, &port);
     sprintf(portname, "%d", (unsigned int) port);
-
-    printf("\nDNS: hostname = %s, portname = %s", hostname, portname);
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;

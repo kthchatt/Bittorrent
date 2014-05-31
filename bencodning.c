@@ -76,7 +76,7 @@ int decode_bencode(char *file_name, torrent_info *data){
 	//fprintf(stderr, "The info hash is:");
 	for (j = 0; j < 20; ++j)
 		{
-			fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
+			//fprintf(stderr, "%02x", (unsigned char) data->_info_hash[j]);
 			//dataptr++;
 		}
 	//fprintf(stderr, "\n");
@@ -271,6 +271,7 @@ void complete_dictonarry (char *string_name, char *string_value, torrent_info *d
 	//int ascii_int = 0;
 	if (strcmp(string_name, "announce") == 0)
 	{	
+		strcpy(data->_announce_list[place_announce_list++], string_value);
 		strcpy(data->_announce, string_value);
 	} else if (strcmp(string_name, "comment") == 0)
 	{	

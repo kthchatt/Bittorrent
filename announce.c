@@ -7,7 +7,7 @@
 
 #include "announce.h"
 
-//send a http query, the announce.
+//determine protocol to use for announce.
 static void* announcer(void* arg)
 {
     announce_t* announce = (announce_t*) arg;
@@ -34,7 +34,7 @@ void tracker_announce(swarm_t* swarm)
     announce_t* announce;
     int i;
 
-    swarm_reset(swarm);  //clear stale peers
+    swarm_reset(swarm);  //[todo: clear stale peers]
 
     for (i = 0; i < swarm->tinfo->_announce_list_count; i++)
     {

@@ -7,7 +7,7 @@
 #include "protocol_tcp.h"
 
 
-//construct a http query
+//construct a http scrape query
 static int scrape_build(char request[256], char* info_hash, char* tracker) 
 {
     char* path =     (char*) malloc(MAX_URL_LEN);
@@ -26,7 +26,7 @@ static int scrape_build(char request[256], char* info_hash, char* tracker)
     return strlen(request);
 }
 
-//construct a http query. [todo: add left, downloaded and event]
+//construct a http announce query. [todo: add left, downloaded and event]
 static void announce_build(char request[300], char* info_hash, char* peer_id, char* tracker, int listenport) 
 {
     char* announce = (char*) malloc(strlen(tracker));
@@ -46,6 +46,7 @@ static void announce_build(char request[300], char* info_hash, char* peer_id, ch
     return;
 }
 
+//read the scrape response.
 static void scrape_response(int* sockfd, scrape_t* scrape)
 {
     int num = 0;
@@ -57,7 +58,7 @@ static void scrape_response(int* sockfd, scrape_t* scrape)
     if ((num = recv(*sockfd, recvbuf, sizeof(recvbuf)-1, MSG_DONTWAIT)) > 0)
     {
         recvbuf[num] = '\0';
-        netstat_update(INPUT, strlen(recvbuf), swarm->info_hash);
+        netstat_update(swarm->info_hash, INPUT, strlen(recvbuf));
 
         scrape->tracker->completed  = bdecode_value(recvbuf, "complete");
         scrape->tracker->downloaded = bdecode_value(recvbuf, "downloaded");
@@ -86,7 +87,7 @@ static void announce_response(int* sockfd, announce_t* announce)
     {
         recvbuf[num] = '\0';
 
-        netstat_update(INPUT, num, announce->swarm->info_hash);
+        netstat_update(announce->swarm->info_hash, INPUT, num);
         announce->tracker->interval   = bdecode_value(recvbuf, ":interval");
         announce->tracker->minterval  = bdecode_value(recvbuf, ":min interval");
 
@@ -132,7 +133,7 @@ static void announce_response(int* sockfd, announce_t* announce)
     }
 }
 
-
+//scrape a tcp tracker
 void tcp_scrape(scrape_t* scrape)
 {
     int sockfd;
@@ -160,7 +161,7 @@ void tcp_scrape(scrape_t* scrape)
             if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
             {
                 send(sockfd, request, strlen(request), 0);
-                netstat_update(OUTPUT, strlen(request), scrape->swarm->info_hash);
+                netstat_update(scrape->swarm->info_hash, OUTPUT, strlen(request));
                 scrape_response(&sockfd, scrape);
             } 
             close(sockfd);
@@ -170,7 +171,7 @@ void tcp_scrape(scrape_t* scrape)
     free(portname);
 }
 
-//send a http query, the announce.
+//send a http announce query.
 void tcp_announce(announce_t* announce)
 {
     int   port = 80, sockfd, url_len = 200;
@@ -199,7 +200,7 @@ void tcp_announce(announce_t* announce)
             if (connect(sockfd, res->ai_addr, res->ai_addrlen) > -1)
             {
                 send(sockfd, request, strlen(request), 0);
-                netstat_update(OUTPUT, strlen(request), announce->swarm->info_hash);
+                netstat_update(announce->swarm->info_hash, OUTPUT, strlen(request));
                 announce_response(&sockfd, announce);
             } 
             close(sockfd);
